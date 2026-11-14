@@ -213,15 +213,16 @@ const DynamicSpaceLighting: React.FC<{
       bounceLightRef.current.intensity = 0.28;
       bounceLightRef.current.position.set(5, 1, -6);
     } else if (sp < 0.87) {
-      // Stage 4: Mars Encounter (Warm ferric oxide albedo bounce at comfortable distance)
-      sunLightRef.current.color.set('#fff8eb');
-      sunLightRef.current.intensity = 2.8;
+      // Stage 4: Mars Encounter (Dimmer, warmer sunlight at 1.52 AU)
+      sunLightRef.current.color.set(STAGE_CONFIG.stage04_mars.sunColor);
+      sunLightRef.current.intensity = STAGE_CONFIG.stage04_mars.sunIntensity;
+      sunLightRef.current.position.set(...STAGE_CONFIG.stage04_mars.sunPosition);
 
       ambientLightRef.current.color.set('#fed7aa');
-      ambientLightRef.current.intensity = 0.32;
+      ambientLightRef.current.intensity = 0.24;
 
       bounceLightRef.current.color.set('#ea580c');
-      bounceLightRef.current.intensity = 0.58;
+      bounceLightRef.current.intensity = 0.42;
       bounceLightRef.current.position.set(5, 1, -6);
     } else {
       // Stage 5: Deep Space Terminal Void (Stark solar key light with soft interstellar starlight)
@@ -345,18 +346,18 @@ const CelestialEncounters: React.FC<{
         const v = (sp - 0.70) / 0.22; // Progress 0 -> 1
 
         const harmonic = Math.sin(v * Math.PI);
-        const zDist = -95.0 + 65.0 * harmonic; // -95.0 down to -30.0 at closest approach -> -95.0
+        const zDist = -95.0 + (95.0 + STAGE_CONFIG.stage04_mars.marsClosestZ) * harmonic; // -95.0 down to -26.0
         const dist = 7.3 - zDist;
 
         // Clean upper-right placement clear of the text cards on the left
-        const tanX = 0.29 + 0.02 * (v - 0.5);
+        const tanX = 0.26 + 0.02 * (v - 0.5);
         const tanY = 0.11 - 0.02 * (v - 0.5);
 
         const xPos = 0.4 + dist * tanX;
         const yPos = 0.55 + dist * tanY;
 
-        // Comfortable interplanetary scale: peaks at 1.38
-        const s = 0.08 + 1.30 * harmonic;
+        // Elliptical encounter: swells from a distant 0.10 to a close high-detail 2.1 (STAGE_CONFIG.stage04_mars.marsRadius)
+        const s = 0.10 + (STAGE_CONFIG.stage04_mars.marsRadius - 0.10) * harmonic;
 
         const fadeIn = THREE.MathUtils.smoothstep(v, 0.0, 0.12);
         const fadeOut = 1.0 - THREE.MathUtils.smoothstep(v, 0.88, 1.0);
