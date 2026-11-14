@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { STAGE_CONFIG } from '../scene/stageConfig';
 
 interface IndiaLaunchPadProps {
   scrollProgressRef: React.MutableRefObject<number>;
@@ -201,6 +202,7 @@ export const IndiaLaunchPad: React.FC<IndiaLaunchPadProps> = ({
   const umbilicalGantryLeft = useRef<THREE.Group>(null);
   const umbilicalGantryRight = useRef<THREE.Group>(null);
   const delugeSteamGroup = useRef<THREE.Group>(null);
+  const cryoVapourGroup = useRef<THREE.Group>(null);
   const padLightRef = useRef<THREE.PointLight>(null);
   const ignitionTimeRef = useRef<number | null>(null);
 
@@ -290,34 +292,34 @@ export const IndiaLaunchPad: React.FC<IndiaLaunchPadProps> = ({
         metalness: 0.65,
       }),
       tropicalFoliage: new THREE.MeshStandardMaterial({
-        color: '#1b3b1e', // Sriharikota coastal Casuarina deep evergreen
-        roughness: 0.85,
-        metalness: 0.05,
+        color: '#070f0b', // Soft atmospheric dark silhouette
+        roughness: 0.96,
+        metalness: 0.02,
       }),
       foliageHighlight: new THREE.MeshStandardMaterial({
-        color: '#2d5a27',
-        roughness: 0.80,
-        metalness: 0.05,
+        color: '#0a1610',
+        roughness: 0.94,
+        metalness: 0.02,
       }),
       treeBark: new THREE.MeshStandardMaterial({
-        color: '#2b2118', // Weathered coastal Casuarina bark
-        roughness: 0.92,
-        metalness: 0.04,
+        color: '#120d09', // Weathered dark bark
+        roughness: 0.95,
+        metalness: 0.02,
       }),
       forestCanopyDeep: new THREE.MeshStandardMaterial({
-        color: '#122616', // Dense coastal pine canopy shade
-        roughness: 0.88,
-        metalness: 0.03,
+        color: '#050c08', // Deepest silhouette shadow
+        roughness: 0.98,
+        metalness: 0.01,
       }),
       forestCanopyMid: new THREE.MeshStandardMaterial({
-        color: '#1b3d21', // Mid-tier evergreen foliage
-        roughness: 0.84,
-        metalness: 0.04,
+        color: '#08120b',
+        roughness: 0.95,
+        metalness: 0.02,
       }),
       forestCanopyLight: new THREE.MeshStandardMaterial({
-        color: '#2b582f', // Sunlit outer needles
-        roughness: 0.78,
-        metalness: 0.05,
+        color: '#0c1810',
+        roughness: 0.92,
+        metalness: 0.03,
       }),
       mastWhite: new THREE.MeshBasicMaterial({ color: '#f8fafc' }),
       mastRed: new THREE.MeshBasicMaterial({ color: '#ef4444' }),
@@ -505,9 +507,12 @@ export const IndiaLaunchPad: React.FC<IndiaLaunchPadProps> = ({
           }
         });
 
-        // Flame light reflection on launch trench and concrete
+        // Flame light reflection on launch trench and concrete with dramatic initial ignition flash
         if (padLightRef.current) {
-          padLightRef.current.intensity = (9.5 + Math.sin(t * 40) * 3.0) * fadeOut * eruptionGrowth;
+          const initialFlash = timeSinceIgnition < 0.38
+            ? (1.0 - timeSinceIgnition / 0.38) * STAGE_CONFIG.stage00_launchPad.ignitionFlashIntensity
+            : 0;
+          padLightRef.current.intensity = ((9.5 + Math.sin(t * 40) * 3.0) + initialFlash) * fadeOut * eruptionGrowth;
         }
       } else {
         delugeSteamGroup.current.visible = false;
@@ -515,6 +520,26 @@ export const IndiaLaunchPad: React.FC<IndiaLaunchPadProps> = ({
         materials.fireSmokeMat.opacity = 0;
         if (padLightRef.current) padLightRef.current.intensity = 0;
         ignitionTimeRef.current = null;
+      }
+    }
+
+    // 5. Cryogenic LH2/LOX boil-off wisps venting from umbilical disconnect valves
+    if (cryoVapourGroup.current) {
+      if (scrollProgress < 0.08) {
+        cryoVapourGroup.current.visible = true;
+        cryoVapourGroup.current.children.forEach((child, i) => {
+          const wisp = child as THREE.Mesh;
+          const wispT = (t * STAGE_CONFIG.stage00_launchPad.cryoVentRate + i * 0.45) % 2.0;
+          wisp.position.y = 1.35 - wispT * 0.45;
+          wisp.position.x = 0.14 + Math.sin(wispT * 3.0 + i) * 0.06 - wispT * 0.08;
+          wisp.position.z = -0.45 + Math.cos(wispT * 2.5 + i) * 0.04;
+          const scale = 0.08 + wispT * 0.18;
+          wisp.scale.set(scale, scale, scale);
+          const mat = wisp.material as THREE.MeshBasicMaterial;
+          mat.opacity = Math.sin((wispT / 2.0) * Math.PI) * STAGE_CONFIG.stage00_launchPad.cryoVentOpacity;
+        });
+      } else {
+        cryoVapourGroup.current.visible = false;
       }
     }
   });
@@ -1221,10 +1246,10 @@ export const IndiaLaunchPad: React.FC<IndiaLaunchPadProps> = ({
         </group>
       </group>
 
-      {/* ===== 8. TROPICAL CASUARINA COASTAL FORESTRY (AUTHENTIC CORNER FRAMING) ===== */}
-      {/* Faithfully replicates the coastal tree canopies in the bottom corners of the Chandrayaan-3 photograph */}
-      {/* Bottom-Left Natural Foliage (Framed neatly at the outer corner) */}
-      <group position={[-2.8, -1.45, 2.2]}>
+      {/* ===== 8. TROPICAL CASUARINA COASTAL FORESTRY (AUTHENTIC CORNER SILHOUETTE FRAMING) ===== */}
+      {/* Tucked into outer corners, scaled down, darkened into atmospheric silhouettes */}
+      {/* Bottom-Left Natural Foliage Silhouette */}
+      <group position={[-3.6, -1.60, 2.4]} scale={[0.52, 0.52, 0.52]}>
         {/* Slender Weathered Casuarina Trunks */}
         <mesh position={[0, 0.35, 0]} material={materials.treeBark}>
           <cylinderGeometry args={[0.05, 0.09, 0.75, 8]} />
@@ -1246,8 +1271,8 @@ export const IndiaLaunchPad: React.FC<IndiaLaunchPadProps> = ({
         ))}
       </group>
 
-      {/* Bottom-Right Natural Foliage (Symmetrical corner framing) */}
-      <group position={[2.8, -1.45, 2.2]}>
+      {/* Bottom-Right Natural Foliage Silhouette */}
+      <group position={[3.6, -1.60, 2.4]} scale={[0.52, 0.52, 0.52]}>
         {/* Slender Weathered Casuarina Trunks */}
         <mesh position={[0, 0.35, 0]} material={materials.treeBark}>
           <cylinderGeometry args={[0.05, 0.09, 0.75, 8]} />
@@ -1268,6 +1293,52 @@ export const IndiaLaunchPad: React.FC<IndiaLaunchPadProps> = ({
           </mesh>
         ))}
       </group>
+
+      {/* ===== MORNING SUNRISE GOD-RAYS (Filtering through the Umbilical Gantry) ===== */}
+      <mesh position={[1.8, 2.4, -2.0]} rotation={[0.42, 0.35, -0.68]}>
+        <cylinderGeometry args={[0.6, 3.2, 7.5, 16, 1, true]} />
+        <meshBasicMaterial
+          color={STAGE_CONFIG.stage00_launchPad.sunColor}
+          transparent
+          opacity={0.055}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* ===== CRYOGENIC LH2/LOX BOIL-OFF VAPOUR WISPS ===== */}
+      <group ref={cryoVapourGroup} position={[0, 0, 0]}>
+        {[...Array(8)].map((_, i) => (
+          <mesh key={`cryo-wisp-${i}`} position={[0.14, 1.25, -0.45]}>
+            <sphereGeometry args={[1, 8, 8]} />
+            <meshBasicMaterial
+              map={smokePuffTexture}
+              transparent
+              opacity={0.35}
+              depthWrite={false}
+              blending={THREE.NormalBlending}
+            />
+          </mesh>
+        ))}
+      </group>
+
+      {/* ===== INDUSTRIAL DECK PERIMETER LIGHTING ===== */}
+      {[
+        { x: -0.88, z: -0.78 },
+        { x: 0.88, z: -0.78 },
+        { x: -0.88, z: 0.78 },
+        { x: 0.88, z: 0.78 },
+      ].map((pt, i) => (
+        <group key={`pad-flood-${i}`} position={[pt.x, 0.35, pt.z]}>
+          <mesh material={materials.towerSteel}>
+            <cylinderGeometry args={[0.015, 0.02, 0.06, 6]} />
+          </mesh>
+          <mesh position={[0, 0.04, 0]} material={materials.floodlightGlow}>
+            <sphereGeometry args={[0.035, 8, 8]} />
+          </mesh>
+        </group>
+      ))}
 
       {/* ===== 9. DEEP BACKGROUND CRYOGENIC PROPELLANT TANKS (SAFE STAND-OFF DISTANCE) ===== */}
       <group position={[-5.5, -1.35, -12.0]} scale={[0.65, 0.65, 0.65]}>

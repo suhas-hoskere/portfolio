@@ -8,6 +8,7 @@ import { MarsModel } from './MarsModel';
 import { WarpStarfield } from './WarpStarfield';
 import { IndiaLaunchPad } from './IndiaLaunchPad';
 import { AtmosphericClouds } from './AtmosphericClouds';
+import { STAGE_CONFIG } from '../scene/stageConfig';
 
 interface CosmicFlightSceneProps {
   scrollProgressRef: React.MutableRefObject<number>;
@@ -21,7 +22,8 @@ interface CosmicFlightSceneProps {
 // Cleanly frames the launch vehicle & spacecraft on the right half, leaving the left 50% open for story cards!
 const FlightCameraRig: React.FC<{
   scrollProgressRef: React.MutableRefObject<number>;
-}> = ({ scrollProgressRef }) => {
+  isIgnited?: boolean;
+}> = ({ scrollProgressRef, isIgnited = false }) => {
   const mouseRef = useRef(new THREE.Vector2(0, 0));
 
   useEffect(() => {
@@ -85,12 +87,22 @@ const FlightCameraRig: React.FC<{
 
     targetCamY += mouse.y * 0.08;
 
+    // Camera shake at ground zero ignition & Max-Q ascent
+    const t = state.clock.getElapsedTime();
+    let shakeX = 0;
+    let shakeY = 0;
+    if ((isIgnited || sp > 0.005) && sp < 0.08) {
+      const shakeAmt = STAGE_CONFIG.stage00_launchPad.padCameraShake;
+      shakeX = (Math.sin(t * 78) * 0.7 + Math.cos(t * 112) * 0.3) * shakeAmt;
+      shakeY = (Math.cos(t * 88) * 0.7 + Math.sin(t * 130) * 0.3) * shakeAmt;
+    }
+
     // Frame-rate independent cinematic camera damping (pure butter-smooth tracking with zero artificial jitter)
     const delta = state.clock.getDelta();
     const lerpFactor = 1 - Math.exp(-8.5 * delta);
 
-    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetCamX, lerpFactor);
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY, lerpFactor);
+    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetCamX + shakeX, lerpFactor);
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY + shakeY, lerpFactor);
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetCamZ, lerpFactor);
 
     // Architectural alignment: lookAt strictly matches camera X and Y!
@@ -409,6 +421,7 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
       >
         <FlightCameraRig
           scrollProgressRef={scrollProgressRef}
+          isIgnited={isIgnited}
         />
 
         {/* Dynamic Coastal Dawn Fog at Ground Level */}
