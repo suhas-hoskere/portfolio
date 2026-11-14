@@ -20,7 +20,7 @@ export interface StageConfig {
     };
   };
 
-  // Stage 00: Launch Pad (Sriharikota SDSC SHAR)
+  // Stage 00: Launch Pad & Cinematic Liftoff Sequence
   stage00_launchPad: {
     sunPosition: [number, number, number];
     sunColor: string;
@@ -36,6 +36,38 @@ export interface StageConfig {
     ignitionFlashIntensity: number;
     ignitionSmokeScale: number;
     padCameraShake: number;
+    liftoffMilestones: {
+      totalDuration: number;
+      reducedMotionDuration: number;
+      ignitionStart: number;
+      ignitionEnd: number;
+      buildupStart: number;
+      buildupEnd: number;
+      releaseStart: number;
+      releaseEnd: number;
+      climbStart: number;
+      climbEnd: number;
+    };
+    cameraShakeCurve: {
+      idle: number;
+      ignition: number;
+      buildupPeak: number;
+      release: number;
+      climb: number;
+    };
+    fireAndSmoke: {
+      maxFlameParticles: number;
+      maxSmokeParticles: number;
+      maxSparks: number;
+      lateralTrenchVelocity: number;
+      smokeDissipationRate: number;
+    };
+    environment: {
+      treeCount: number;
+      groundMistOpacity: number;
+      groundElevationScale: number;
+      apronRadius: number;
+    };
   };
 
   // Stage 01: Atmospheric Ascent (Max-Q, Booster Separation)
@@ -152,7 +184,7 @@ export const STAGE_CONFIG: StageConfig = {
   },
 
   stage00_launchPad: {
-    sunPosition: [18, 7, 6],
+    sunPosition: [18, 6.5, 6],
     sunColor: '#fff0db',
     sunIntensity: 3.2,
     ambientColor: '#bae6fd',
@@ -166,6 +198,38 @@ export const STAGE_CONFIG: StageConfig = {
     ignitionFlashIntensity: 14.0,
     ignitionSmokeScale: 1.4,
     padCameraShake: 0.0035,
+    liftoffMilestones: {
+      totalDuration: 10.0,
+      reducedMotionDuration: 3.0,
+      ignitionStart: 0.0,
+      ignitionEnd: 1.5,
+      buildupStart: 1.5,
+      buildupEnd: 4.5,
+      releaseStart: 4.5,
+      releaseEnd: 6.0,
+      climbStart: 6.0,
+      climbEnd: 10.0,
+    },
+    cameraShakeCurve: {
+      idle: 0.0003,
+      ignition: 0.0022,
+      buildupPeak: 0.0068,
+      release: 0.0082,
+      climb: 0.0038,
+    },
+    fireAndSmoke: {
+      maxFlameParticles: 320,
+      maxSmokeParticles: 180,
+      maxSparks: 60,
+      lateralTrenchVelocity: 4.2,
+      smokeDissipationRate: 0.28,
+    },
+    environment: {
+      treeCount: 96,
+      groundMistOpacity: 0.25,
+      groundElevationScale: 0.15,
+      apronRadius: 4.5,
+    },
   },
 
   stage01_ascent: {

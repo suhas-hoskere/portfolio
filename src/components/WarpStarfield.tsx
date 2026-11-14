@@ -238,7 +238,7 @@ interface WarpStarfieldProps {
   scrollProgressRef: React.MutableRefObject<number>;
 }
 
-// Procedural Optical Solar Lens Flare Texture with Gaussian Corona & Diffraction Spikes
+// Procedural Realistic Sun Disc Texture with Soft Atmospheric Haze & Warm Glow (Zero Geometric Spikes)
 let cachedSunFlareTexture: THREE.CanvasTexture | null = null;
 function getCachedSunFlareTexture(): THREE.CanvasTexture {
   if (cachedSunFlareTexture) return cachedSunFlareTexture;
@@ -250,52 +250,47 @@ function getCachedSunFlareTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d')!;
   const center = size / 2;
 
-  // 1. Broad outer solar halo (soft exponential falloff)
-  const haloGrad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.95);
-  haloGrad.addColorStop(0.0, 'rgba(255, 240, 200, 0.45)');
-  haloGrad.addColorStop(0.15, 'rgba(255, 180, 70, 0.22)');
-  haloGrad.addColorStop(0.35, 'rgba(251, 146, 60, 0.08)');
-  haloGrad.addColorStop(0.65, 'rgba(234, 88, 12, 0.025)');
-  haloGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = haloGrad;
+  // 1. Broad soft atmospheric haze & outer solar bloom (smooth natural exponential falloff)
+  const hazeGrad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.95);
+  hazeGrad.addColorStop(0.0, 'rgba(255, 246, 225, 0.45)');
+  hazeGrad.addColorStop(0.18, 'rgba(255, 210, 140, 0.26)');
+  hazeGrad.addColorStop(0.42, 'rgba(251, 146, 60, 0.10)');
+  hazeGrad.addColorStop(0.70, 'rgba(234, 88, 12, 0.025)');
+  hazeGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = hazeGrad;
   ctx.fillRect(0, 0, size, size);
 
-  // 2. Optical 6-point diffraction spikes (secondary mirror spider diffraction)
-  ctx.save();
-  ctx.translate(center, center);
-  ctx.strokeStyle = 'rgba(255, 245, 220, 0.35)';
-  ctx.lineWidth = 1.6;
-  for (let i = 0; i < 3; i++) {
-    const angle = (i * Math.PI) / 3;
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(-center * 0.85, 0);
-    ctx.lineTo(center * 0.85, 0);
-    ctx.stroke();
-    ctx.rotate(-angle);
-  }
-  ctx.restore();
-
-  // 3. Dense intense golden corona
-  const coronaGrad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.38);
-  coronaGrad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
-  coronaGrad.addColorStop(0.2, 'rgba(254, 240, 138, 0.85)');
-  coronaGrad.addColorStop(0.5, 'rgba(245, 158, 11, 0.40)');
-  coronaGrad.addColorStop(0.8, 'rgba(234, 88, 12, 0.12)');
+  // 2. Soft warm solar corona
+  const coronaGrad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.42);
+  coronaGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.95)');
+  coronaGrad.addColorStop(0.22, 'rgba(255, 240, 180, 0.85)');
+  coronaGrad.addColorStop(0.55, 'rgba(251, 191, 36, 0.38)');
+  coronaGrad.addColorStop(0.85, 'rgba(245, 158, 11, 0.08)');
   coronaGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = coronaGrad;
   ctx.beginPath();
-  ctx.arc(center, center, center * 0.38, 0, Math.PI * 2);
+  ctx.arc(center, center, center * 0.42, 0, Math.PI * 2);
   ctx.fill();
 
-  // 4. Pure white incandescent core
-  const coreGrad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.10);
+  // 3. Clean incandescent solar disc with subtle limb darkening (realistic celestial body)
+  const discGrad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.16);
+  discGrad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+  discGrad.addColorStop(0.70, 'rgba(255, 255, 250, 0.98)');
+  discGrad.addColorStop(0.92, 'rgba(255, 245, 210, 0.92)');
+  discGrad.addColorStop(1.0, 'rgba(254, 215, 170, 0.0)');
+  ctx.fillStyle = discGrad;
+  ctx.beginPath();
+  ctx.arc(center, center, center * 0.16, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Ultra-bright incandescent center
+  const coreGrad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.08);
   coreGrad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
-  coreGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
+  coreGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.95)');
   coreGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
   ctx.fillStyle = coreGrad;
   ctx.beginPath();
-  ctx.arc(center, center, center * 0.10, 0, Math.PI * 2);
+  ctx.arc(center, center, center * 0.08, 0, Math.PI * 2);
   ctx.fill();
 
   cachedSunFlareTexture = new THREE.CanvasTexture(canvas);

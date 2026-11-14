@@ -15,6 +15,8 @@ interface RocketModelProps {
   scrollProgressRef: React.MutableRefObject<number>;
   scrollSpeedRef: React.MutableRefObject<number>;
   isIgnited?: boolean;
+  liftoffTime?: number;
+  isLiftoffActive?: boolean;
 }
 
 // Procedural soft glowing radial particle texture for supersonic rocket exhaust
@@ -46,7 +48,14 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   scrollProgressRef,
   scrollSpeedRef,
   isIgnited = false,
+  liftoffTime = 0,
+  isLiftoffActive = false,
 }) => {
+  const liftoffTimeRef = useRef(liftoffTime);
+  const isLiftoffActiveRef = useRef(isLiftoffActive);
+  liftoffTimeRef.current = liftoffTime;
+  isLiftoffActiveRef.current = isLiftoffActive;
+
   const vehicleGroup = useRef<THREE.Group>(null);
   const rocketBodyGroup = useRef<THREE.Group>(null);
   const intactFairingGroup = useRef<THREE.Group>(null);
@@ -128,13 +137,13 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     return {
       hullWhite: new THREE.MeshStandardMaterial({
         color: '#f8fafc',
-        roughness: 0.25,
-        metalness: 0.15,
+        roughness: 0.22,
+        metalness: 0.12,
       }),
       hullAccent: new THREE.MeshStandardMaterial({
-        color: '#ea580c', // ISRO orange
+        color: '#334155', // Industrial titanium dark accent
         roughness: 0.35,
-        metalness: 0.2,
+        metalness: 0.45,
       }),
       hullDark: new THREE.MeshStandardMaterial({
         color: '#1e293b',
@@ -142,9 +151,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         metalness: 0.6,
       }),
       engineMetal: new THREE.MeshStandardMaterial({
-        color: '#334155',
-        roughness: 0.2,
-        metalness: 0.85,
+        color: '#1e293b',
+        roughness: 0.28,
+        metalness: 0.88,
       }),
       towerSteel: new THREE.MeshStandardMaterial({
         color: '#475569',
@@ -278,8 +287,26 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       // Subtle physical thrust acoustic vibration during high-thrust atmospheric burn
       let thrustVibeX = 0;
       let thrustVibeY = 0;
-      if ((isIgnited || scrollProgress > 0.005) && scrollProgress < 0.22) {
-        const intensity = 1.0 + Math.min(scrollSpeed * 2.5, 2.0);
+      const lt = liftoffTimeRef.current;
+      const la = isLiftoffActiveRef.current;
+      const isBurningNow =
+        (la && lt >= 0.0) ||
+        ((isIgnited || scrollProgress > 0.005) && scrollProgress < 0.22);
+
+      if (isBurningNow) {
+        let intensity = 1.0;
+        if (la) {
+          if (lt < 1.5) {
+            intensity = 0.5 + (lt / 1.5) * 1.5;
+          } else if (lt < 4.5) {
+            intensity = 2.0 + Math.sin(t * 30) * 0.5;
+          } else {
+            intensity = 2.4;
+          }
+        } else {
+          intensity = 1.0 + Math.min(scrollSpeed * 2.5, 2.0);
+        }
+
         thrustVibeX = (Math.sin(t * 72) * 0.0012 + Math.cos(t * 110) * 0.0008) * intensity;
         thrustVibeY = (Math.cos(t * 85) * 0.0016 + Math.sin(t * 125) * 0.0009) * intensity;
       }
@@ -294,8 +321,12 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     }
 
     // 2. REALISTIC DYNAMIC ROCKET EXHAUST FIRE PLUME (Particles + Shock Diamonds + Light)
-    // Starts at T-00.00 ignition or when user begins scrolling
-    const isBurning = (isIgnited || scrollProgress > 0.005) && scrollProgress < 0.28;
+    // Starts at T-00.00 ignition or when liftoff sequence begins or when user begins scrolling
+    const lt = liftoffTimeRef.current;
+    const la = isLiftoffActiveRef.current;
+    const isBurning =
+      (la && lt >= 0.0) ||
+      ((isIgnited || scrollProgress > 0.005) && scrollProgress < 0.28);
     if (flamePointsRef.current) {
       if (isBurning) {
         flamePointsRef.current.visible = true;
@@ -738,13 +769,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         <mesh position={[0, 3.45, 0]} material={materials.hullWhite}>
           <cylinderGeometry args={[0.44, 0.44, 0.9, 32]} />
         </mesh>
-        {/* ISRO Tricolor Accent Stripe (Exact radius flush alignment) */}
-        <mesh position={[0, 3.55, 0]} material={materials.hullAccent}>
-          <cylinderGeometry args={[0.441, 0.441, 0.22, 32]} />
-        </mesh>
-        {/* Chandrayaan-3 & Indian National Flag Mission Decal on Fairing */}
-        <mesh position={[0, 3.45, 0]} material={materials.fairingDecalMat}>
-          <cylinderGeometry args={[0.443, 0.443, 0.90, 32, 1, true, -Math.PI * 0.12, Math.PI * 0.24]} />
+        {/* Interstage Seam Ring */}
+        <mesh position={[0, 3.0, 0]} material={materials.hullAccent}>
+          <cylinderGeometry args={[0.442, 0.442, 0.06, 32]} />
         </mesh>
       </group>
 
@@ -794,23 +821,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           <cylinderGeometry args={[0.45, 0.45, 0.05, 32]} />
         </mesh>
 
-        {/* Core Stage ISRO Badge */}
-        <group position={[0, 1.25, 0.442]}>
-          <mesh material={materials.hullAccent}>
-            <planeGeometry args={[0.55, 0.08]} />
-          </mesh>
-        </group>
-        {/* First Stage (L110) Main Liquid Propellant Core Tank */}
+        {/* First Stage Main Liquid Propellant Core Tank */}
         <mesh position={[0, -1.8, 0]} material={materials.hullWhite}>
           <cylinderGeometry args={[0.44, 0.44, 4.2, 32]} />
-        </mesh>
-
-        {/* ISRO Orange Vertical Accent Stripes */}
-        <mesh position={[0, -1.8, 0.435]} material={materials.hullAccent}>
-          <boxGeometry args={[0.08, 4.0, 0.02]} />
-        </mesh>
-        <mesh position={[0, -1.8, -0.435]} material={materials.hullAccent}>
-          <boxGeometry args={[0.08, 4.0, 0.02]} />
         </mesh>
 
         {/* External Propellant Feed Raceways / Cable Conduits (Running along Core Cylinder) */}

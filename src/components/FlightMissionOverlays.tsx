@@ -120,6 +120,7 @@ interface FlightMissionOverlaysProps {
   onLaunch: () => void;
   onSelectProject: (proj: ProjectData) => void;
   onNextStage?: () => void;
+  isLiftoffActive?: boolean;
 }
 
 const cardTransition = {
@@ -131,6 +132,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
   activeStageIndex,
   onLaunch,
   onSelectProject,
+  isLiftoffActive = false,
 }) => {
   return (
     <div className="fixed inset-0 pointer-events-none z-20 flex items-end sm:items-center justify-start px-4 sm:px-8 md:px-12 lg:px-16 pb-6 sm:pb-0 select-none">
@@ -143,10 +145,12 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
             <motion.div
               key="stage-0"
               initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+              animate={{ opacity: isLiftoffActive ? 0 : 1, y: isLiftoffActive ? -14 : 0, scale: 1 }}
               exit={{ opacity: 0, y: -18, scale: 0.98 }}
               transition={cardTransition}
-              className="space-y-4 sm:space-y-5 text-left"
+              className={`space-y-4 sm:space-y-5 text-left transition-opacity duration-700 ${
+                isLiftoffActive ? 'pointer-events-none' : 'pointer-events-auto'
+              }`}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-1 rounded-lg bg-[#0e131f]/80 border border-orange-400/40 text-orange-400 text-xs font-mono font-medium tracking-widest uppercase flex items-center gap-1.5 shadow-[0_0_12px_rgba(249,115,22,0.2)]">

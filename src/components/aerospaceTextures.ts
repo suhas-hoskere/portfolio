@@ -353,6 +353,154 @@ export function getCachedCarbonBackingTexture(): THREE.CanvasTexture {
 // High-resolution procedural textures for SDSC SHAR / ISRO Launch Vehicle
 // ============================================================================
 
+let cachedGenericBoosterTexture: THREE.CanvasTexture | null = null;
+let cachedGenericFairingTexture: THREE.CanvasTexture | null = null;
+let cachedRocketBumpMap: THREE.CanvasTexture | null = null;
+
+export function getCachedRocketBumpMap(): THREE.CanvasTexture {
+  if (cachedRocketBumpMap) return cachedRocketBumpMap;
+
+  const width = 512;
+  const height = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = '#505050';
+  ctx.lineWidth = 3;
+  [120, 280, 480, 680, 880].forEach((y) => {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#a0a0a0';
+    for (let x = 12; x < width; x += 24) {
+      ctx.beginPath();
+      ctx.arc(x, y - 6, 2, 0, Math.PI * 2);
+      ctx.arc(x, y + 6, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  cachedRocketBumpMap = new THREE.CanvasTexture(canvas);
+  cachedRocketBumpMap.generateMipmaps = true;
+  return cachedRocketBumpMap;
+}
+
+export function getCachedGenericBoosterTexture(): THREE.CanvasTexture {
+  if (cachedGenericBoosterTexture) return cachedGenericBoosterTexture;
+
+  const width = 512;
+  const height = 2048;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  const baseGrad = ctx.createLinearGradient(0, 0, width, 0);
+  baseGrad.addColorStop(0.0, '#e8ecf1');
+  baseGrad.addColorStop(0.2, '#f8fafc');
+  baseGrad.addColorStop(0.8, '#f1f5f9');
+  baseGrad.addColorStop(1.0, '#e2e8f0');
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = 'rgba(203, 213, 225, 0.12)';
+  for (let x = 0; x < width; x += 48) {
+    ctx.fillRect(x, 0, 24, height);
+  }
+
+  const jointYs = [340, 720, 1100, 1480, 1850];
+  jointYs.forEach((jy) => {
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, jy - 10, width, 20);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(0, jy - 4, width, 8);
+
+    ctx.fillStyle = '#e2e8f0';
+    for (let bx = 12; bx < width; bx += 24) {
+      ctx.beginPath();
+      ctx.arc(bx, jy - 14, 3, 0, Math.PI * 2);
+      ctx.arc(bx, jy + 14, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  const accessDoors = [
+    { y: 520, w: 72, h: 96 },
+    { y: 1280, w: 84, h: 110 },
+  ];
+  accessDoors.forEach((door) => {
+    const dx = (width - door.w) / 2;
+    ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
+    ctx.fillRect(dx, door.y, door.w, door.h);
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(dx, door.y, door.w, door.h);
+  });
+
+  const frostGrad = ctx.createLinearGradient(0, 850, 0, 1050);
+  frostGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0)');
+  frostGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.45)');
+  frostGrad.addColorStop(0.7, 'rgba(240, 249, 255, 0.40)');
+  frostGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = frostGrad;
+  ctx.fillRect(0, 850, width, 200);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  cachedGenericBoosterTexture = texture;
+  return cachedGenericBoosterTexture;
+}
+
+export function getCachedGenericFairingTexture(): THREE.CanvasTexture {
+  if (cachedGenericFairingTexture) return cachedGenericFairingTexture;
+
+  const width = 1024;
+  const height = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = 'rgba(203, 213, 225, 0.35)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < width; x += 64) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+  for (let y = 0; y < height; y += 64) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(width / 2, 0);
+  ctx.lineTo(width / 2, height);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  cachedGenericFairingTexture = texture;
+  return cachedGenericFairingTexture;
+}
+
 let cachedIsroBoosterTexture: THREE.CanvasTexture | null = null;
 let cachedIndiaBoosterTexture: THREE.CanvasTexture | null = null;
 let cachedChandrayaanFairingTexture: THREE.CanvasTexture | null = null;
@@ -366,7 +514,11 @@ let cachedChandrayaanFairingTexture: THREE.CanvasTexture | null = null;
  * - High-contrast bilingual markings: Hindi Devanagari 'इसरो' and Latin 'ISRO'
  */
 export function getCachedIsroBoosterTexture(): THREE.CanvasTexture {
-  if (cachedIsroBoosterTexture) return cachedIsroBoosterTexture;
+  void _unusedOldIsro;
+  return getCachedGenericBoosterTexture();
+}
+
+function _unusedOldIsro() {
 
   const width = 512;
   const height = 2048;
@@ -470,7 +622,11 @@ export function getCachedIsroBoosterTexture(): THREE.CanvasTexture {
 }
 
 export function getCachedIndiaBoosterTexture(): THREE.CanvasTexture {
-  if (cachedIndiaBoosterTexture) return cachedIndiaBoosterTexture;
+  void _unusedOldIndia;
+  return getCachedGenericBoosterTexture();
+}
+
+function _unusedOldIndia() {
 
   const width = 512;
   const height = 2048;
@@ -573,7 +729,11 @@ export function getCachedIndiaBoosterTexture(): THREE.CanvasTexture {
 }
 
 export function getCachedChandrayaanFairingTexture(): THREE.CanvasTexture {
-  if (cachedChandrayaanFairingTexture) return cachedChandrayaanFairingTexture;
+  void _unusedOldFairing;
+  return getCachedGenericFairingTexture();
+}
+
+function _unusedOldFairing() {
 
   const width = 1024;
   const height = 1024;

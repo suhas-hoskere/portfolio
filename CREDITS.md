@@ -26,6 +26,5 @@ This project renders a multi-stage cosmic flight experience utilizing public-dom
 
 ## Aerospace Vehicle & Launch Complex
 
-- **Launch Vehicle Architecture**: Modeled after the Indian Space Research Organisation (ISRO) LVM3 / Chandrayaan-3 launch configuration (twin S200 solid rocket boosters, L110 core liquid stage, C25 cryogenic upper stage, and payload fairing).
-- **Launch Complex**: Modeled after the Satish Dhawan Space Centre (SDSC SHAR) Second Launch Pad (SLP), Sriharikota, Andhra Pradesh, India.
-- **Markings & Decals**: Standard national insignia and Latin designation emblems. No copyrighted proprietary commercial photography utilized.
+- **Launch Vehicle & Pad (Stage 00)**: Generic heavy-lift orbital launch vehicle featuring a central core liquid propellant stage with payload fairing, twin solid rocket strap-on boosters with structural load-bearing struts, and an industrial launch mount with flame trench, umbilical tower, and distant lightning masts. 100% procedural Three.js PBR geometry and custom canvas-generated PBR textures with zero corporate or national branding (no logos, no trademarks, no flags).
+- **Planetary Spacecraft (Stages 02–05)**: Autonomous interplanetary science probe with dual articulated photovoltaic arrays, high-gain parabolic reflector dish, and multi-layer insulation (MLI) gold foil shielding.

@@ -6,7 +6,7 @@ import { EarthModel } from './EarthModel';
 import { MoonModel } from './MoonModel';
 import { MarsModel } from './MarsModel';
 import { WarpStarfield } from './WarpStarfield';
-import { IndiaLaunchPad } from './IndiaLaunchPad';
+import { Stage00LaunchPad } from './Stage00LaunchPad';
 import { AtmosphericClouds } from './AtmosphericClouds';
 import { getPhotorealisticEarthTextures } from './photorealisticPlanetTextures';
 import { STAGE_CONFIG } from '../scene/stageConfig';
@@ -16,6 +16,8 @@ interface CosmicFlightSceneProps {
   scrollSpeedRef: React.MutableRefObject<number>;
   activeStageIndex: number;
   isIgnited?: boolean;
+  liftoffTime?: number;
+  isLiftoffActive?: boolean;
 }
 
 // 3D Camera Rig: Telephoto architectural alignment (view vector strictly parallel to -Z)
@@ -24,7 +26,14 @@ interface CosmicFlightSceneProps {
 const FlightCameraRig: React.FC<{
   scrollProgressRef: React.MutableRefObject<number>;
   isIgnited?: boolean;
-}> = ({ scrollProgressRef, isIgnited = false }) => {
+  liftoffTime?: number;
+  isLiftoffActive?: boolean;
+}> = ({
+  scrollProgressRef,
+  isIgnited = false,
+  liftoffTime = 0,
+  isLiftoffActive = false,
+}) => {
   const mouseRef = useRef(new THREE.Vector2(0, 0));
 
   useEffect(() => {
@@ -53,8 +62,23 @@ const FlightCameraRig: React.FC<{
     let targetCamY = isMobile ? 0.45 : 0.4;
     let targetCamZ = baseCamZ;
 
+    let pitchTilt = 0;
+
     // Continuous spline interpolation across stages
-    if (sp < 0.18) {
+    if (isLiftoffActive) {
+      if (liftoffTime < 4.5) {
+        targetCamY = isMobile ? 0.35 : 0.2;
+        targetCamZ = baseCamZ;
+      } else {
+        const climbSec = liftoffTime - 4.5;
+        const climbRatio = Math.min(climbSec / 5.5, 1.0);
+        targetCamY = (isMobile ? 0.35 : 0.2) + Math.pow(climbRatio, 1.35) * 0.40;
+        targetCamZ = baseCamZ + climbRatio * 0.2;
+        if (liftoffTime >= 6.0) {
+          pitchTilt = Math.min((liftoffTime - 6.0) / 4.0, 1.0) * 0.12;
+        }
+      }
+    } else if (sp < 0.18) {
       // Ground zero -> lift-off
       const p = sp / 0.18;
       targetCamY = (isMobile ? 0.35 : 0.2) + p * 0.40;
@@ -92,7 +116,20 @@ const FlightCameraRig: React.FC<{
     const t = state.clock.getElapsedTime();
     let shakeX = 0;
     let shakeY = 0;
-    if ((isIgnited || sp > 0.005) && sp < 0.08) {
+    if (isLiftoffActive) {
+      let shakeAmt = 0.0003;
+      if (liftoffTime < 1.5) {
+        shakeAmt = THREE.MathUtils.lerp(0.0004, 0.0022, liftoffTime / 1.5);
+      } else if (liftoffTime < 4.5) {
+        shakeAmt = THREE.MathUtils.lerp(0.0022, 0.0068, (liftoffTime - 1.5) / 3.0);
+      } else if (liftoffTime < 6.0) {
+        shakeAmt = THREE.MathUtils.lerp(0.0068, 0.0082, (liftoffTime - 4.5) / 1.5);
+      } else {
+        shakeAmt = THREE.MathUtils.lerp(0.0082, 0.0035, (liftoffTime - 6.0) / 4.0);
+      }
+      shakeX = (Math.sin(t * 88) * 0.7 + Math.cos(t * 124) * 0.3) * shakeAmt;
+      shakeY = (Math.cos(t * 96) * 0.7 + Math.sin(t * 140) * 0.3) * shakeAmt;
+    } else if ((isIgnited || sp > 0.005) && sp < 0.08) {
       const shakeAmt = STAGE_CONFIG.stage00_launchPad.padCameraShake;
       shakeX = (Math.sin(t * 78) * 0.7 + Math.cos(t * 112) * 0.3) * shakeAmt;
       shakeY = (Math.cos(t * 88) * 0.7 + Math.sin(t * 130) * 0.3) * shakeAmt;
@@ -122,7 +159,6 @@ const FlightCameraRig: React.FC<{
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetCamZ, lerpFactor);
 
     // Architectural alignment with subtle pitch elevation tilt during ascent
-    let pitchTilt = 0;
     if (sp >= 0.18 && sp < 0.36) {
       const p = (sp - 0.18) / 0.18;
       pitchTilt = p * 0.12;
@@ -471,7 +507,16 @@ const SceneEntities: React.FC<{
   scrollSpeedRef: React.MutableRefObject<number>;
   activeStageIndex: number;
   isIgnited?: boolean;
-}> = ({ scrollProgressRef, scrollSpeedRef, activeStageIndex, isIgnited }) => {
+  liftoffTime?: number;
+  isLiftoffActive?: boolean;
+}> = ({
+  scrollProgressRef,
+  scrollSpeedRef,
+  activeStageIndex,
+  isIgnited,
+  liftoffTime = 0,
+  isLiftoffActive = false,
+}) => {
   return (
     <>
       {/* 100% GPU-driven Starfield with Warp Streaks & Dynamic Atmospheric Sky */}
@@ -488,14 +533,21 @@ const SceneEntities: React.FC<{
         />
       </group>
 
-      {/* Ground Launch Base in India & Slender Rocket positioned cleanly on the right (x = 2.6) */}
+      {/* Ground Launch Base & Slender Rocket positioned cleanly on the right (x = 2.6) */}
       <group position={[2.6, 0, 0]}>
-        <IndiaLaunchPad scrollProgressRef={scrollProgressRef} isIgnited={isIgnited} />
+        <Stage00LaunchPad
+          scrollProgressRef={scrollProgressRef}
+          isIgnited={isIgnited}
+          liftoffTime={liftoffTime}
+          isLiftoffActive={isLiftoffActive}
+        />
 
         <RocketModel
           scrollProgressRef={scrollProgressRef}
           scrollSpeedRef={scrollSpeedRef}
           isIgnited={isIgnited}
+          liftoffTime={liftoffTime}
+          isLiftoffActive={isLiftoffActive}
         />
       </group>
 
@@ -545,6 +597,8 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
   scrollSpeedRef,
   activeStageIndex,
   isIgnited,
+  liftoffTime = 0,
+  isLiftoffActive = false,
 }) => {
   return (
     <div className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-[#030611]">
@@ -564,6 +618,8 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
         <FlightCameraRig
           scrollProgressRef={scrollProgressRef}
           isIgnited={isIgnited}
+          liftoffTime={liftoffTime}
+          isLiftoffActive={isLiftoffActive}
         />
 
         {/* Dynamic Coastal Dawn Fog at Ground Level */}
@@ -577,6 +633,8 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
           scrollSpeedRef={scrollSpeedRef}
           activeStageIndex={activeStageIndex}
           isIgnited={isIgnited}
+          liftoffTime={liftoffTime}
+          isLiftoffActive={isLiftoffActive}
         />
       </Canvas>
     </div>
