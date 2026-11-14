@@ -199,8 +199,8 @@ const DynamicSpaceLighting: React.FC<{
     } else if (sp < 0.48) {
       // Stage 2: LEO & Orbital Constellation (Brilliant Earth blue albedo reflection)
       sunLightRef.current.color.set('#ffffff');
-      sunLightRef.current.intensity = STAGE_CONFIG.stage02_orbit.sunIntensity;
-      sunLightRef.current.position.set(...STAGE_CONFIG.stage02_orbit.sunPosition);
+      sunLightRef.current.intensity = 3.2;
+      sunLightRef.current.position.set(16, 9, 5);
 
       ambientLightRef.current.color.set('#ffffff');
       ambientLightRef.current.intensity = 0.38;
@@ -215,36 +215,35 @@ const DynamicSpaceLighting: React.FC<{
       sunLightRef.current.position.set(...STAGE_CONFIG.stage03_moon.sunPosition);
 
       ambientLightRef.current.color.set('#e2e8f0');
-      ambientLightRef.current.intensity = 0.22;
+      ambientLightRef.current.intensity = 0.28;
 
       bounceLightRef.current.color.set('#cbd5e1');
-      bounceLightRef.current.intensity = 0.28;
+      bounceLightRef.current.intensity = 0.35;
       bounceLightRef.current.position.set(5, 1, -6);
     } else if (sp < 0.87) {
-      // Stage 4: Mars Encounter (Dimmer, warmer sunlight at 1.52 AU)
+      // Stage 4: Mars Encounter (Warm sunlight at comfortable distance)
       sunLightRef.current.color.set(STAGE_CONFIG.stage04_mars.sunColor);
       sunLightRef.current.intensity = STAGE_CONFIG.stage04_mars.sunIntensity;
       sunLightRef.current.position.set(...STAGE_CONFIG.stage04_mars.sunPosition);
 
       ambientLightRef.current.color.set('#fed7aa');
-      ambientLightRef.current.intensity = 0.24;
+      ambientLightRef.current.intensity = 0.28;
 
       bounceLightRef.current.color.set('#ea580c');
       bounceLightRef.current.intensity = 0.42;
       bounceLightRef.current.position.set(5, 1, -6);
     } else {
-      // Stage 5: Deep Space Uplink (Soft directional sunlight on solar panels aligned with distant Sun, calm cosmic ambient)
-      const [dsX, dsY, dsZ] = STAGE_CONFIG.stage05_uplink.distantSunPosition;
-      sunLightRef.current.position.set(dsX, dsY, dsZ);
-      sunLightRef.current.color.set('#fdf4dc');
-      sunLightRef.current.intensity = STAGE_CONFIG.stage05_uplink.distantSunIntensity;
+      // Stage 5: Deep Space Terminal Void (Stark solar key light with soft interstellar starlight)
+      sunLightRef.current.color.set('#ffffff');
+      sunLightRef.current.intensity = 2.6;
+      sunLightRef.current.position.set(16, 9, 5);
 
-      ambientLightRef.current.color.set('#0b1026'); // Calm deep void ambient
-      ambientLightRef.current.intensity = 0.22;
+      ambientLightRef.current.color.set('#818cf8');
+      ambientLightRef.current.intensity = 0.28;
 
-      bounceLightRef.current.color.set('#06b6d4'); // Subtle cyan uplink backscatter
-      bounceLightRef.current.intensity = 0.25;
-      bounceLightRef.current.position.set(2, -2, 4);
+      bounceLightRef.current.color.set('#6366f1');
+      bounceLightRef.current.intensity = 0.45;
+      bounceLightRef.current.position.set(0, 4, 6);
     }
   });
 
