@@ -190,7 +190,8 @@ const DynamicSpaceLighting: React.FC<{
     } else if (sp < 0.48) {
       // Stage 2: LEO & Orbital Constellation (Brilliant Earth blue albedo reflection)
       sunLightRef.current.color.set('#ffffff');
-      sunLightRef.current.intensity = 3.2;
+      sunLightRef.current.intensity = STAGE_CONFIG.stage02_orbit.sunIntensity;
+      sunLightRef.current.position.set(...STAGE_CONFIG.stage02_orbit.sunPosition);
 
       ambientLightRef.current.color.set('#ffffff');
       ambientLightRef.current.intensity = 0.38;
