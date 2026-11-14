@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background-color: #04050d;
+    color: #f4f2ed;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #04050d;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Lenis Smooth Scroll Recommended Styles */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Nebula Lighting Effects */
+.nebula-glow {
+  background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.18) 0%, rgba(236, 72, 153, 0.12) 35%, rgba(249, 115, 22, 0.08) 60%, transparent 80%);
+}
+
+.nebula-warm {
+  background: radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.15) 0%, rgba(139, 92, 246, 0.1) 45%, transparent 75%);
+}
+
+/* Magnetic Button Utility */
+.magnetic-btn {
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Editorial Title Accent */
+.font-editorial-italic {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #04050d;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(244, 242, 237, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}
