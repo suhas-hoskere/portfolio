@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {
   getCachedSolarPanelTexture,
   getCachedGoldMliTexture,
+  getCachedGoldMliBumpMap,
   getCachedCarbonBackingTexture,
   getCachedIsroBoosterTexture,
   getCachedIndiaBoosterTexture,
@@ -59,6 +60,12 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   const solarRight = useRef<THREE.Group>(null);
   const signalRing1 = useRef<THREE.Mesh>(null);
   const signalRing2 = useRef<THREE.Mesh>(null);
+  const signalRing3 = useRef<THREE.Mesh>(null);
+  const signalRing4 = useRef<THREE.Mesh>(null);
+  const signalBeamRef = useRef<THREE.Mesh>(null);
+  const dataPacketsRef = useRef<THREE.Points>(null);
+  const rcsPuffsRef = useRef<THREE.Group>(null);
+  const dishGroupRef = useRef<THREE.Group>(null);
 
   // Stage 01: Max-Q Prandtl-Glauert shock collar & condensation vapour particles
   const maxQCollarRef = useRef<THREE.Mesh>(null);
@@ -165,6 +172,28 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     return { maxQGeom: geom, maxQData: data };
   }, [maxQCount]);
+
+  // Stage 05: Deep Space Telemetry Data Packets (65 data packets traveling along signal beam)
+  const dataPacketCount = STAGE_CONFIG.stage05_uplink.dataPacketCount;
+  const { dataPacketGeom, dataPacketData } = useMemo(() => {
+    const positions = new Float32Array(dataPacketCount * 3);
+    const data = [];
+    for (let i = 0; i < dataPacketCount; i++) {
+      const dist = (i / dataPacketCount) * 16.0;
+      data.push({
+        dist,
+        speed: 3.2 + Math.random() * 1.6,
+        radius: (Math.random() - 0.5) * 0.15,
+      });
+      // Directed along antenna transmission vector [0, 0.88, 0.47]
+      positions[i * 3] = data[i].radius;
+      positions[i * 3 + 1] = 1.3 + dist * 0.88;
+      positions[i * 3 + 2] = 0.4 + dist * 0.47;
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return { dataPacketGeom: geom, dataPacketData: data };
+  }, [dataPacketCount]);
 
   // Aerospace materials
   const materials = useMemo(() => {
@@ -284,8 +313,10 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       }),
       goldMli: new THREE.MeshStandardMaterial({
         map: getCachedGoldMliTexture(),
-        roughness: 0.22,
-        metalness: 0.92,
+        bumpMap: getCachedGoldMliBumpMap(),
+        bumpScale: 0.08,
+        roughness: STAGE_CONFIG.spacecraft.goldFoilRoughness,
+        metalness: STAGE_CONFIG.spacecraft.goldFoilMetalness,
       }),
       isroBoosterMat: new THREE.MeshStandardMaterial({
         map: getCachedIsroBoosterTexture(),
@@ -305,10 +336,10 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       }),
       solarPhotovoltaic: new THREE.MeshStandardMaterial({
         map: getCachedSolarPanelTexture(),
-        roughness: 0.2,
-        metalness: 0.35,
+        roughness: 0.18,
+        metalness: STAGE_CONFIG.spacecraft.solarPanelReflectivity,
         emissive: '#092147',
-        emissiveIntensity: 0.45,
+        emissiveIntensity: 0.35,
         side: THREE.DoubleSide,
       }),
       solarBacking: new THREE.MeshStandardMaterial({
@@ -332,11 +363,46 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         metalness: 0.85,
       }),
       signalRipple: new THREE.MeshBasicMaterial({
-        color: '#38bdf8',
+        color: STAGE_CONFIG.stage05_uplink.dataBeamColor,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.65,
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
+      }),
+      signalBeam: new THREE.MeshBasicMaterial({
+        color: STAGE_CONFIG.stage05_uplink.dataBeamColor,
+        transparent: true,
+        opacity: 0.22,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+      dataPacketMat: new THREE.PointsMaterial({
+        color: STAGE_CONFIG.stage05_uplink.dataBeamColor,
+        size: 0.08,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+      ledGreen: new THREE.MeshStandardMaterial({
+        color: '#22c55e',
+        emissive: '#22c55e',
+        emissiveIntensity: 2.2,
+        roughness: 0.2,
+      }),
+      ledAmber: new THREE.MeshStandardMaterial({
+        color: '#f59e0b',
+        emissive: '#f59e0b',
+        emissiveIntensity: 2.0,
+        roughness: 0.2,
+      }),
+      rcsPlume: new THREE.MeshBasicMaterial({
+        color: '#e0f2fe',
+        transparent: true,
+        opacity: 0.0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
       }),
     };
   }, [flameTexture]);
@@ -752,23 +818,75 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       }
     }
 
-    // 7. TERMINAL UPLINK SIGNAL TRANSMISSION (scroll >= 0.88):
+    // 7. TERMINAL UPLINK SIGNAL TRANSMISSION, DISH TARGETING & DATA PACKETS (scroll >= 0.88):
     const isTransmitting = scrollProgress >= 0.88;
-    if (signalRing1.current && signalRing2.current) {
+    if (dishGroupRef.current) {
       if (isTransmitting) {
-        signalRing1.current.visible = true;
-        signalRing2.current.visible = true;
-        const wave1 = (t * 1.5) % 1.0;
-        const wave2 = (t * 1.5 + 0.5) % 1.0;
-        signalRing1.current.scale.setScalar(0.5 + wave1 * 3.5);
-        (signalRing1.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.8 - wave1 * 0.8);
-        signalRing2.current.scale.setScalar(0.5 + wave2 * 3.5);
-        (signalRing2.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.8 - wave2 * 0.8);
+        dishGroupRef.current.rotation.x = THREE.MathUtils.lerp(dishGroupRef.current.rotation.x, 0.72, 0.05);
+        dishGroupRef.current.rotation.y = THREE.MathUtils.lerp(dishGroupRef.current.rotation.y, -0.32, 0.05);
       } else {
-        signalRing1.current.visible = false;
-        signalRing2.current.visible = false;
+        dishGroupRef.current.rotation.x = THREE.MathUtils.lerp(dishGroupRef.current.rotation.x, 0.4, 0.05);
+        dishGroupRef.current.rotation.y = THREE.MathUtils.lerp(dishGroupRef.current.rotation.y, 0, 0.05);
       }
     }
+
+    if (signalBeamRef.current) {
+      signalBeamRef.current.visible = isTransmitting;
+    }
+
+    const rings = [signalRing1, signalRing2, signalRing3, signalRing4];
+    rings.forEach((ringRef, idx) => {
+      if (ringRef.current) {
+        if (isTransmitting) {
+          ringRef.current.visible = true;
+          const wavePhase = (t * STAGE_CONFIG.stage05_uplink.signalExpansionRate + idx * 0.25) % 1.0;
+          ringRef.current.scale.setScalar(0.4 + wavePhase * 3.8);
+          (ringRef.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.85 - wavePhase * 0.85);
+        } else {
+          ringRef.current.visible = false;
+        }
+      }
+    });
+
+    if (dataPacketsRef.current) {
+      dataPacketsRef.current.visible = isTransmitting;
+      if (isTransmitting) {
+        const dPos = dataPacketGeom.attributes.position as THREE.BufferAttribute;
+        const dPosArr = dPos.array as Float32Array;
+        const speed = STAGE_CONFIG.stage05_uplink.dataPacketSpeed * 4.0;
+        for (let i = 0; i < dataPacketCount; i++) {
+          const p = dataPacketData[i];
+          p.dist += delta * speed * (p.speed / 3.5);
+          if (p.dist > 16.0) {
+            p.dist = 0;
+          }
+          dPosArr[i * 3] = p.radius + p.dist * -0.08;
+          dPosArr[i * 3 + 1] = 1.3 + p.dist * 0.90;
+          dPosArr[i * 3 + 2] = 0.4 + p.dist * 0.42;
+        }
+        dPos.needsUpdate = true;
+      }
+    }
+
+    // 8. COLD-GAS ATTITUDE CONTROL (RCS) THRUSTER PUFFS
+    const rcsInterval = STAGE_CONFIG.spacecraft.thrusterPuffFrequencySec;
+    const rcsPhase = (t % rcsInterval);
+    const isPuffing = (scrollProgress >= 0.30) && (rcsPhase < 0.28);
+    if (rcsPuffsRef.current) {
+      if (isPuffing) {
+        rcsPuffsRef.current.visible = true;
+        const puffStrength = Math.sin((rcsPhase / 0.28) * Math.PI);
+        materials.rcsPlume.opacity = puffStrength * 0.72;
+      } else {
+        rcsPuffsRef.current.visible = false;
+        materials.rcsPlume.opacity = 0;
+      }
+    }
+
+    // 9. STATUS LEDS (AVIONICS BUS BLINK)
+    const blinkHz = STAGE_CONFIG.spacecraft.ledStatusBlinkHz;
+    materials.ledGreen.emissiveIntensity = (Math.sin(t * Math.PI * 2 * blinkHz) > 0 ? 2.5 : 0.2);
+    materials.ledAmber.emissiveIntensity = (Math.sin(t * Math.PI * 2 * blinkHz * 0.75 + 1.2) > 0 ? 2.2 : 0.15);
   });
 
   return (
@@ -783,20 +901,60 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         </mesh>
 
         {/* High-Gain Parabolic Communications Dish Antenna */}
-        <mesh position={[0, 0.9, 0.25]} rotation={[0.4, 0, 0]} material={materials.hullWhite}>
-          <coneGeometry args={[0.7, 0.25, 24, 1, true]} />
+        <group ref={dishGroupRef} position={[0, 0.9, 0.25]} rotation={[0.4, 0, 0]}>
+          <mesh material={materials.hullWhite}>
+            <coneGeometry args={[0.7, 0.25, 24, 1, true]} />
+          </mesh>
+          <mesh position={[0, 0.25, 0.1]} material={materials.hullAccent}>
+            <cylinderGeometry args={[0.03, 0.03, 0.35, 8]} />
+          </mesh>
+
+          {/* Concentric Signal Telemetry Ripples (Pulsing at terminal uplink) */}
+          <mesh ref={signalRing1} position={[0, 0.4, 0.15]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
+            <ringGeometry args={[0.3, 0.38, 32]} />
+          </mesh>
+          <mesh ref={signalRing2} position={[0, 0.4, 0.15]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
+            <ringGeometry args={[0.3, 0.38, 32]} />
+          </mesh>
+          <mesh ref={signalRing3} position={[0, 0.4, 0.15]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
+            <ringGeometry args={[0.3, 0.38, 32]} />
+          </mesh>
+          <mesh ref={signalRing4} position={[0, 0.4, 0.15]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
+            <ringGeometry args={[0.3, 0.38, 32]} />
+          </mesh>
+
+          {/* Focused Telemetry Carrier Wave Beam */}
+          <mesh ref={signalBeamRef} position={[0, 7.0, 0.2]} rotation={[0, 0, 0]} material={materials.signalBeam} visible={false}>
+            <cylinderGeometry args={[2.0, 0.35, 14, 16, 1, true]} />
+          </mesh>
+        </group>
+
+        {/* Stage 05 Data Packet Particles traveling outwards along transmission vector */}
+        <points ref={dataPacketsRef} geometry={dataPacketGeom} material={materials.dataPacketMat} visible={false} />
+
+        {/* Avionics Bus Status Indicators */}
+        <mesh position={[-0.32, 0.45, 0.51]} material={materials.ledGreen}>
+          <sphereGeometry args={[0.024, 12, 12]} />
         </mesh>
-        <mesh position={[0, 1.15, 0.35]} material={materials.hullAccent}>
-          <cylinderGeometry args={[0.03, 0.03, 0.35, 8]} />
+        <mesh position={[-0.22, 0.45, 0.51]} material={materials.ledAmber}>
+          <sphereGeometry args={[0.024, 12, 12]} />
         </mesh>
 
-        {/* Concentric Signal Telemetry Ripples (Pulsing at terminal uplink) */}
-        <mesh ref={signalRing1} position={[0, 1.3, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
-          <ringGeometry args={[0.4, 0.46, 32]} />
-        </mesh>
-        <mesh ref={signalRing2} position={[0, 1.3, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
-          <ringGeometry args={[0.4, 0.46, 32]} />
-        </mesh>
+        {/* Corner Cold-gas Attitude Control (RCS) Thruster Quads */}
+        <group ref={rcsPuffsRef} visible={false}>
+          <mesh position={[0.52, 0.55, 0.52]} rotation={[0, 0, -Math.PI / 2]} material={materials.rcsPlume}>
+            <coneGeometry args={[0.06, 0.28, 8, 1, true]} />
+          </mesh>
+          <mesh position={[-0.52, 0.55, 0.52]} rotation={[0, 0, Math.PI / 2]} material={materials.rcsPlume}>
+            <coneGeometry args={[0.06, 0.28, 8, 1, true]} />
+          </mesh>
+          <mesh position={[0.52, 0.55, -0.52]} rotation={[0, 0, -Math.PI / 2]} material={materials.rcsPlume}>
+            <coneGeometry args={[0.06, 0.28, 8, 1, true]} />
+          </mesh>
+          <mesh position={[-0.52, 0.55, -0.52]} rotation={[0, 0, Math.PI / 2]} material={materials.rcsPlume}>
+            <coneGeometry args={[0.06, 0.28, 8, 1, true]} />
+          </mesh>
+        </group>
 
         {/* Satellite Main Engine Nozzle Bell (Central aft propulsion) */}
         <mesh position={[0, -0.72, 0]} rotation={[Math.PI, 0, 0]} material={materials.engineMetal}>

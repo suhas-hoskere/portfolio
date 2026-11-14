@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { STAGE_CONFIG } from '../scene/stageConfig';
 
 // 1. Physically Authentic Atmospheric-to-Cosmic Background Sky Shader
 // Seamlessly transitions from coastal tropical dawn over the Bay of Bengal (0 km)
@@ -138,6 +139,7 @@ const skyFragmentShader = `
 const starVertexShader = `
   uniform float uTime;
   uniform float uSpeed;
+  uniform float uTransitStretch;
   attribute vec3 aColor;
   attribute float aSize;
   varying vec3 vColor;
@@ -152,11 +154,11 @@ const starVertexShader = `
 
     // Warp forward along Z axis on GPU
     float zDist = 120.0;
-    float warp = 1.0 + uSpeed * 6.5;
+    float warp = 1.0 + uSpeed * 6.5 + uTransitStretch * 18.0;
     pos.z = mod(pos.z + uTime * 3.5 * warp + 60.0, zDist) - 60.0;
 
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-    float sizeFactor = (1.0 + uSpeed * 1.2);
+    float sizeFactor = (1.0 + uSpeed * 1.2 + uTransitStretch * 2.5);
     gl_PointSize = (aSize / -mvPosition.z) * sizeFactor;
     gl_Position = projectionMatrix * mvPosition;
   }
@@ -388,6 +390,7 @@ export const WarpStarfield: React.FC<WarpStarfieldProps> = ({
     () => ({
       uTime: { value: 0 },
       uSpeed: { value: 0 },
+      uTransitStretch: { value: 0 },
       uAltitude: { value: 0 },
     }),
     []
@@ -414,11 +417,26 @@ export const WarpStarfield: React.FC<WarpStarfieldProps> = ({
     const progress = scrollProgressRef.current;
     const targetSpeed = scrollSpeedRef.current;
 
+    // Subtle star-streak stretch during long hops (03->04 and 04->05)
+    let transitStretch = 0;
+    if (STAGE_CONFIG.global.enableStarStreaksOnTransit) {
+      if (progress >= 0.67 && progress <= 0.75) {
+        transitStretch = Math.sin(((progress - 0.67) / 0.08) * Math.PI);
+      } else if (progress >= 0.83 && progress <= 0.91) {
+        transitStretch = Math.sin(((progress - 0.83) / 0.08) * Math.PI);
+      }
+    }
+
     if (starMatRef.current) {
       starMatRef.current.uniforms.uTime.value += delta;
       starMatRef.current.uniforms.uSpeed.value = THREE.MathUtils.lerp(
         starMatRef.current.uniforms.uSpeed.value,
         targetSpeed,
+        0.1
+      );
+      starMatRef.current.uniforms.uTransitStretch.value = THREE.MathUtils.lerp(
+        starMatRef.current.uniforms.uTransitStretch.value,
+        transitStretch,
         0.1
       );
       starMatRef.current.uniforms.uAltitude.value = progress;

@@ -105,6 +105,14 @@ const FlightCameraRig: React.FC<{
       shakeY = (Math.cos(t * 110) * 0.7 + Math.sin(t * 170) * 0.3) * shakeAmt;
     }
 
+    // Respect prefers-reduced-motion (disable camera shake)
+    const prefersReducedMotion = typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      shakeX = 0;
+      shakeY = 0;
+    }
+
     // Frame-rate independent cinematic camera damping (pure butter-smooth tracking with zero artificial jitter)
     const delta = state.clock.getDelta();
     const lerpFactor = 1 - Math.exp(-8.5 * delta);
@@ -225,16 +233,18 @@ const DynamicSpaceLighting: React.FC<{
       bounceLightRef.current.intensity = 0.42;
       bounceLightRef.current.position.set(5, 1, -6);
     } else {
-      // Stage 5: Deep Space Terminal Void (Stark solar key light with soft interstellar starlight)
-      sunLightRef.current.color.set('#ffffff');
-      sunLightRef.current.intensity = 2.6;
+      // Stage 5: Deep Space Uplink (Soft directional sunlight on solar panels aligned with distant Sun, calm cosmic ambient)
+      const [dsX, dsY, dsZ] = STAGE_CONFIG.stage05_uplink.distantSunPosition;
+      sunLightRef.current.position.set(dsX, dsY, dsZ);
+      sunLightRef.current.color.set('#fdf4dc');
+      sunLightRef.current.intensity = STAGE_CONFIG.stage05_uplink.distantSunIntensity;
 
-      ambientLightRef.current.color.set('#818cf8');
-      ambientLightRef.current.intensity = 0.28;
+      ambientLightRef.current.color.set('#0b1026'); // Calm deep void ambient
+      ambientLightRef.current.intensity = 0.22;
 
-      bounceLightRef.current.color.set('#6366f1');
-      bounceLightRef.current.intensity = 0.45;
-      bounceLightRef.current.position.set(0, 4, 6);
+      bounceLightRef.current.color.set('#06b6d4'); // Subtle cyan uplink backscatter
+      bounceLightRef.current.intensity = 0.25;
+      bounceLightRef.current.position.set(2, -2, 4);
     }
   });
 
@@ -261,6 +271,7 @@ const CelestialEncounters: React.FC<{
   const moonRef = useRef<THREE.Group>(null);
   const marsRef = useRef<THREE.Group>(null);
   const distantEarthRef = useRef<THREE.Group>(null);
+  const distantDeepSpaceBeaconRef = useRef<THREE.Group>(null);
   const moonOpacityRef = useRef(0);
   const marsOpacityRef = useRef(0);
   const distantEarthOpacityRef = useRef(0);
@@ -374,6 +385,17 @@ const CelestialEncounters: React.FC<{
         marsOpacityRef.current = 0;
       }
     }
+
+    // =========================================================================
+    // 3. TERMINAL DEEP SPACE VOID: DISTANT SUN & PALE BLUE DOT (EARTH) (0.86 to 1.00)
+    // =========================================================================
+    if (distantDeepSpaceBeaconRef.current) {
+      if (sp >= 0.86) {
+        distantDeepSpaceBeaconRef.current.visible = true;
+      } else {
+        distantDeepSpaceBeaconRef.current.visible = false;
+      }
+    }
   });
 
   return (
@@ -400,6 +422,41 @@ const CelestialEncounters: React.FC<{
             color="#38bdf8"
             transparent
             opacity={0.35}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+      </group>
+
+      {/* 4. Stage 05 Distant Pinpoint Sun & Pale Blue Dot Earth */}
+      <group ref={distantDeepSpaceBeaconRef} position={STAGE_CONFIG.stage05_uplink.distantSunPosition} visible={false}>
+        {/* Pinpoint distant Sun */}
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[0.55, 16, 16]} />
+          <meshBasicMaterial color="#fffbeb" />
+        </mesh>
+        {/* Faint distant corona */}
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[12, 12]} />
+          <meshBasicMaterial
+            color="#fff0c2"
+            transparent
+            opacity={0.35}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* Tiny Pale Blue Dot (Earth) sitting 2.5 units to the right in the black void */}
+        <mesh position={[2.5, -0.6, 1.5]}>
+          <sphereGeometry args={[STAGE_CONFIG.stage05_uplink.distantEarthScale, 16, 16]} />
+          <meshBasicMaterial color="#38bdf8" />
+        </mesh>
+        <mesh position={[2.5, -0.6, 1.5]}>
+          <sphereGeometry args={[STAGE_CONFIG.stage05_uplink.distantEarthScale * 2.2, 16, 16]} />
+          <meshBasicMaterial
+            color="#0ea5e9"
+            transparent
+            opacity={0.3}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />
@@ -456,6 +513,34 @@ const SceneEntities: React.FC<{
   );
 };
 
+// Adaptive Performance Controller: monitors frame delta times; if frame time stays above 20ms (>50fps drop),
+// dynamically clamps DPR to 1.0 to protect smooth 60fps on integrated GPU laptops
+const AdaptiveQualityController: React.FC = () => {
+  const { gl } = useThree();
+  const frameTimes = useRef<number[]>([]);
+  const isReduced = useRef(false);
+
+  useFrame((_, delta) => {
+    const ms = delta * 1000;
+    const history = frameTimes.current;
+    history.push(ms);
+    if (history.length > 50) history.shift();
+
+    if (history.length >= 50) {
+      const avg = history.reduce((a, b) => a + b, 0) / history.length;
+      if (avg > STAGE_CONFIG.global.adaptiveQualityTargetMs && !isReduced.current) {
+        gl.setPixelRatio(STAGE_CONFIG.global.dprMin);
+        isReduced.current = true;
+      } else if (avg < 15.5 && isReduced.current) {
+        gl.setPixelRatio(Math.min(window.devicePixelRatio, STAGE_CONFIG.global.dprMax));
+        isReduced.current = false;
+      }
+    }
+  });
+
+  return null;
+};
+
 export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
   scrollProgressRef,
   scrollSpeedRef,
@@ -469,13 +554,14 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
           antialias: true,
           powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.15,
+          toneMappingExposure: STAGE_CONFIG.global.toneMappingExposure,
           stencil: false,
           depth: true,
         }}
         camera={{ position: [0.4, 0.4, 7.2], fov: 36, near: 0.1, far: 200 }}
-        dpr={[1, 2]}
+        dpr={[STAGE_CONFIG.global.dprMin, STAGE_CONFIG.global.dprMax]}
       >
+        <AdaptiveQualityController />
         <FlightCameraRig
           scrollProgressRef={scrollProgressRef}
           isIgnited={isIgnited}

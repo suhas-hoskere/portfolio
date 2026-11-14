@@ -237,6 +237,76 @@ export function getCachedGoldMliTexture(): THREE.CanvasTexture {
   return cachedGoldMliTexture;
 }
 
+let cachedGoldMliBumpMap: THREE.CanvasTexture | null = null;
+export function getCachedGoldMliBumpMap(): THREE.CanvasTexture {
+  if (cachedGoldMliBumpMap) return cachedGoldMliBumpMap;
+
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, size, size);
+
+  const pads = 8;
+  const padSize = size / pads;
+
+  for (let r = 0; r < pads; r++) {
+    for (let c = 0; c < pads; c++) {
+      const px = c * padSize;
+      const py = r * padSize;
+
+      // Pillow convexity bump in each quilted pad
+      const rad = padSize / 2;
+      const g = ctx.createRadialGradient(px + rad, py + rad, 0, px + rad, py + rad, rad);
+      g.addColorStop(0.0, '#b8b8b8');
+      g.addColorStop(0.7, '#949494');
+      g.addColorStop(1.0, '#555555');
+      ctx.fillStyle = g;
+      ctx.fillRect(px + 2, py + 2, padSize - 4, padSize - 4);
+
+      // Crinkle ridge cuts
+      ctx.strokeStyle = '#d4d4d4';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(px + 4, py + padSize * 0.4);
+      ctx.lineTo(px + padSize * 0.6, py + 6);
+      ctx.lineTo(px + padSize - 6, py + padSize * 0.7);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#383838';
+      ctx.beginPath();
+      ctx.moveTo(px + padSize * 0.3, py + padSize - 4);
+      ctx.lineTo(px + padSize * 0.7, py + padSize * 0.4);
+      ctx.stroke();
+    }
+  }
+
+  // Depressed seam lines
+  ctx.strokeStyle = '#222222';
+  ctx.lineWidth = 3;
+  for (let i = 0; i <= pads; i++) {
+    const pos = i * padSize;
+    ctx.beginPath();
+    ctx.moveTo(pos, 0);
+    ctx.lineTo(pos, size);
+    ctx.moveTo(0, pos);
+    ctx.lineTo(size, pos);
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+
+  cachedGoldMliBumpMap = texture;
+  return cachedGoldMliBumpMap;
+}
+
 /**
  * Procedural Carbon-Composite Honeycomb backing for solar panels
  */
