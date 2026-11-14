@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { RocketModel } from './RocketModel';
@@ -8,6 +8,7 @@ import { MarsModel } from './MarsModel';
 import { WarpStarfield } from './WarpStarfield';
 import { IndiaLaunchPad } from './IndiaLaunchPad';
 import { AtmosphericClouds } from './AtmosphericClouds';
+import { getPhotorealisticEarthTextures } from './photorealisticPlanetTextures';
 import { STAGE_CONFIG } from '../scene/stageConfig';
 
 interface CosmicFlightSceneProps {
@@ -200,15 +201,16 @@ const DynamicSpaceLighting: React.FC<{
       bounceLightRef.current.intensity = 1.35;
       bounceLightRef.current.position.set(-6, -8, 2);
     } else if (sp < 0.71) {
-      // Stage 3: Moon Flyby (Silvery lunar regolith albedo reflection at comfortable distance)
+      // Stage 3: Moon Flyby (Grazing side sunlight with terminator crater relief)
       sunLightRef.current.color.set('#fffdf5');
-      sunLightRef.current.intensity = 3.0;
+      sunLightRef.current.intensity = STAGE_CONFIG.stage03_moon.sunIntensity;
+      sunLightRef.current.position.set(...STAGE_CONFIG.stage03_moon.sunPosition);
 
       ambientLightRef.current.color.set('#e2e8f0');
-      ambientLightRef.current.intensity = 0.32;
+      ambientLightRef.current.intensity = 0.22;
 
       bounceLightRef.current.color.set('#cbd5e1');
-      bounceLightRef.current.intensity = 0.48;
+      bounceLightRef.current.intensity = 0.28;
       bounceLightRef.current.position.set(5, 1, -6);
     } else if (sp < 0.87) {
       // Stage 4: Mars Encounter (Warm ferric oxide albedo bounce at comfortable distance)
@@ -257,10 +259,14 @@ const CelestialEncounters: React.FC<{
 }> = ({ scrollProgressRef }) => {
   const moonRef = useRef<THREE.Group>(null);
   const marsRef = useRef<THREE.Group>(null);
+  const distantEarthRef = useRef<THREE.Group>(null);
   const moonOpacityRef = useRef(0);
   const marsOpacityRef = useRef(0);
+  const distantEarthOpacityRef = useRef(0);
 
-  useFrame((state) => {
+  const earthTextures = useMemo(() => getPhotorealisticEarthTextures(), []);
+
+  useFrame((state, delta) => {
     const sp = scrollProgressRef.current;
     const t = state.clock.getElapsedTime();
 
@@ -268,8 +274,8 @@ const CelestialEncounters: React.FC<{
     // 1. REALISTIC KEPLERIAN LUNAR APPROACH & FLYBY (0.45 to 0.73)
     // =========================================================================
     // Constant Bearing Decreasing Range (CBDR) Trajectory:
-    // Maintained at a comfortable deep-space distance (peak z = -27.0, scale = 1.33)
-    // Elegantly framed in the upper right celestial quadrant without filling the screen
+    // Pushed back cleanly to z = -24.0 with majestic radius 1.85, unambiguously
+    // separate from the foreground spacecraft (z = 0) with rich parallax!
     if (moonRef.current) {
       if (sp >= 0.45 && sp <= 0.73) {
         moonRef.current.visible = true;
@@ -277,18 +283,18 @@ const CelestialEncounters: React.FC<{
 
         // Smooth harmonic approach curve (continuous C1 velocity, peak at u = 0.50)
         const harmonic = Math.sin(u * Math.PI); // 0 -> 1 -> 0
-        const zDist = -85.0 + 58.0 * harmonic; // -85.0 down to -27.0 at periapsis -> -85.0
+        const zDist = -85.0 + (85.0 + STAGE_CONFIG.stage03_moon.moonClosestZ) * harmonic; // -85.0 down to -24.0
         const dist = 7.5 - zDist; // Distance to camera at Z = 7.5
 
         // Clean positioning in upper-right cosmic quadrant
-        const tanX = 0.28 + 0.02 * (u - 0.5);
+        const tanX = 0.25 + 0.02 * (u - 0.5);
         const tanY = 0.12 - 0.02 * (u - 0.5);
 
         const xPos = 0.4 + dist * tanX;
         const yPos = 0.65 + dist * tanY;
 
-        // Comfortable deep-space scale: starts tiny (0.08) and peaks at a majestic 1.33
-        const s = 0.08 + 1.25 * harmonic;
+        // Majestic scale: starts small (0.12) and peaks at 1.85 (STAGE_CONFIG.stage03_moon.moonRadius)
+        const s = 0.12 + (STAGE_CONFIG.stage03_moon.moonRadius - 0.12) * harmonic;
 
         // Smooth opacity fade at cosmic boundaries (fades in 0->0.12, locked 1.0, fades out 0.88->1.0)
         const fadeIn = THREE.MathUtils.smoothstep(u, 0.0, 0.12);
@@ -304,6 +310,26 @@ const CelestialEncounters: React.FC<{
       } else {
         moonRef.current.visible = false;
         moonOpacityRef.current = 0;
+      }
+    }
+
+    // Distant background Earth marble (Looking back home from lunar flyby)
+    if (distantEarthRef.current) {
+      if (sp >= 0.45 && sp <= 0.73) {
+        distantEarthRef.current.visible = true;
+        const u = (sp - 0.45) / 0.28;
+        const fadeIn = THREE.MathUtils.smoothstep(u, 0.0, 0.12);
+        const fadeOut = 1.0 - THREE.MathUtils.smoothstep(u, 0.88, 1.0);
+        distantEarthOpacityRef.current = fadeIn * fadeOut;
+
+        const [eX, eY, eZ] = STAGE_CONFIG.stage03_moon.backgroundEarthPosition;
+        distantEarthRef.current.position.set(eX, eY, eZ);
+        const es = STAGE_CONFIG.stage03_moon.backgroundEarthScale;
+        distantEarthRef.current.scale.set(es, es, es);
+        distantEarthRef.current.rotation.y += delta * 0.01;
+      } else {
+        distantEarthRef.current.visible = false;
+        distantEarthOpacityRef.current = 0;
       }
     }
 
@@ -359,6 +385,24 @@ const CelestialEncounters: React.FC<{
       {/* 2. Mars (Continuous Keplerian Flyby past Olympus Mons) */}
       <group ref={marsRef} position={[26.0, 8.5, -95]} visible={false}>
         <MarsModel position={[0, 0, 0]} scale={1.0} opacityRef={marsOpacityRef} />
+      </group>
+
+      {/* 3. Distant Background Earth Marble (Narrative: Looking back home from lunar flyby) */}
+      <group ref={distantEarthRef} visible={false}>
+        <mesh>
+          <sphereGeometry args={[1, 32, 24]} />
+          <meshBasicMaterial map={earthTextures.dayTexture} />
+        </mesh>
+        <mesh scale={[1.06, 1.06, 1.06]}>
+          <sphereGeometry args={[1, 32, 24]} />
+          <meshBasicMaterial
+            color="#38bdf8"
+            transparent
+            opacity={0.35}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
       </group>
     </>
   );
