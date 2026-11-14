@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitalSatellite } from './OrbitalSatellite';
 import { getPhotorealisticEarthTextures } from './photorealisticPlanetTextures';
+import { STAGE_CONFIG } from '../scene/stageConfig';
 
 // Physically Based Rayleigh Atmospheric Scattering Shader (FrontSide thin shell)
 const atmosphereVertexShader = `
@@ -207,15 +208,15 @@ export const EarthModel: React.FC<EarthModelProps> = ({
     const scrollProgress = scrollProgressRef.current;
     if (!earthGroup.current) return;
 
-    // Earth and its satellites belong strictly to Stage 2: Low Earth Orbit (0.285 to 0.475)
-    // Sinks and departs completely before the Moon arrives at 0.495, ensuring Earth and Moon are never in the same view!
-    if (scrollProgress >= 0.285 && scrollProgress <= 0.475) {
+    // Earth begins rising as a thin curved horizon near end of Stage 01 ascent (0.25)
+    // and fills the lower 40-50% in Stage 02: Low Earth Orbit (0.34 to 0.43), then departs before Moon arrival (0.475)
+    if (scrollProgress >= STAGE_CONFIG.stage01_ascent.curvedHorizonFadeStart && scrollProgress <= 0.475) {
       earthGroup.current.visible = true;
 
-      // 1. Smooth Fade-in (0.285 to 0.34) and Depart Fade-out (0.43 to 0.475)
+      // 1. Smooth Fade-in (0.25 to 0.34) and Depart Fade-out (0.43 to 0.475)
       let opacity = 0;
       if (scrollProgress < 0.34) {
-        opacity = Math.min((scrollProgress - 0.285) / 0.055, 1.0);
+        opacity = Math.min((scrollProgress - STAGE_CONFIG.stage01_ascent.curvedHorizonFadeStart) / 0.09, 1.0);
       } else if (scrollProgress > 0.43) {
         opacity = Math.max(1.0 - (scrollProgress - 0.43) / 0.045, 0.0);
       } else {
@@ -226,16 +227,17 @@ export const EarthModel: React.FC<EarthModelProps> = ({
       cloudMaterial.opacity = opacity * 0.45;
       atmosphereMaterial.uniforms.uOpacity.value = opacity;
 
-      // Satellites exist WITH Earth from the very first frame Earth rises into view!
+      // Satellites exist only once orbital altitude is reached (> 0.33)
       if (satellitesGroup.current) {
-        satellitesGroup.current.visible = opacity > 0.01;
+        satellitesGroup.current.visible = scrollProgress >= 0.33 && opacity > 0.01;
       }
 
-      // 2. Majestic horizon rise from below (-28.0 -> -12.6) and depart (-12.6 -> -32.0)
+      // 2. Thin curved horizon rise from below (-24.5 -> -12.6) and depart (-12.6 -> -32.0)
+      // At scroll 0.25: targetY = -24.5, so only the glowing curved top limb is visible across the bottom
       let targetY = -12.6;
       if (scrollProgress < 0.34) {
-        const rise = (scrollProgress - 0.285) / 0.055;
-        targetY = -28.0 + rise * 15.4;
+        const rise = (scrollProgress - STAGE_CONFIG.stage01_ascent.curvedHorizonFadeStart) / 0.09;
+        targetY = -24.5 + rise * 11.9;
       } else if (scrollProgress > 0.43) {
         const sink = (scrollProgress - 0.43) / 0.045;
         targetY = -12.6 - sink * 19.4;

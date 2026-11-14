@@ -9,6 +9,7 @@ import {
   getCachedIndiaBoosterTexture,
   getCachedChandrayaanFairingTexture,
 } from './aerospaceTextures';
+import { STAGE_CONFIG } from '../scene/stageConfig';
 
 interface RocketModelProps {
   scrollProgressRef: React.MutableRefObject<number>;
@@ -58,6 +59,19 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   const solarRight = useRef<THREE.Group>(null);
   const signalRing1 = useRef<THREE.Mesh>(null);
   const signalRing2 = useRef<THREE.Mesh>(null);
+
+  // Stage 01: Max-Q Prandtl-Glauert shock collar & condensation vapour particles
+  const maxQCollarRef = useRef<THREE.Mesh>(null);
+  const maxQVapourRef = useRef<THREE.Points>(null);
+
+  // Stage 01: Staging separation pyrotechnic flash & jettison puffs
+  const stagingFlashLightRef = useRef<THREE.PointLight>(null);
+  const stagingFlashMeshRef = useRef<THREE.Mesh>(null);
+  const boosterSepPuffsLeft = useRef<THREE.Group>(null);
+  const boosterSepPuffsRight = useRef<THREE.Group>(null);
+
+  // Cryogenic Upper Stage expansive plume (ignites post-staging pause)
+  const cryoUpperPlumeRef = useRef<THREE.Group>(null);
 
   // Translunar Injection (TLI) Thruster Pulse
   const tliFlameRef = useRef<THREE.Mesh>(null);
@@ -122,6 +136,36 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     return { particleGeom: geom, particleData: data };
   }, [particleCount]);
 
+  // Max-Q vapour and ice shedding particles (120 particles)
+  const maxQCount = STAGE_CONFIG.stage01_ascent.maxQVapourParticleCount;
+  const { maxQGeom, maxQData } = useMemo(() => {
+    const positions = new Float32Array(maxQCount * 3);
+    const data = [];
+    for (let i = 0; i < maxQCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 0.44 + Math.random() * 0.15;
+      const originX = Math.cos(angle) * radius;
+      const originZ = Math.sin(angle) * radius;
+      const originY = 3.2 + (Math.random() - 0.5) * 0.6;
+      data.push({
+        age: Math.random() * 0.25,
+        lifespan: 0.18 + Math.random() * 0.16,
+        originX,
+        originY,
+        originZ,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: -(8.0 + Math.random() * 12.0),
+        vz: (Math.random() - 0.5) * 0.8,
+      });
+      positions[i * 3] = originX;
+      positions[i * 3 + 1] = originY;
+      positions[i * 3 + 2] = originZ;
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return { maxQGeom: geom, maxQData: data };
+  }, [maxQCount]);
+
   // Aerospace materials
   const materials = useMemo(() => {
     return {
@@ -185,6 +229,52 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         depthWrite: false,
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
+      }),
+      cryoPlumeWhite: new THREE.MeshBasicMaterial({
+        color: '#ffffff',
+        transparent: true,
+        opacity: 0.98,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      }),
+      cryoPlumeBlue: new THREE.MeshBasicMaterial({
+        color: '#38bdf8', // Expansive cyan/blue-white upper stage plume
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      }),
+      maxQCollarMat: new THREE.MeshBasicMaterial({
+        color: '#e0f2fe',
+        transparent: true,
+        opacity: 0.0,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+      maxQVapourMat: new THREE.PointsMaterial({
+        size: 0.18,
+        color: '#e0f2fe',
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+      stagingFlashMat: new THREE.MeshBasicMaterial({
+        color: '#fffbeb',
+        transparent: true,
+        opacity: 0.0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+      boosterSepPuffMat: new THREE.MeshBasicMaterial({
+        color: '#f8fafc',
+        transparent: true,
+        opacity: 0.0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
       }),
       tliFlameMat: new THREE.MeshBasicMaterial({
         color: '#818cf8', // Hypergolic translunar burn cyan-violet plasma
@@ -293,6 +383,83 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     // 2. REALISTIC DYNAMIC ROCKET EXHAUST FIRE PLUME (Particles + Shock Diamonds + Light)
     // Starts at T-00.00 ignition or when user begins scrolling
     const isBurning = (isIgnited || scrollProgress > 0.005) && scrollProgress < 0.28;
+    const altitude = Math.min(Math.max((scrollProgress - 0.05) / 0.17, 0.0), 1.0);
+    const plumeExpansion = THREE.MathUtils.lerp(1.0, STAGE_CONFIG.stage01_ascent.plumeExpansionMax, altitude);
+
+    // Max-Q Prandtl-Glauert shock collar and vapour shedding
+    if (maxQCollarRef.current) {
+      if (scrollProgress >= 0.14 && scrollProgress <= 0.19) {
+        maxQCollarRef.current.visible = true;
+        const qProgress = (scrollProgress - 0.14) / 0.05;
+        const qBell = Math.sin(qProgress * Math.PI);
+        const flutter = 1.0 + Math.sin(t * 42) * 0.12;
+        materials.maxQCollarMat.opacity = qBell * 0.72 * flutter;
+        maxQCollarRef.current.scale.set(flutter, 1.0, flutter);
+      } else {
+        maxQCollarRef.current.visible = false;
+        materials.maxQCollarMat.opacity = 0;
+      }
+    }
+
+    if (maxQVapourRef.current) {
+      if (scrollProgress >= 0.14 && scrollProgress <= 0.19) {
+        maxQVapourRef.current.visible = true;
+        const qProgress = (scrollProgress - 0.14) / 0.05;
+        const qBell = Math.sin(qProgress * Math.PI);
+        materials.maxQVapourMat.opacity = qBell * 0.85;
+
+        const posAttr = maxQGeom.getAttribute('position') as THREE.BufferAttribute;
+        const posArray = posAttr.array as Float32Array;
+        for (let i = 0; i < maxQCount; i++) {
+          const p = maxQData[i];
+          p.age += delta * 2.8;
+          if (p.age >= p.lifespan) {
+            p.age = 0;
+            posArray[i * 3] = p.originX + (Math.random() - 0.5) * 0.18;
+            posArray[i * 3 + 1] = p.originY;
+            posArray[i * 3 + 2] = p.originZ + (Math.random() - 0.5) * 0.18;
+          } else {
+            posArray[i * 3] += p.vx * delta;
+            posArray[i * 3 + 1] += p.vy * delta;
+            posArray[i * 3 + 2] += p.vz * delta;
+          }
+        }
+        posAttr.needsUpdate = true;
+      } else {
+        maxQVapourRef.current.visible = false;
+      }
+    }
+
+    // Staging pyrotechnic flash & separation puffs at booster separation (0.22)
+    const isFlashing = scrollProgress >= 0.220 && scrollProgress <= 0.228;
+    if (stagingFlashLightRef.current) {
+      stagingFlashLightRef.current.intensity = isFlashing
+        ? (1.0 - (scrollProgress - 0.220) / 0.008) * STAGE_CONFIG.stage00_launchPad.ignitionFlashIntensity
+        : 0;
+    }
+    if (stagingFlashMeshRef.current) {
+      stagingFlashMeshRef.current.visible = isFlashing;
+      materials.stagingFlashMat.opacity = isFlashing ? (1.0 - (scrollProgress - 0.220) / 0.008) * 0.95 : 0;
+    }
+
+    if (scrollProgress >= 0.220 && scrollProgress <= 0.245) {
+      const puffRatio = (scrollProgress - 0.220) / 0.025;
+      const puffScale = 0.2 + puffRatio * 1.8;
+      materials.boosterSepPuffMat.opacity = Math.max(0, (1.0 - puffRatio) * 0.85);
+      if (boosterSepPuffsLeft.current) {
+        boosterSepPuffsLeft.current.visible = true;
+        boosterSepPuffsLeft.current.scale.set(puffScale, puffScale, puffScale);
+      }
+      if (boosterSepPuffsRight.current) {
+        boosterSepPuffsRight.current.visible = true;
+        boosterSepPuffsRight.current.scale.set(puffScale, puffScale, puffScale);
+      }
+    } else {
+      if (boosterSepPuffsLeft.current) boosterSepPuffsLeft.current.visible = false;
+      if (boosterSepPuffsRight.current) boosterSepPuffsRight.current.visible = false;
+      materials.boosterSepPuffMat.opacity = 0;
+    }
+
     if (flamePointsRef.current) {
       if (isBurning) {
         flamePointsRef.current.visible = true;
@@ -326,10 +493,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
               p.vz = (Math.random() - 0.5) * 0.45;
             }
           } else {
-            // Integrate turbulent particle motion
-            posArray[i * 3] += p.vx * delta;
+            // Integrate turbulent particle motion with altitude plume widening
+            const spreadMult = 1.0 + altitude * 1.8;
+            posArray[i * 3] += p.vx * delta * spreadMult;
             posArray[i * 3 + 1] += p.vy * delta;
-            posArray[i * 3 + 2] += p.vz * delta;
+            posArray[i * 3 + 2] += p.vz * delta * spreadMult;
 
             // Turbulent outward plume expansion with altitude
             p.vx *= 1.03;
@@ -384,19 +552,43 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             boosterFlameRight.current.visible = true;
             const bFlicker = (1.0 + thrustBoost * 0.25) * (1.0 + Math.sin(t * 48) * 0.12);
             const wPulsate = 1.0 + Math.sin(t * 32) * 0.06;
-            boosterFlameLeft.current.scale.set(wPulsate, bFlicker, wPulsate);
-            boosterFlameRight.current.scale.set(wPulsate, bFlicker, wPulsate);
+            boosterFlameLeft.current.scale.set(plumeExpansion * wPulsate, bFlicker, plumeExpansion * wPulsate);
+            boosterFlameRight.current.scale.set(plumeExpansion * wPulsate, bFlicker, plumeExpansion * wPulsate);
           } else {
             boosterFlameLeft.current.visible = false;
             boosterFlameRight.current.visible = false;
           }
         }
 
-        // Twin L110 core Vikas engine exhaust flames (active during ascent < 0.28)
+        // Core Vikas / Staging pause & Cryogenic upper stage burn:
+        // Between 0.220 and 0.232: brief staging pause (engine pause)
+        const isStagingPause = scrollProgress >= 0.220 && scrollProgress <= 0.232;
         if (coreFlamesRef.current) {
-          coreFlamesRef.current.visible = true;
-          const vFlicker = (1.0 + thrustBoost * 0.2) * (1.0 + Math.sin(t * 54) * 0.1);
-          coreFlamesRef.current.scale.set(1.0, vFlicker, 1.0);
+          if (scrollProgress < 0.220) {
+            coreFlamesRef.current.visible = true;
+            const vFlicker = (1.0 + thrustBoost * 0.2) * (1.0 + Math.sin(t * 54) * 0.1);
+            coreFlamesRef.current.scale.set(1.0, vFlicker, 1.0);
+          } else if (isStagingPause) {
+            coreFlamesRef.current.visible = false;
+          } else if (scrollProgress <= 0.28) {
+            // Next stage cryogenic ignition: longer, more expansive, slightly bluer-white plume
+            coreFlamesRef.current.visible = true;
+            const vFlicker = (1.0 + thrustBoost * 0.25) * (1.0 + Math.sin(t * 58) * 0.12);
+            coreFlamesRef.current.scale.set(plumeExpansion * 0.9, vFlicker * 1.5, plumeExpansion * 0.9);
+          } else {
+            coreFlamesRef.current.visible = false;
+          }
+        }
+
+        // Cryogenic expansive upper stage plume (ignites post-staging pause)
+        if (cryoUpperPlumeRef.current) {
+          if (scrollProgress > 0.232 && scrollProgress <= 0.28) {
+            cryoUpperPlumeRef.current.visible = true;
+            const cFlicker = (1.0 + thrustBoost * 0.28) * (1.0 + Math.sin(t * 62) * 0.14);
+            cryoUpperPlumeRef.current.scale.set(plumeExpansion * 1.15, cFlicker * 1.6, plumeExpansion * 1.15);
+          } else {
+            cryoUpperPlumeRef.current.visible = false;
+          }
         }
       } else {
         flamePointsRef.current.visible = false;
@@ -404,10 +596,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         if (boosterFlameLeft.current) boosterFlameLeft.current.visible = false;
         if (boosterFlameRight.current) boosterFlameRight.current.visible = false;
         if (coreFlamesRef.current) coreFlamesRef.current.visible = false;
+        if (cryoUpperPlumeRef.current) cryoUpperPlumeRef.current.visible = false;
       }
     }
 
-    // 3. SOLID ROCKET BOOSTERS: Separate cleanly at 0.22 and drop away
+    // 3. SOLID ROCKET BOOSTERS: Separate cleanly at 0.22 and peel / tumble away
     if (boosterLeft.current && boosterRight.current) {
       if (scrollProgress >= 0.28) {
         boosterLeft.current.visible = false;
@@ -416,12 +609,14 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         boosterLeft.current.visible = true;
         boosterRight.current.visible = true;
         const sep = (scrollProgress - 0.22) / 0.06;
-        boosterLeft.current.position.x = -0.76 - sep * 3.5;
-        boosterLeft.current.position.y = -2.1 - sep * 3.0;
-        boosterLeft.current.rotation.z = sep * 0.4;
-        boosterRight.current.position.x = 0.76 + sep * 3.5;
-        boosterRight.current.position.y = -2.1 - sep * 3.0;
-        boosterRight.current.rotation.z = -sep * 0.4;
+        boosterLeft.current.position.x = -0.76 - sep * 4.2;
+        boosterLeft.current.position.y = -2.1 - sep * 3.4;
+        boosterLeft.current.rotation.z = sep * 0.55;
+        boosterLeft.current.rotation.y = sep * 0.35;
+        boosterRight.current.position.x = 0.76 + sep * 4.2;
+        boosterRight.current.position.y = -2.1 - sep * 3.4;
+        boosterRight.current.rotation.z = -sep * 0.55;
+        boosterRight.current.rotation.y = -sep * 0.35;
       } else {
         boosterLeft.current.visible = true;
         boosterRight.current.visible = true;
@@ -743,6 +938,10 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         <mesh position={[0, 3.45, 0]} material={materials.fairingDecalMat}>
           <cylinderGeometry args={[0.443, 0.443, 0.90, 32, 1, true, -Math.PI * 0.12, Math.PI * 0.24]} />
         </mesh>
+        {/* Stage 01: Max-Q Prandtl-Glauert Condensation Vapor Shock Collar */}
+        <mesh ref={maxQCollarRef} position={[0, 3.2, 0]} material={materials.maxQCollarMat} visible={false}>
+          <cylinderGeometry args={[0.56, 0.44, 0.50, 32, 1, true]} />
+        </mesh>
       </group>
 
       {/* =========================================================================
@@ -789,6 +988,12 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         </mesh>
         <mesh position={[0, 0.45, 0]} material={materials.engineMetal}>
           <cylinderGeometry args={[0.45, 0.45, 0.05, 32]} />
+        </mesh>
+
+        {/* Stage 01: Staging Separation Pyrotechnic Flash */}
+        <pointLight ref={stagingFlashLightRef} position={[0, -0.6, 0]} color="#fffbeb" intensity={0} distance={14} />
+        <mesh ref={stagingFlashMeshRef} position={[0, -0.6, 0]} material={materials.stagingFlashMat} visible={false}>
+          <sphereGeometry args={[0.95, 16, 16]} />
         </mesh>
 
         {/* Core Stage ISRO Badge */}
@@ -861,6 +1066,23 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           <pointLight position={[0, -4.8, 0]} color="#ffaa33" intensity={12} distance={8} />
         </group>
 
+        {/* Stage 01 -> 02: Cryogenic Upper Stage Expansive Supersonic Plume (Bluer-White) */}
+        <group ref={cryoUpperPlumeRef} visible={false}>
+          {[-0.16, 0.16].map((vx, vIdx) => (
+            <group key={`cryo-flame-${vIdx}`} position={[vx, -4.25, 0]}>
+              {/* Intense white-hot supersonic core */}
+              <mesh position={[0, -1.2, 0]} material={materials.cryoPlumeWhite} renderOrder={10}>
+                <cylinderGeometry args={[0.16, 0.32, 2.6, 16, 1, true]} />
+              </mesh>
+              {/* Expansive cyan/blue-white supersonic vacuum plume */}
+              <mesh position={[0, -1.9, 0]} material={materials.cryoPlumeBlue} renderOrder={9}>
+                <coneGeometry args={[0.75, 4.2, 16, 1, true]} />
+              </mesh>
+            </group>
+          ))}
+          <pointLight position={[0, -4.8, 0]} color="#38bdf8" intensity={15} distance={10} />
+        </group>
+
         {/* =========================================================================
             SOLID ROCKET STRAP-ON BOOSTERS (AUTHENTIC ISRO S200 HEAVY-LIFT SCALE)
            ========================================================================= */}
@@ -872,6 +1094,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           </mesh>
 
           {/* 4 Forward Separation Jettison Motor Pods around Nosecone Base */}
+          <group ref={boosterSepPuffsLeft} position={[0, 1.62, 0]} visible={false}>
+            <mesh material={materials.boosterSepPuffMat}>
+              <sphereGeometry args={[0.28, 12, 12]} />
+            </mesh>
+          </group>
           {[
             { x: 0.32, z: 0, ry: 0 },
             { x: -0.32, z: 0, ry: Math.PI },
@@ -948,6 +1175,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           </mesh>
 
           {/* 4 Forward Separation Jettison Motor Pods around Nosecone Base */}
+          <group ref={boosterSepPuffsRight} position={[0, 1.62, 0]} visible={false}>
+            <mesh material={materials.boosterSepPuffMat}>
+              <sphereGeometry args={[0.28, 12, 12]} />
+            </mesh>
+          </group>
           {[
             { x: 0.32, z: 0, ry: 0 },
             { x: -0.32, z: 0, ry: Math.PI },
@@ -1042,6 +1274,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           <octahedronGeometry args={[0.055, 0]} />
         </mesh>
       </group>
+
+      {/* Stage 01: Max-Q Ice & Vapor Condensation Shedding Particles */}
+      <points ref={maxQVapourRef} geometry={maxQGeom} material={materials.maxQVapourMat} visible={false} />
     </group>
   );
 };

@@ -59,10 +59,10 @@ const FlightCameraRig: React.FC<{
       targetCamY = (isMobile ? 0.35 : 0.2) + p * 0.40;
       targetCamZ = baseCamZ + p * 0.2;
     } else if (sp < 0.36) {
-      // Atmospheric ascent & cloud punch
+      // Atmospheric ascent & cloud punch: Camera pulls back and tilts up as speed rises
       const p = (sp - 0.18) / 0.18;
-      targetCamY = (isMobile ? 0.75 : 0.60) + p * 0.20;
-      targetCamZ = baseCamZ + 0.2 + p * 0.2;
+      targetCamY = (isMobile ? 0.75 : 0.60) + p * 0.25;
+      targetCamZ = baseCamZ + 0.2 + p * 0.55;
     } else if (sp < 0.52) {
       // LEO & translunar injection
       const p = (sp - 0.36) / 0.16;
@@ -95,6 +95,13 @@ const FlightCameraRig: React.FC<{
       const shakeAmt = STAGE_CONFIG.stage00_launchPad.padCameraShake;
       shakeX = (Math.sin(t * 78) * 0.7 + Math.cos(t * 112) * 0.3) * shakeAmt;
       shakeY = (Math.cos(t * 88) * 0.7 + Math.sin(t * 130) * 0.3) * shakeAmt;
+    } else if (sp >= STAGE_CONFIG.stage01_ascent.maxQScrollRange[0] && sp <= STAGE_CONFIG.stage01_ascent.maxQScrollRange[1]) {
+      const qRange = STAGE_CONFIG.stage01_ascent.maxQScrollRange;
+      const qProgress = (sp - qRange[0]) / (qRange[1] - qRange[0]);
+      const qBell = Math.sin(qProgress * Math.PI);
+      const shakeAmt = STAGE_CONFIG.stage01_ascent.maxQShakeIntensity * qBell;
+      shakeX = (Math.sin(t * 96) * 0.7 + Math.cos(t * 144) * 0.3) * shakeAmt;
+      shakeY = (Math.cos(t * 110) * 0.7 + Math.sin(t * 170) * 0.3) * shakeAmt;
     }
 
     // Frame-rate independent cinematic camera damping (pure butter-smooth tracking with zero artificial jitter)
@@ -105,9 +112,13 @@ const FlightCameraRig: React.FC<{
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY + shakeY, lerpFactor);
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetCamZ, lerpFactor);
 
-    // Architectural alignment: lookAt strictly matches camera X and Y!
-    // View direction is exactly (0, 0, -1), ensuring zero perspective keystoning or slant!
-    state.camera.lookAt(state.camera.position.x, state.camera.position.y, 0);
+    // Architectural alignment with subtle pitch elevation tilt during ascent
+    let pitchTilt = 0;
+    if (sp >= 0.18 && sp < 0.36) {
+      const p = (sp - 0.18) / 0.18;
+      pitchTilt = p * 0.12;
+    }
+    state.camera.lookAt(state.camera.position.x, state.camera.position.y + pitchTilt, 0);
   });
 
   return null;

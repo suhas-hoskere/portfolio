@@ -108,19 +108,27 @@ const skyFragmentShader = `
     // =========================================================================
     // 3. CINEMATIC STRATOSPHERIC TRANSITION:
     // =========================================================================
-    // As uAltitude climbs from 0.06 to 0.28:
-    // - Daylight fades and zenith darkens into space black
+    // As uAltitude climbs from 0.04 to 0.26:
+    // - Daylight fades: pale blue (#1e3852) -> deep navy (#07162c) -> near-black (#030712)
     // - Horizon atmospheric curve sinks downward and condenses into Earth's glowing blue limb
-    float spaceTransition = smoothstep(0.06, 0.26, uAltitude);
+    vec3 skyColorGround = vec3(0.118, 0.220, 0.322); // #1e3852
+    vec3 skyColorMid    = vec3(0.027, 0.086, 0.173); // #07162c
+    vec3 skyColorSpace  = vec3(0.012, 0.027, 0.071); // #030712
+
+    float midSkyFactor   = smoothstep(0.04, 0.16, uAltitude);
+    float spaceSkyFactor = smoothstep(0.16, 0.26, uAltitude);
+
+    vec3 stratosphericSky = mix(groundSky, skyColorMid, midSkyFactor);
+    stratosphericSky      = mix(stratosphericSky, skyColorSpace, spaceSkyFactor);
+
+    float spaceTransition = smoothstep(0.12, 0.28, uAltitude);
 
     // Dynamic glowing atmospheric limb on horizon during ascent
     float limbHeight = 0.32 - uAltitude * 1.05;
     float atmosphericLimb = exp(-pow((vUv.y - limbHeight) * 7.5, 2.0)) * (1.0 - spaceTransition) * 0.70;
     vec3 limbColor = vec3(0.35, 0.75, 1.0) * atmosphericLimb;
 
-    // Progressive daylight darkening (Rayleigh scattering extinction)
-    vec3 currentSky = mix(groundSky, vec3(0.01, 0.02, 0.05), smoothstep(0.04, 0.22, uAltitude));
-    vec3 finalColor = mix(currentSky, cosmicColor, spaceTransition) + limbColor;
+    vec3 finalColor = mix(stratosphericSky, cosmicColor, spaceTransition) + limbColor;
 
     gl_FragColor = vec4(finalColor, 1.0);
   }
@@ -429,13 +437,20 @@ export const WarpStarfield: React.FC<WarpStarfieldProps> = ({
       dustMatRef.current.uniforms.uAltitude.value = progress;
     }
 
-    // Solar flare tint & scale adjustment: warm sunrise golden glow on ground, brilliant cosmic white in vacuum
+    // Solar flare fade as vehicle climbs: intense golden sunrise flare on pad, fading to crisp sun disc in vacuum
     if (sunSpriteRef.current) {
-      const isGround = progress < 0.20;
-      const targetScale = isGround ? 16.0 : 13.5;
+      const climbFactor = THREE.MathUtils.smoothstep(progress, 0.04, 0.26);
+      const targetScale = THREE.MathUtils.lerp(16.5, 9.2, climbFactor);
+      const targetOpacity = THREE.MathUtils.lerp(0.95, 0.42, climbFactor);
+
       const currentScale = sunSpriteRef.current.scale.x;
       const newScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.08);
       sunSpriteRef.current.scale.set(newScale, newScale, 1);
+      (sunSpriteRef.current.material as THREE.SpriteMaterial).opacity = THREE.MathUtils.lerp(
+        (sunSpriteRef.current.material as THREE.SpriteMaterial).opacity,
+        targetOpacity,
+        0.08
+      );
     }
   });
 
