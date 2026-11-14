@@ -1,7 +1,52 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Rocket, ShieldCheck, Terminal, Radio, Cpu, Sparkles, FastForward, Flame } from 'lucide-react';
-import { cosmicAudio } from './AudioEngine';
+import * as THREE from 'three';
+import {
+  getCachedSolarPanelTexture,
+  getCachedGoldMliTexture,
+  getCachedIsroBoosterTexture,
+  getCachedIndiaBoosterTexture,
+  getCachedChandrayaanFairingTexture,
+} from './aerospaceTextures';
+
+// ============================================================================
+// INTRO CONFIGURATION: All strings, timings, colors, and session keys
+// ============================================================================
+export const INTRO_CONFIG = {
+  strings: {
+    nameEnglish: 'Suhas Hoskere',
+    nameKannada: 'ಸುಹಾಸ್ ಹೊಸಕೆರೆ',
+    subsystemTag: 'MISSION CONTROL // SRIHARIKOTA FLIGHT TELEMETRY',
+    statusLines: [
+      { id: 'nav', label: 'NAV SYSTEMS', result: 'OK' },
+      { id: 'telemetry', label: 'TELEMETRY BUS', result: 'OK' },
+      { id: 'propulsion', label: 'STAGE 00 PAD', result: 'OK' },
+      { id: 'assets', label: 'SCENE ASSETS', pending: 'LOADING', done: 'READY' },
+    ],
+    skipButton: 'SKIP',
+    countdown: ['T-3', 'T-2', 'T-1'],
+  },
+  timings: {
+    totalDuration: 5.0, // Standard duration (seconds)
+    reducedMotionDuration: 2.0, // For prefers-reduced-motion
+    nameFadeStart: 0.0,
+    nameFadeEnd: 0.8,
+    statusTypingStart: 0.8,
+    statusTypingEnd: 3.8,
+    countdownStart: 3.8,
+    countdownEnd: 4.5,
+    overlayFadeStart: 4.5,
+    overlayFadeEnd: 5.0,
+  },
+  colors: {
+    bgNavy: '#030611',
+    bgNavyBrightened: '#071026',
+    cyanAccent: '#38bdf8', // existing cyan accent
+    cyanGlow: 'rgba(56, 189, 248, 0.45)',
+    emeraldOk: '#34d399',
+    textCream: '#f4f2ed',
+  },
+  sessionKey: 'portfolio_intro_seen',
+};
 
 interface LaunchPreloaderProps {
   onShowDashboard?: () => void;
@@ -9,16 +54,18 @@ interface LaunchPreloaderProps {
   onComplete: () => void;
 }
 
-export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({ onShowDashboard, onIgnition, onComplete }) => {
-  const [progress, setProgress] = useState(0);
-  const [tMinus, setTMinus] = useState('05.00');
-  const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const [isDashboardRevealed, setIsDashboardRevealed] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
+export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
+  onShowDashboard,
+  onIgnition,
+  onComplete,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [skipRequested, setSkipRequested] = useState(false);
+  const [isDone, setIsDone] = useState(false);
+
   const completedRef = useRef(false);
-  const showDashboardTriggered = useRef(false);
-  const ignitionTriggered = useRef(false);
-  const lastBeepSecRef = useRef(6);
   const onCompleteRef = useRef(onComplete);
   const onShowDashboardRef = useRef(onShowDashboard);
   const onIgnitionRef = useRef(onIgnition);
@@ -35,268 +82,372 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({ onShowDashboar
     onIgnitionRef.current = onIgnition;
   }, [onIgnition]);
 
-  const checklistSteps = [
-    { id: 1, label: 'SDSC SHAR LAUNCH COMPLEX // SECOND LAUNCH PAD', status: 'READY' },
-    { id: 2, label: 'CRYOGENIC LH2 / LOX DEWAR MANIFOLDS & UMBILICAL TOWER', status: 'PRESSURIZED' },
-    { id: 3, label: 'THREE.JS GPU RENDER PIPELINE & RAYLEIGH ATMOSPHERE', status: 'COMPILED' },
-    { id: 4, label: 'DASHBOARD TELEMETRY & CHANDRAYAAN-3 STACK', status: 'ONLINE' },
-    { id: 5, label: 'SOLID ROCKET BOOSTER IGNITION ARMING SEQUENCE', status: 'ARMED' },
-    { id: 6, label: 'MISSION FLIGHT DIRECTOR // SUHAS HOSKERE PORTFOLIO', status: 'GO FOR LAUNCH' },
-  ];
+  // Detect prefers-reduced-motion
+  const prefersReduced = useRef(
+    typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ).current;
 
-  const handleSkip = useCallback(() => {
-    if (!completedRef.current) {
-      completedRef.current = true;
-      setProgress(100);
-      setTMinus('00.00');
-      cosmicAudio.playCountdownBeep(true);
-      if (onShowDashboardRef.current) onShowDashboardRef.current();
-      if (onIgnitionRef.current) onIgnitionRef.current();
+  // 1. REAL ASSET PRE-CACHING FOR STAGE 00 FIRST SCENE
+  useEffect(() => {
+    let mounted = true;
+
+    const preloadFirstSceneAssets = async () => {
+      try {
+        // Kick off procedural texture generation in parallel while intro runs
+        getCachedSolarPanelTexture();
+        getCachedGoldMliTexture();
+        getCachedIsroBoosterTexture();
+        getCachedIndiaBoosterTexture();
+        getCachedChandrayaanFairingTexture();
+      } catch (err) {
+        console.warn('Pre-cache warning:', err);
+      }
+
+      // Hook into Three.js DefaultLoadingManager
+      let isQueueActive = false;
+      THREE.DefaultLoadingManager.onStart = () => {
+        isQueueActive = true;
+      };
+      THREE.DefaultLoadingManager.onLoad = () => {
+        if (mounted) setAssetsLoaded(true);
+      };
+
+      // If no assets were queued by managers, mark ready after procedural textures generate
       setTimeout(() => {
-        setIsExiting(true);
-        setTimeout(() => {
-          onCompleteRef.current();
-        }, 350);
-      }, 700);
-    }
+        if (mounted && !isQueueActive) {
+          setAssetsLoaded(true);
+        }
+      }, 400);
+    };
+
+    preloadFirstSceneAssets();
+
+    // Failsafe: guarantee ready after 1.8s so user is never blocked
+    const fallbackTimer = setTimeout(() => {
+      if (mounted) setAssetsLoaded(true);
+    }, 1800);
+
+    return () => {
+      mounted = false;
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
-  // Frame-rate independent, lag-resistant countdown ticker (Guarantees smooth 5.00s countdown)
+  // 2. FAINT BACKGROUND 2D STARFIELD
   useEffect(() => {
-    const totalDurationSec = 5.0; // Exact 5.00s mission countdown
-    let elapsedSec = 0;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    const starCount = 80;
+    const stars = Array.from({ length: starCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: 0.6 + Math.random() * 1.2,
+      baseAlpha: 0.2 + Math.random() * 0.5,
+      twinkleSpeed: 1.0 + Math.random() * 2.5,
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    let animId: number;
+    let t = 0;
+    const renderStars = () => {
+      ctx.clearRect(0, 0, width, height);
+      t += 0.02;
+
+      for (let i = 0; i < starCount; i++) {
+        const s = stars[i];
+        const alpha = s.baseAlpha * (0.6 + 0.4 * Math.sin(t * s.twinkleSpeed + s.phase));
+        ctx.fillStyle = `rgba(244, 242, 237, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      animId = requestAnimationFrame(renderStars);
+    };
+
+    renderStars();
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // 3. FRAME-ACCURATE TIMELINE CONTROLLER
+  useEffect(() => {
+    const totalDuration = prefersReduced
+      ? INTRO_CONFIG.timings.reducedMotionDuration
+      : INTRO_CONFIG.timings.totalDuration;
+
     let lastTime = performance.now();
-    let rafId: number;
+    let currentElapsed = 0;
+    let animFrame: number;
 
     const tick = (now: number) => {
       if (completedRef.current) return;
 
-      const rawDeltaSec = (now - lastTime) / 1000;
+      const delta = (now - lastTime) / 1000;
       lastTime = now;
+      const safeDelta = Math.min(Math.max(delta, 0), 0.1); // clamp against background tab stalls
 
-      // Anti-hang clamping: clamp maximum step to 0.10s to stay accurate to real time without skipping
-      const safeDelta = Math.min(Math.max(rawDeltaSec, 0), 0.10);
-      elapsedSec += safeDelta;
+      currentElapsed += safeDelta;
 
-      const rawProgress = Math.min(elapsedSec / totalDurationSec, 1.0);
-      const remainingSec = Math.max(totalDurationSec - elapsedSec, 0);
-
-      setProgress(rawProgress * 100);
-
-      // Countdown display: 05.00 down to 00.00
-      const sec = Math.floor(remainingSec);
-      const ms = Math.floor((remainingSec % 1) * 100);
-      const secStr = sec.toString().padStart(2, '0');
-      const msStr = ms.toString().padStart(2, '0');
-      setTMinus(`${secStr}.${msStr}`);
-
-      // Play authentic radar telemetry beeps on each second
-      if (sec !== lastBeepSecRef.current && sec <= 5 && remainingSec > 0.05) {
-        lastBeepSecRef.current = sec;
-        cosmicAudio.playCountdownBeep(false);
+      // Handle Skip request: fast-forward past typing/countdown once assets are ready
+      if (skipRequested) {
+        if (assetsLoaded) {
+          currentElapsed = Math.max(currentElapsed, INTRO_CONFIG.timings.overlayFadeStart);
+        } else {
+          // Hold just before fade out until assets finish loading
+          currentElapsed = Math.min(currentElapsed, INTRO_CONFIG.timings.countdownStart);
+        }
+      } else {
+        // If elapsed reaches countdown end (4.5s) but assets are still loading, hold until ready
+        if (currentElapsed >= INTRO_CONFIG.timings.countdownEnd && !assetsLoaded) {
+          currentElapsed = INTRO_CONFIG.timings.countdownEnd;
+        }
       }
 
-      // At T-03.00: Reveal dashboard telemetry while countdown continues smoothly
-      if (remainingSec <= 3.0 && !showDashboardTriggered.current) {
-        showDashboardTriggered.current = true;
-        setIsDashboardRevealed(true);
-        if (onShowDashboardRef.current) onShowDashboardRef.current();
+      setElapsed(currentElapsed);
+
+      // Trigger hero dashboard reveal at 4.2s so it is ready under the fade-out
+      if (currentElapsed >= 4.2 && onShowDashboardRef.current) {
+        onShowDashboardRef.current();
       }
 
-      // Active checklist milestone
-      const stepIdx = Math.min(Math.floor(rawProgress * checklistSteps.length), checklistSteps.length - 1);
-      setActiveStepIndex(stepIdx);
+      // Trigger launchpad ignition at 4.5s
+      if (currentElapsed >= 4.5 && onIgnitionRef.current) {
+        onIgnitionRef.current();
+      }
 
-      // At T-00.00: Ignition & Liftoff!
-      if (rawProgress >= 1.0) {
+      // Completion: fade out finished at 5.0s
+      if (currentElapsed >= totalDuration && assetsLoaded) {
         completedRef.current = true;
-        setTMinus('00.00');
-        if (lastBeepSecRef.current !== 0) {
-          lastBeepSecRef.current = 0;
-          cosmicAudio.playCountdownBeep(true);
+        setIsDone(true);
+
+        try {
+          sessionStorage.setItem(INTRO_CONFIG.sessionKey, 'true');
+        } catch {
+          // ignore storage failure in private mode
         }
-        if (onShowDashboardRef.current) onShowDashboardRef.current();
-        if (!ignitionTriggered.current) {
-          ignitionTriggered.current = true;
-          if (onIgnitionRef.current) onIgnitionRef.current();
+
+        if (onCompleteRef.current) {
+          onCompleteRef.current();
         }
-        // Keep countdown badge visible for 0.85s after liftoff so user clearly sees the 00.00 ignition event
-        setTimeout(() => {
-          setIsExiting(true);
-          setTimeout(() => {
-            onCompleteRef.current();
-          }, 350);
-        }, 850);
         return;
       }
 
-      rafId = requestAnimationFrame(tick);
+      animFrame = requestAnimationFrame(tick);
     };
 
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [checklistSteps.length]);
+    animFrame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animFrame);
+  }, [assetsLoaded, skipRequested, prefersReduced]);
+
+  const handleSkip = useCallback(() => {
+    setSkipRequested(true);
+  }, []);
+
+  if (isDone) return null;
+
+  // 4. COMPUTED STAGE ANIMATION VALUES
+  const { timings, strings } = INTRO_CONFIG;
+
+  // Name opacity (0.0s to 0.8s)
+  const nameProgress = Math.min(
+    Math.max((elapsed - timings.nameFadeStart) / (timings.nameFadeEnd - timings.nameFadeStart), 0),
+    1
+  );
+  const nameOpacity = prefersReduced ? 1 : nameProgress;
+  const nameTranslateY = prefersReduced ? 0 : (1 - nameProgress) * 12;
+
+  // Progress Bar (0.8s to 3.8s)
+  const progressRaw = Math.min(
+    Math.max((elapsed - timings.statusTypingStart) / (timings.statusTypingEnd - timings.statusTypingStart), 0),
+    1
+  );
+  const progressBarPercent = prefersReduced
+    ? Math.min((elapsed / 1.4) * 100, 100)
+    : Math.min(progressRaw * 100, assetsLoaded ? 100 : 95);
+
+  // Status Lines Typewriter Sequencing
+  const typingSlotSec = (timings.statusTypingEnd - timings.statusTypingStart) / strings.statusLines.length; // 0.75s per line
+  const typingElapsed = Math.max(elapsed - timings.statusTypingStart, 0);
+
+  // Countdown (3.8s to 4.5s)
+  const isCountdownActive = elapsed >= timings.countdownStart && elapsed < timings.overlayFadeStart;
+  let countdownText = '';
+  if (!prefersReduced && isCountdownActive) {
+    const cdProgress = (elapsed - timings.countdownStart) / (timings.countdownEnd - timings.countdownStart);
+    if (cdProgress < 0.33) countdownText = 'T-3';
+    else if (cdProgress < 0.66) countdownText = 'T-2';
+    else countdownText = 'T-1';
+  }
+
+  // Overlay Brightening (3.8s to 4.5s)
+  const brightenOpacity = isCountdownActive
+    ? Math.sin(((elapsed - timings.countdownStart) / 0.7) * Math.PI) * 0.28
+    : 0;
+
+  // Overall Fade-out (4.5s to 5.0s)
+  const fadeOutProgress = Math.min(
+    Math.max((elapsed - timings.overlayFadeStart) / (timings.overlayFadeEnd - timings.overlayFadeStart), 0),
+    1
+  );
+  const overlayOpacity = Math.max(1 - fadeOutProgress, 0);
 
   return (
-    <div className="fixed inset-0 z-[100] pointer-events-none select-none font-mono">
-      {/* 1. PRE-FLIGHT TELEMETRY INTRO OVERLAY (Frames the left 50%, leaving the 3D rocket visible on the right from T-5!) */}
-      <AnimatePresence>
-        {!isDashboardRevealed && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, x: -25, transition: { duration: 0.7, ease: 'easeInOut' } }}
-            className="absolute inset-0 bg-gradient-to-r from-[#030611] via-[#030611]/85 to-transparent flex flex-col justify-between p-6 sm:p-10 pointer-events-auto"
-          >
-            {/* Background Grid & Star Accents */}
-            <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
-            <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div
+      style={{ opacity: overlayOpacity }}
+      className="fixed inset-0 z-[200] bg-[#030611] text-[#f4f2ed] flex flex-col items-center justify-center p-6 select-none overflow-hidden transition-opacity duration-150 pointer-events-auto"
+    >
+      {/* 2D Canvas Starfield */}
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
 
-            {/* Top Header */}
-            <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4 max-w-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400">
-                  <Rocket className="w-4 h-4 animate-pulse" />
-                </div>
-                <div>
-                  <div className="text-xs tracking-[0.25em] text-white/50 uppercase">ISRO // SDSC SHAR SRIHARIKOTA</div>
-                  <div className="text-sm font-semibold tracking-wider text-white">CHANDRAYAAN-3 LAUNCH SEQUENCE</div>
-                </div>
-              </div>
+      {/* Ambient Radial Deep Navy Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(6,182,212,0.07)_0%,_rgba(3,6,17,0.92)_70%)] pointer-events-none" />
 
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>PAD TELEMETRY: NOMINAL</span>
-                </div>
-                <button
-                  onClick={handleSkip}
-                  className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 rounded-lg transition-all shadow-sm cursor-pointer"
-                >
-                  <span>SKIP TO IGNITION</span>
-                  <FastForward className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+      {/* Subtle overlay brightening during countdown T-3 to T-1 */}
+      <div
+        style={{ opacity: brightenOpacity }}
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.25)_0%,_transparent_75%)] pointer-events-none transition-opacity duration-200"
+      />
 
-            {/* Center Checklist & Progress (Left-aligned, leaving the rocket fully visible on the right) */}
-            <div className="relative z-10 max-w-lg lg:max-w-xl my-auto pt-16 pb-4 space-y-4">
-              {/* Progress Bar */}
-              <div className="w-full space-y-2">
-                <div className="flex justify-between items-center text-xs tracking-wider">
-                  <span className="text-white/60 flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>SYSTEM INITIALIZATION & PAD PRESSURIZATION</span>
+      {/* Main Container */}
+      <div className="relative z-10 w-full max-w-md mx-auto flex flex-col items-center text-center">
+        {/* Subsystem Header Monospace Badge */}
+        <div
+          style={{ opacity: nameOpacity }}
+          className="text-[10px] tracking-[0.28em] uppercase text-cyan-400/80 font-mono mb-6"
+        >
+          {strings.subsystemTag}
+        </div>
+
+        {/* Name Title (English + Kannada) */}
+        <div
+          style={{
+            opacity: nameOpacity,
+            transform: `translateY(${nameTranslateY}px)`,
+          }}
+          className="flex flex-col items-center gap-1.5 mb-10 transition-transform duration-75"
+        >
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#f4f2ed] font-display">
+            {strings.nameEnglish}
+          </h1>
+          <span className="text-base sm:text-lg text-cyan-400 font-kannada tracking-wide">
+            {strings.nameKannada}
+          </span>
+        </div>
+
+        {/* Monospace Status Subsystem Checklist */}
+        <div className="w-full bg-[#050a18]/80 border border-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-md mb-6 shadow-2xl">
+          <div className="flex flex-col space-y-2.5 text-left font-mono text-xs sm:text-[13px]">
+            {strings.statusLines.map((line, idx) => {
+              if (prefersReduced) {
+                return (
+                  <div key={line.id} className="flex justify-between items-center text-white/90">
+                    <span className="tracking-wider">{line.label}</span>
+                    <span className="text-emerald-400 font-bold tracking-widest font-mono">
+                      ... {line.done || line.result}
+                    </span>
+                  </div>
+                );
+              }
+
+              const lineStart = idx * typingSlotSec;
+              const lineTime = typingElapsed - lineStart;
+              const isStarted = lineTime > 0;
+              const isFinished = lineTime >= typingSlotSec;
+
+              if (!isStarted) {
+                return (
+                  <div key={line.id} className="flex justify-between items-center text-white/20">
+                    <span className="tracking-wider">{line.label}</span>
+                    <span className="font-mono text-[11px] tracking-widest text-white/15">... PENDING</span>
+                  </div>
+                );
+              }
+
+              // Typing label
+              const textLength = line.label.length;
+              const typeCharCount = isFinished
+                ? textLength
+                : Math.min(Math.floor((lineTime / (typingSlotSec * 0.6)) * textLength), textLength);
+              const typedText = line.label.slice(0, typeCharCount);
+
+              // Status result
+              let resultStr = '';
+              let resultClass = 'text-emerald-400';
+              if (line.id === 'assets') {
+                if (assetsLoaded && (isFinished || elapsed >= timings.countdownStart)) {
+                  resultStr = `... ${line.done}`;
+                  resultClass = 'text-emerald-400 font-bold';
+                } else {
+                  resultStr = `... ${line.pending}`;
+                  resultClass = 'text-amber-400 animate-pulse font-semibold';
+                }
+              } else {
+                resultStr = isFinished ? `... ${line.result}` : '';
+              }
+
+              return (
+                <div key={line.id} className="flex justify-between items-center text-white/90">
+                  <span className="tracking-wider font-mono">
+                    {typedText}
+                    {!isFinished && <span className="inline-block w-1.5 h-3 ml-0.5 bg-cyan-400 animate-pulse" />}
                   </span>
-                  <span className="text-cyan-400 font-bold">{progress.toFixed(1)}%</span>
-                </div>
-                <div className="w-full h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden p-0.5">
-                  <div
-                    className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-cyan-400 rounded-full shadow-[0_0_15px_rgba(249,115,22,0.6)] transition-all duration-75"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Subsystem Telemetry Checklist */}
-              <div className="w-full bg-black/60 border border-white/10 rounded-xl p-4 sm:p-5 backdrop-blur-md space-y-2">
-                <div className="text-[10px] tracking-[0.25em] text-white/40 uppercase mb-1 flex items-center gap-2">
-                  <Terminal className="w-3 h-3 text-white/50" />
-                  <span>PRE-FLIGHT TELEMETRY VERIFICATION</span>
-                </div>
-                {checklistSteps.map((step, idx) => {
-                  const isDone = idx <= activeStepIndex;
-                  const isCurrent = idx === activeStepIndex;
-                  return (
-                    <div
-                      key={step.id}
-                      className={`flex items-center justify-between text-xs transition-colors duration-150 ${
-                        isDone ? 'text-white' : 'text-white/25'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate pr-2">
-                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${
-                          isDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-white/5 text-white/30'
-                        }`}>
-                          {isDone ? '✓' : idx + 1}
-                        </span>
-                        <span className={`truncate ${isCurrent ? 'text-cyan-300 font-semibold' : ''}`}>
-                          {step.label}
-                        </span>
-                      </div>
-                      <span className={`text-[11px] font-bold tracking-wider shrink-0 ${
-                        isDone ? 'text-emerald-400' : 'text-white/20'
-                      }`}>
-                        {isDone ? step.status : 'PENDING'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Bottom Footer */}
-            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-white/40 border-t border-white/10 pt-4 gap-2 max-w-xl">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-cyan-400" />
-                <span>ALL CRITICAL SYSTEMS VERIFIED · SDSC SHAR SECOND LAUNCH PAD</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/60">
-                <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-                <span>SUHAS HOSKERE // PORTFOLIO MISSION</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 2. PROMINENT FLOATING COUNTDOWN TIMER (Always 100% visible, centered at top, zero clipping) */}
-      <AnimatePresence>
-        {!isExiting && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.35 } }}
-            className="fixed top-4 sm:top-5 left-1/2 -translate-x-1/2 z-[120] pointer-events-auto"
-          >
-            <div className={`px-5 py-2.5 sm:px-7 sm:py-3 rounded-2xl bg-[#030611]/92 border ${
-              tMinus === '00.00' ? 'border-emerald-500/80 shadow-[0_0_50px_rgba(16,185,129,0.5)]' : 'border-orange-500/60 shadow-[0_0_40px_rgba(249,115,22,0.4)]'
-            } backdrop-blur-xl text-center flex flex-col items-center transition-colors duration-300`}>
-              <div className="text-[10px] sm:text-xs uppercase tracking-[0.25em] font-semibold mb-0.5 flex items-center justify-center gap-2">
-                {tMinus === '00.00' ? (
-                  <span className="text-emerald-400 flex items-center gap-1.5">
-                    <Rocket className="w-3.5 h-3.5 animate-bounce" />
-                    <span>LIFTOFF // CHANDRAYAAN-3</span>
+                  <span className={`font-mono text-xs tracking-widest ${resultClass}`}>
+                    {resultStr}
                   </span>
-                ) : isDashboardRevealed ? (
-                  <span className="text-amber-400 flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
-                    <span>ARMED // MAIN ENGINE IGNITION</span>
-                  </span>
-                ) : (
-                  <span className="text-orange-400 flex items-center gap-1.5">
-                    <Radio className="w-3.5 h-3.5 text-orange-400 animate-spin" />
-                    <span>LAUNCH COUNTDOWN CLOCK</span>
-                  </span>
-                )}
-              </div>
+                </div>
+              );
+            })}
+          </div>
 
-              <div className="text-3xl sm:text-5xl font-black tracking-tight text-white font-mono drop-shadow-[0_0_25px_rgba(249,115,22,0.7)]">
-                T-MINUS <span className={tMinus === '00.00' ? 'text-emerald-400' : 'text-orange-400'}>{tMinus}</span>
-              </div>
-
-              <div className="text-[9px] sm:text-[10px] text-white/70 tracking-widest uppercase font-medium mt-0.5">
-                {tMinus === '00.00'
-                  ? 'SOLID ROCKET BOOSTER IGNITION CONFIRMED'
-                  : isDashboardRevealed
-                  ? 'DASHBOARD ONLINE · IGNITION AT T-00.00'
-                  : 'AUTONOMOUS FLIGHT CONTROLLER SEQUENCE'}
-              </div>
+          {/* Thin Cyan Accent Progress Bar */}
+          <div className="w-full mt-4 pt-3 border-t border-white/10 space-y-1.5">
+            <div className="flex justify-between items-center text-[10px] font-mono tracking-widest text-white/50 uppercase">
+              <span>INITIALIZING SYSTEM BUS</span>
+              <span className="text-cyan-400 font-bold">{progressBarPercent.toFixed(0)}%</span>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div className="w-full h-[2.5px] bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-cyan-300 rounded-full transition-all duration-75 shadow-[0_0_10px_rgba(56,189,248,0.7)]"
+                style={{ width: `${progressBarPercent}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Countdown T-3, T-2, T-1 Display */}
+        <div className="h-10 flex items-center justify-center font-mono font-bold tracking-widest text-xl sm:text-2xl text-cyan-300 drop-shadow-[0_0_16px_rgba(56,189,248,0.7)]">
+          {countdownText && (
+            <span className="animate-pulse">{countdownText}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Small Minimalist Skip Button (Bottom Right) */}
+      <button
+        onClick={handleSkip}
+        className="fixed bottom-6 right-6 z-20 font-mono text-[11px] tracking-[0.25em] uppercase text-white/50 hover:text-cyan-300 bg-white/5 hover:bg-white/10 border border-white/15 hover:border-cyan-400/40 px-3.5 py-1.5 rounded-md backdrop-blur-sm transition-all duration-200 cursor-pointer shadow-sm active:scale-95"
+      >
+        {strings.skipButton}
+      </button>
     </div>
   );
 };
+
+export default LaunchPreloader;

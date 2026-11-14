@@ -20,8 +20,27 @@ export const App: React.FC = () => {
   }, []);
 
   // Pre-flight Launch Initialization State (Plays 5-second countdown with T-3 dashboard reveal & T-0 ignition)
-  const [isPreloading, setIsPreloading] = useState(true);
-  const [showDashboard, setShowDashboard] = useState(false);
+  // Shows once per session; skips on reload within the same session
+  const [isPreloading, setIsPreloading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !sessionStorage.getItem('portfolio_intro_seen');
+      } catch {
+        return true;
+      }
+    }
+    return true;
+  });
+  const [showDashboard, setShowDashboard] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !!sessionStorage.getItem('portfolio_intro_seen');
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
   const [isIgnited, setIsIgnited] = useState(false);
 
   const handleShowDashboard = useCallback(() => {
