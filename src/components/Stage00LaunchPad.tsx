@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { STAGE_CONFIG } from '../scene/stageConfig';
 
 interface Stage00LaunchPadProps {
@@ -338,24 +339,25 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         metalness: 0.85,
       }),
       casuarinaMat: new THREE.MeshStandardMaterial({
-        color: '#ffffff',
-        roughness: 0.86,
+        roughness: 0.88,
         metalness: 0.04,
+        vertexColors: true,
       }),
       palmMat: new THREE.MeshStandardMaterial({
-        color: '#ffffff',
-        roughness: 0.78,
-        metalness: 0.06,
+        roughness: 0.82,
+        metalness: 0.05,
+        vertexColors: true,
+        side: THREE.DoubleSide,
       }),
       eucalyptusMat: new THREE.MeshStandardMaterial({
-        color: '#ffffff',
-        roughness: 0.82,
+        roughness: 0.86,
         metalness: 0.04,
+        vertexColors: true,
       }),
       scrubMat: new THREE.MeshStandardMaterial({
-        color: '#ffffff',
         roughness: 0.90,
         metalness: 0.02,
+        vertexColors: true,
       }),
       smokeMat: new THREE.PointsMaterial({
         size: 3.2,
@@ -411,181 +413,363 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     return geom;
   }, []);
 
-  // 3. Authentic Sriharikota Vegetation Geometries & Instanced Clusters
-  // A. Tall, slender Casuarina equisetifolia (iconic coastal windbreaks with wispy feathery spindle crowns)
+  // 3. Authentic Indian Coastal Vegetation Geometries & Instanced Groves
+  // A. Tall Casuarina equisetifolia (Savukku / Gaali Mara - slender coastal windbreak trees)
   const casuarinaGeom = useMemo(() => {
-    const points: THREE.Vector2[] = [
-      new THREE.Vector2(0.045, 0.0),   // Slender trunk base firmly in ground
-      new THREE.Vector2(0.038, 2.2),   // Tall slender bare trunk (55% bare!)
-      new THREE.Vector2(0.28, 2.5),    // Lower feathery canopy begins high off ground
-      new THREE.Vector2(0.42, 3.1),    // Widest soft feathery waist
-      new THREE.Vector2(0.38, 3.7),    // Gently tapering upper crown
-      new THREE.Vector2(0.24, 4.2),    // Narrowing wispy top
-      new THREE.Vector2(0.08, 4.6),    // Slender drooping tip
-      new THREE.Vector2(0.0, 4.8),     // Crown apex
+    const parts: THREE.BufferGeometry[] = [];
+
+    // Slender dark woody trunk, lower 45% bare
+    const trunk = new THREE.CylinderGeometry(0.045, 0.08, 4.4, 8, 4);
+    trunk.deleteAttribute('uv');
+    trunk.deleteAttribute('normal');
+    trunk.translate(0, 2.2, 0);
+    const tpos = trunk.attributes.position;
+    const tCols = new Float32Array(tpos.count * 3);
+    for (let i = 0; i < tpos.count; i++) {
+      tCols[i * 3] = 0.28;
+      tCols[i * 3 + 1] = 0.22;
+      tCols[i * 3 + 2] = 0.18;
+    }
+    trunk.setAttribute('color', new THREE.BufferAttribute(tCols, 3));
+    parts.push(trunk.toNonIndexed());
+
+    // 4 overlapping vertically-stretched feathery needle lobes (smooth organic canopy, no flat cuts)
+    const lobes = [
+      { y: 2.3, rx: 0.40, ry: 0.75, rz: 0.40 },
+      { y: 3.0, rx: 0.48, ry: 0.85, rz: 0.48 },
+      { y: 3.7, rx: 0.36, ry: 0.80, rz: 0.36 },
+      { y: 4.4, rx: 0.22, ry: 0.70, rz: 0.22 },
     ];
-    const geom = new THREE.LatheGeometry(points, 12);
-    geom.computeVertexNormals();
-    return geom;
+
+    lobes.forEach((lb, idx) => {
+      const sphere = new THREE.SphereGeometry(1.0, 10, 8);
+      sphere.deleteAttribute('uv');
+      sphere.deleteAttribute('normal');
+      sphere.scale(lb.rx, lb.ry, lb.rz);
+      sphere.translate(0, lb.y, 0);
+
+      const spos = sphere.attributes.position;
+      const sCols = new Float32Array(spos.count * 3);
+      for (let i = 0; i < spos.count; i++) {
+        const y = spos.getY(i);
+        const jx = Math.sin(y * 6.0 + idx) * 0.04;
+        const jz = Math.cos(y * 6.0 + idx) * 0.04;
+        spos.setX(i, spos.getX(i) + jx);
+        spos.setZ(i, spos.getZ(i) + jz);
+
+        // Natural feathery grey-green Casuarina needle tint
+        sCols[i * 3] = 0.20 + idx * 0.02;
+        sCols[i * 3 + 1] = 0.36 + idx * 0.03;
+        sCols[i * 3 + 2] = 0.22 + idx * 0.02;
+      }
+      sphere.setAttribute('color', new THREE.BufferAttribute(sCols, 3));
+      parts.push(sphere.toNonIndexed());
+    });
+
+    const merged = mergeGeometries(parts, false);
+    merged.computeVertexNormals();
+    return merged;
   }, []);
 
-  // B. Palmyra & Coconut Palms (Slender bare trunk + arching umbrella frond canopy)
+  // B. Authentic South Indian Coconut Palm (ತೆಂಗಿನ ಮರ / ಕೊಬ್ಬರಿ చెట్టు)
   const palmGeom = useMemo(() => {
-    const points: THREE.Vector2[] = [
-      new THREE.Vector2(0.055, 0.0),   // Base
-      new THREE.Vector2(0.040, 2.0),   // Slender curved trunk
-      new THREE.Vector2(0.035, 3.4),   // Bare trunk crown junction
-      new THREE.Vector2(0.090, 3.45),  // Crown node
-      new THREE.Vector2(0.95, 3.35),   // Arching frond canopy
-      new THREE.Vector2(1.20, 3.00),   // Drooping frond tips
-      new THREE.Vector2(0.70, 3.40),   // Canopy underside
-      new THREE.Vector2(0.0, 3.70),    // Crown apex
-    ];
-    const geom = new THREE.LatheGeometry(points, 10);
-    geom.computeVertexNormals();
-    return geom;
+    const parts: THREE.BufferGeometry[] = [];
+
+    // Slender curved trunk with fibrous bark rings
+    const trunk = new THREE.CylinderGeometry(0.045, 0.085, 3.8, 8, 14);
+    trunk.deleteAttribute('uv');
+    trunk.deleteAttribute('normal');
+    trunk.translate(0, 1.9, 0);
+    const pos = trunk.attributes.position;
+    const tColors = new Float32Array(pos.count * 3);
+
+    let topX = 0, topZ = 0;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      const h = y / 3.8;
+      const curveX = Math.sin(h * 1.5) * 0.42;
+      const curveZ = Math.sin(h * 1.1) * 0.16;
+      pos.setX(i, pos.getX(i) + curveX);
+      pos.setZ(i, pos.getZ(i) + curveZ);
+
+      if (h > 0.95) {
+        topX = pos.getX(i);
+        topZ = pos.getZ(i);
+      }
+
+      const ring = Math.sin(y * 22.0) * 0.04;
+      tColors[i * 3] = 0.42 + ring;
+      tColors[i * 3 + 1] = 0.34 + ring;
+      tColors[i * 3 + 2] = 0.26 + ring;
+    }
+    trunk.setAttribute('color', new THREE.BufferAttribute(tColors, 3));
+    parts.push(trunk.toNonIndexed());
+
+    // 14 Distinct Arching, Drooping Fronds radiating 360 degrees
+    const numFronds = 14;
+    for (let f = 0; f < numFronds; f++) {
+      const angle = (f / numFronds) * Math.PI * 2 + (f % 2) * 0.12;
+      const frondGeom = new THREE.BufferGeometry();
+      const fVerts: number[] = [];
+      const fCols: number[] = [];
+      const segs = 9;
+      const frondLen = 2.3 + (f % 3) * 0.25;
+
+      for (let s = 0; s < segs; s++) {
+        const t0 = s / segs;
+        const t1 = (s + 1) / segs;
+        const d0 = t0 * frondLen;
+        const d1 = t1 * frondLen;
+
+        const y0 = Math.sin(t0 * Math.PI * 0.72) * 0.65 - Math.pow(t0, 2.1) * 1.15;
+        const y1 = Math.sin(t1 * Math.PI * 0.72) * 0.65 - Math.pow(t1, 2.1) * 1.15;
+
+        const w0 = Math.sin(t0 * Math.PI) * 0.28 + 0.02;
+        const w1 = Math.sin(t1 * Math.PI) * 0.28 + 0.02;
+
+        const cx0 = topX + Math.cos(angle) * d0;
+        const cz0 = topZ + Math.sin(angle) * d0;
+        const cy0 = 3.8 + y0;
+
+        const cx1 = topX + Math.cos(angle) * d1;
+        const cz1 = topZ + Math.sin(angle) * d1;
+        const cy1 = 3.8 + y1;
+
+        const sx0 = -Math.sin(angle) * (w0 * 0.5);
+        const sz0 = Math.cos(angle) * (w0 * 0.5);
+        const sx1 = -Math.sin(angle) * (w1 * 0.5);
+        const sz1 = Math.cos(angle) * (w1 * 0.5);
+
+        const droop0 = -0.04 * (w0 / 0.28);
+        const droop1 = -0.04 * (w1 / 0.28);
+
+        // Quad 1: Left half
+        fVerts.push(cx0 + sx0, cy0 + droop0, cz0 + sz0);
+        fCols.push(0.22, 0.52, 0.16);
+        fVerts.push(cx0, cy0, cz0);
+        fCols.push(0.30, 0.62, 0.20);
+        fVerts.push(cx1 + sx1, cy1 + droop1, cz1 + sz1);
+        fCols.push(0.24, 0.54, 0.18);
+
+        fVerts.push(cx1 + sx1, cy1 + droop1, cz1 + sz1);
+        fCols.push(0.24, 0.54, 0.18);
+        fVerts.push(cx0, cy0, cz0);
+        fCols.push(0.30, 0.62, 0.20);
+        fVerts.push(cx1, cy1, cz1);
+        fCols.push(0.32, 0.65, 0.22);
+
+        // Quad 2: Right half
+        fVerts.push(cx0, cy0, cz0);
+        fCols.push(0.30, 0.62, 0.20);
+        fVerts.push(cx0 - sx0, cy0 + droop0, cz0 - sz0);
+        fCols.push(0.20, 0.48, 0.14);
+        fVerts.push(cx1, cy1, cz1);
+        fCols.push(0.32, 0.65, 0.22);
+
+        fVerts.push(cx1, cy1, cz1);
+        fCols.push(0.32, 0.65, 0.22);
+        fVerts.push(cx0 - sx0, cy0 + droop0, cz0 - sz0);
+        fCols.push(0.20, 0.48, 0.14);
+        fVerts.push(cx1 - sx1, cy1 + droop1, cz1 - sz1);
+        fCols.push(0.22, 0.50, 0.16);
+      }
+
+      frondGeom.setAttribute('position', new THREE.Float32BufferAttribute(fVerts, 3));
+      frondGeom.setAttribute('color', new THREE.Float32BufferAttribute(fCols, 3));
+      parts.push(frondGeom);
+    }
+
+    // Small coconut clusters under crown
+    for (let c = 0; c < 4; c++) {
+      const nut = new THREE.DodecahedronGeometry(0.08, 0);
+      nut.deleteAttribute('uv');
+      nut.deleteAttribute('normal');
+      const na = (c / 4) * Math.PI * 2;
+      nut.translate(topX + Math.cos(na) * 0.12, 3.68, topZ + Math.sin(na) * 0.12);
+      const nCols = new Float32Array(nut.attributes.position.count * 3);
+      for (let j = 0; j < nut.attributes.position.count; j++) {
+        nCols[j * 3] = 0.35;
+        nCols[j * 3 + 1] = 0.38;
+        nCols[j * 3 + 2] = 0.20;
+      }
+      nut.setAttribute('color', new THREE.BufferAttribute(nCols, 3));
+      parts.push(nut.toNonIndexed());
+    }
+
+    const merged = mergeGeometries(parts, false);
+    merged.computeVertexNormals();
+    return merged;
   }, []);
 
-  // C. Eucalyptus (Straight pale trunks with high airy crowns)
+  // C. Indian Broadleaf Shade Tree (Neem / Tamarind / Peepal - sprawling woody canopy)
   const eucalyptusGeom = useMemo(() => {
-    const points: THREE.Vector2[] = [
-      new THREE.Vector2(0.048, 0.0),
-      new THREE.Vector2(0.036, 2.7),   // 60% of tree is bare pale trunk!
-      new THREE.Vector2(0.35, 3.0),    // Lower airy canopy lobe
-      new THREE.Vector2(0.22, 3.4),    // Narrow waist
-      new THREE.Vector2(0.42, 3.8),    // Upper airy canopy lobe
-      new THREE.Vector2(0.18, 4.2),    // Narrow waist
-      new THREE.Vector2(0.26, 4.5),    // Top puff
-      new THREE.Vector2(0.0, 4.7),     // Apex
+    const parts: THREE.BufferGeometry[] = [];
+
+    // Main Woody Trunk
+    const trunk = new THREE.CylinderGeometry(0.12, 0.18, 1.6, 8, 4);
+    trunk.deleteAttribute('uv');
+    trunk.deleteAttribute('normal');
+    trunk.translate(0, 0.8, 0);
+    const tpos = trunk.attributes.position;
+    const tCols = new Float32Array(tpos.count * 3);
+    for (let i = 0; i < tpos.count; i++) {
+      tCols[i * 3] = 0.28;
+      tCols[i * 3 + 1] = 0.20;
+      tCols[i * 3 + 2] = 0.14;
+    }
+    trunk.setAttribute('color', new THREE.BufferAttribute(tCols, 3));
+    parts.push(trunk.toNonIndexed());
+
+    // 4 Crooked Spreading Limbs
+    const limbs = [
+      { from: [0, 1.4, 0], to: [-0.45, 2.3, 0.25], r: 0.08 },
+      { from: [0, 1.4, 0], to: [0.50, 2.4, -0.20], r: 0.08 },
+      { from: [0, 1.4, 0], to: [0.05, 2.5, -0.45], r: 0.075 },
+      { from: [0, 1.4, 0], to: [-0.10, 2.6, 0.40], r: 0.07 },
     ];
-    const geom = new THREE.LatheGeometry(points, 10);
-    geom.computeVertexNormals();
-    return geom;
+
+    limbs.forEach(limb => {
+      const dx = limb.to[0] - limb.from[0];
+      const dy = limb.to[1] - limb.from[1];
+      const dz = limb.to[2] - limb.from[2];
+      const len = Math.hypot(dx, dy, dz);
+
+      const bGeom = new THREE.CylinderGeometry(limb.r * 0.7, limb.r, len, 6, 2);
+      bGeom.deleteAttribute('uv');
+      bGeom.deleteAttribute('normal');
+      bGeom.translate(0, len / 2, 0);
+
+      const quat = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(dx, dy, dz).normalize()
+      );
+      bGeom.applyQuaternion(quat);
+      bGeom.translate(limb.from[0], limb.from[1], limb.from[2]);
+
+      const bCols = new Float32Array(bGeom.attributes.position.count * 3);
+      for (let i = 0; i < bGeom.attributes.position.count; i++) {
+        bCols[i * 3] = 0.30;
+        bCols[i * 3 + 1] = 0.22;
+        bCols[i * 3 + 2] = 0.15;
+      }
+      bGeom.setAttribute('color', new THREE.BufferAttribute(bCols, 3));
+      parts.push(bGeom.toNonIndexed());
+    });
+
+    // Lush Organic Leaf Clusters (Smooth Deformed Spheres with Natural Canopy Volume)
+    const canopyClusters = [
+      { pos: [0, 2.9, 0], r: 0.95 },
+      { pos: [-0.60, 2.6, 0.35], r: 0.85 },
+      { pos: [0.65, 2.7, -0.25], r: 0.88 },
+      { pos: [0.10, 2.8, -0.65], r: 0.82 },
+      { pos: [-0.20, 3.0, 0.55], r: 0.80 },
+      { pos: [0.45, 3.2, 0.30], r: 0.78 },
+      { pos: [-0.40, 3.3, -0.30], r: 0.75 },
+      { pos: [0.0, 3.5, 0.0], r: 0.70 },
+    ];
+
+    canopyClusters.forEach((cl, cIdx) => {
+      const puff = new THREE.SphereGeometry(cl.r, 12, 10);
+      puff.deleteAttribute('uv');
+      puff.deleteAttribute('normal');
+      const ppos = puff.attributes.position;
+      const pCols = new Float32Array(ppos.count * 3);
+
+      for (let i = 0; i < ppos.count; i++) {
+        const vx = ppos.getX(i);
+        const vy = ppos.getY(i);
+        const vz = ppos.getZ(i);
+
+        const noise =
+          Math.sin(vx * 4.5 + cIdx) * 0.10 +
+          Math.cos(vy * 5.2 + cIdx) * 0.08 +
+          Math.sin(vz * 4.8) * 0.08;
+        const scale = 1.0 + noise;
+
+        ppos.setXYZ(i, vx * scale + cl.pos[0], vy * scale * 0.85 + cl.pos[1], vz * scale + cl.pos[2]);
+
+        const heightGrad = (vy + cl.r) / (cl.r * 2);
+        const sunShine = Math.max(0, heightGrad);
+
+        pCols[i * 3] = 0.16 + sunShine * 0.16;
+        pCols[i * 3 + 1] = 0.38 + sunShine * 0.24;
+        pCols[i * 3 + 2] = 0.12 + sunShine * 0.12;
+      }
+      puff.setAttribute('color', new THREE.BufferAttribute(pCols, 3));
+      parts.push(puff.toNonIndexed());
+    });
+
+    const merged = mergeGeometries(parts, false);
+    merged.computeVertexNormals();
+    return merged;
   }, []);
 
-  // D. Low Coastal Scrub & Sand Dune Grass Tufts
+  // D. Coastal Dune Scrub & Bushes
   const scrubGeom = useMemo(() => {
-    const points: THREE.Vector2[] = [
-      new THREE.Vector2(0.0, 0.0),
-      new THREE.Vector2(0.65, 0.02),   // Sprawling base
-      new THREE.Vector2(0.55, 0.18),   // Scrub rim
-      new THREE.Vector2(0.30, 0.32),   // Scrub crest
-      new THREE.Vector2(0.0, 0.38),    // Scrub mound top
+    const parts: THREE.BufferGeometry[] = [];
+    const clumps = [
+      { pos: [0, 0.25, 0], r: 0.55 },
+      { pos: [-0.3, 0.20, 0.2], r: 0.45 },
+      { pos: [0.35, 0.18, -0.15], r: 0.42 },
+      { pos: [0.1, 0.22, 0.35], r: 0.40 },
     ];
-    const geom = new THREE.LatheGeometry(points, 7);
-    geom.computeVertexNormals();
-    return geom;
+
+    clumps.forEach((cl, idx) => {
+      const mound = new THREE.SphereGeometry(cl.r, 10, 8);
+      mound.deleteAttribute('uv');
+      mound.deleteAttribute('normal');
+      mound.translate(cl.pos[0], cl.pos[1], cl.pos[2]);
+      const mpos = mound.attributes.position;
+      const mCols = new Float32Array(mpos.count * 3);
+
+      for (let i = 0; i < mpos.count; i++) {
+        // Flatten bottom so scrub hugs ground naturally
+        const y = Math.max(0.02, mpos.getY(i) * 0.55);
+        mpos.setY(i, y);
+
+        mCols[i * 3] = 0.24 + idx * 0.02;
+        mCols[i * 3 + 1] = 0.38 + idx * 0.03;
+        mCols[i * 3 + 2] = 0.16 + idx * 0.02;
+      }
+      mound.setAttribute('color', new THREE.BufferAttribute(mCols, 3));
+      parts.push(mound.toNonIndexed());
+    });
+
+    const merged = mergeGeometries(parts, false);
+    merged.computeVertexNormals();
+    return merged;
   }, []);
 
-  // Casuarina Cluster Instances (flanks & distant perimeter z <= -24, |tx| >= 12, foreground clear)
+  // Casuarina Cluster Instances (Tall windbreak lines on distant horizon)
   const casuarinaInstances = useMemo(() => {
-    const count = 24;
+    const count = 22;
     const dummy = new THREE.Object3D();
     const data: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
     const palette = [
-      new THREE.Color('#3f5242'),
-      new THREE.Color('#495a4b'),
-      new THREE.Color('#364839'),
-      new THREE.Color('#516453'),
-      new THREE.Color('#435545'),
+      new THREE.Color(1.00, 1.00, 1.00),
+      new THREE.Color(1.02, 1.02, 0.98),
+      new THREE.Color(0.96, 1.00, 0.98),
+      new THREE.Color(1.01, 0.98, 0.96),
     ];
 
     for (let i = 0; i < count; i++) {
       let tx: number, tz: number;
-      if (i < 12) {
-        // Northwest stand (Lagoon flank)
-        tx = -14 - (i % 6) * 2.4 + Math.sin(i * 2.3) * 1.2;
-        tz = -24 - Math.floor(i / 6) * 4.5 - Math.cos(i * 1.7) * 1.5;
+      if (i < 11) {
+        // Northwest windbreak line (Pulicat Lagoon flank horizon)
+        tx = -16 - (i % 6) * 2.5 + Math.sin(i * 2.3) * 1.2;
+        tz = -30 - Math.floor(i / 6) * 4.5 - Math.cos(i * 1.7) * 1.5;
       } else {
-        // Northeast stand (Coast flank)
-        tx = 14 + ((i - 12) % 6) * 2.2 + Math.sin(i * 3.1) * 1.2;
-        tz = -24 - Math.floor((i - 12) / 6) * 4.5 - Math.cos(i * 2.2) * 1.5;
+        // Northeast windbreak line (Bay of Bengal coast flank horizon)
+        tx = 16 + ((i - 11) % 6) * 2.4 + Math.sin(i * 3.1) * 1.2;
+        tz = -30 - Math.floor((i - 11) / 6) * 4.5 - Math.cos(i * 2.2) * 1.5;
       }
 
-      const scale = 0.85 + (i % 4) * 0.14;
-      const hScale = scale * (0.95 + (i % 3) * 0.20);
-
-      dummy.position.set(tx, -0.42, tz);
-      dummy.scale.set(scale, hScale, scale);
-      dummy.rotation.y = (i * 2.1) % (Math.PI * 2);
-      dummy.updateMatrix();
-
-      data.push({
-        matrix: dummy.matrix.clone(),
-        color: palette[i % palette.length],
-      });
-    }
-    return data;
-  }, []);
-
-  // Palmyra & Coconut Palm Instances (flank margins)
-  const palmInstances = useMemo(() => {
-    const count = 12;
-    const dummy = new THREE.Object3D();
-    const data: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    const palette = [
-      new THREE.Color('#2d442a'),
-      new THREE.Color('#364e32'),
-      new THREE.Color('#283c25'),
-      new THREE.Color('#3d5638'),
-    ];
-
-    for (let i = 0; i < count; i++) {
-      let tx: number, tz: number;
-      if (i < 7) {
-        // Coastal margin near eastern sea horizon
-        tx = 15 + (i % 4) * 2.8 + Math.sin(i * 1.8) * 1.0;
-        tz = -22 - Math.floor(i / 4) * 4.2;
-      } else {
-        // Western lagoon margin
-        tx = -15 - (i - 7) * 2.5;
-        tz = -24 - (i % 3) * 3.2;
-      }
-
-      const scale = 0.88 + (i % 3) * 0.16;
-      const hScale = scale * (1.0 + (i % 4) * 0.15);
-
-      dummy.position.set(tx, -0.42, tz);
-      dummy.scale.set(scale, hScale, scale);
-      dummy.rotation.y = (i * 1.7) % (Math.PI * 2);
-      dummy.updateMatrix();
-
-      data.push({
-        matrix: dummy.matrix.clone(),
-        color: palette[i % palette.length],
-      });
-    }
-    return data;
-  }, []);
-
-  // Eucalyptus Instances (flank groves)
-  const eucalyptusInstances = useMemo(() => {
-    const count = 12;
-    const dummy = new THREE.Object3D();
-    const data: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    const palette = [
-      new THREE.Color('#586b55'),
-      new THREE.Color('#637860'),
-      new THREE.Color('#4e5e4b'),
-      new THREE.Color('#6d826a'),
-    ];
-
-    for (let i = 0; i < count; i++) {
-      let tx: number, tz: number;
-      if (i < 6) {
-        tx = -18 - (i % 3) * 2.8 + Math.sin(i * 2.5) * 1.0;
-        tz = -26 - Math.floor(i / 3) * 4.2;
-      } else {
-        tx = 18 + (i - 6) * 2.2 + Math.cos(i * 2.1) * 1.0;
-        tz = -25 - (i % 3) * 3.6;
-      }
-
-      const scale = 0.86 + (i % 4) * 0.15;
+      const scale = 0.92 + (i % 4) * 0.12;
       const hScale = scale * (0.95 + (i % 3) * 0.18);
 
       dummy.position.set(tx, -0.42, tz);
       dummy.scale.set(scale, hScale, scale);
-      dummy.rotation.y = (i * 2.4) % (Math.PI * 2);
+      dummy.rotation.set(0, (i * 2.1) % (Math.PI * 2), 0);
       dummy.updateMatrix();
 
       data.push({
@@ -596,29 +780,112 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     return data;
   }, []);
 
-  // Low Coastal Scrub & Sand Dune Grass Instances
-  const scrubInstances = useMemo(() => {
-    const count = 34;
+  // Coconut Palm Instances (Iconic coastal South Indian palms with natural graceful lean)
+  const palmInstances = useMemo(() => {
+    const count = 18;
     const dummy = new THREE.Object3D();
     const data: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
     const palette = [
-      new THREE.Color('#636e52'),
-      new THREE.Color('#727e5e'),
-      new THREE.Color('#545f44'),
-      new THREE.Color('#7d8664'),
+      new THREE.Color(1.00, 1.00, 1.00),
+      new THREE.Color(1.03, 1.02, 0.97),
+      new THREE.Color(0.97, 1.02, 0.96),
+      new THREE.Color(1.02, 0.98, 0.95),
+    ];
+
+    for (let i = 0; i < count; i++) {
+      let tx: number, tz: number;
+      if (i < 10) {
+        // West/Southwest grove visible behind cards
+        tx = -13 - (i % 5) * 2.6 + Math.sin(i * 1.7) * 1.0;
+        tz = -22 - Math.floor(i / 5) * 3.8 - Math.cos(i * 2.1) * 1.2;
+      } else {
+        // East coast grove framing sea horizon
+        tx = 14 + ((i - 10) % 4) * 2.5 + Math.sin(i * 2.2) * 0.8;
+        tz = -22 - Math.floor((i - 10) / 4) * 3.5;
+      }
+
+      const scale = 0.88 + (i % 4) * 0.14;
+      const hScale = scale * (0.95 + (i % 3) * 0.15);
+
+      // Natural palm lean (tilted 5 to 11 degrees towards coast breeze)
+      const leanAngle = 0.08 + (i % 3) * 0.05;
+      const leanDir = (i * 1.8) % (Math.PI * 2);
+
+      dummy.position.set(tx, -0.42, tz);
+      dummy.scale.set(scale, hScale, scale);
+      dummy.rotation.set(
+        Math.sin(leanDir) * leanAngle,
+        (i * 1.6) % (Math.PI * 2),
+        Math.cos(leanDir) * leanAngle
+      );
+      dummy.updateMatrix();
+
+      data.push({
+        matrix: dummy.matrix.clone(),
+        color: palette[i % palette.length],
+      });
+    }
+    return data;
+  }, []);
+
+  // Indian Broadleaf Shade Tree Instances (Neem / Tamarind / Peepal)
+  const eucalyptusInstances = useMemo(() => {
+    const count = 10;
+    const dummy = new THREE.Object3D();
+    const data: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
+    const palette = [
+      new THREE.Color(1.00, 1.00, 1.00),
+      new THREE.Color(1.04, 1.02, 0.98),
+      new THREE.Color(0.98, 1.03, 0.97),
+      new THREE.Color(1.01, 0.99, 0.96),
+    ];
+
+    for (let i = 0; i < count; i++) {
+      let tx: number, tz: number;
+      if (i < 5) {
+        // West flank stands
+        tx = -16 - i * 2.4 + Math.sin(i * 2.8) * 1.2;
+        tz = -25 - (i % 3) * 4.0;
+      } else {
+        // East flank stands
+        tx = 17 + (i - 5) * 2.2 + Math.cos(i * 2.1) * 1.0;
+        tz = -25 - (i % 3) * 3.8;
+      }
+
+      const scale = 0.95 + (i % 3) * 0.20;
+      dummy.position.set(tx, -0.42, tz);
+      dummy.scale.set(scale, scale * (0.9 + (i % 2) * 0.15), scale);
+      dummy.rotation.set(0, (i * 2.3) % (Math.PI * 2), 0);
+      dummy.updateMatrix();
+
+      data.push({
+        matrix: dummy.matrix.clone(),
+        color: palette[i % palette.length],
+      });
+    }
+    return data;
+  }, []);
+
+  // Coastal Dune Scrub & Bushes
+  const scrubInstances = useMemo(() => {
+    const count = 30;
+    const dummy = new THREE.Object3D();
+    const data: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
+    const palette = [
+      new THREE.Color(1.00, 1.00, 1.00),
+      new THREE.Color(1.04, 1.03, 0.98),
+      new THREE.Color(0.97, 1.02, 0.96),
     ];
 
     for (let i = 0; i < count; i++) {
       const side = i % 2 === 0 ? 1 : -1;
-      const tx = side * (9.5 + (i % 7) * 2.8 + Math.sin(i * 2.7) * 1.8);
-      const tz = -18 - (i % 6) * 3.0 - Math.cos(i * 1.4) * 2.0;
+      const tx = side * (10.5 + (i % 6) * 2.6 + Math.sin(i * 2.5) * 1.6);
+      const tz = -18 - (i % 5) * 3.0 - Math.cos(i * 1.5) * 2.0;
 
-      const scale = 0.75 + (i % 5) * 0.18;
-      const hScale = scale * (0.55 + (i % 3) * 0.15);
-
+      const scale = 0.75 + (i % 4) * 0.16;
       dummy.position.set(tx, -0.42, tz);
-      dummy.scale.set(scale, hScale, scale);
-      dummy.rotation.y = (i * 1.9) % (Math.PI * 2);
+      dummy.scale.set(scale, scale * (0.55 + (i % 3) * 0.15), scale);
+      dummy.rotation.set(0, (i * 1.9) % (Math.PI * 2), 0);
       dummy.updateMatrix();
 
       data.push({
