@@ -207,7 +207,6 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   const umbilicalArmsRef = useRef<THREE.Group>(null);
   const smokePointsRef = useRef<THREE.Points>(null);
   const sparkPointsRef = useRef<THREE.Points>(null);
-  const cryoVapourRef = useRef<THREE.Points>(null);
   const beaconLightRef = useRef<THREE.PointLight>(null);
   const flameTrenchLightRef = useRef<THREE.PointLight>(null);
   const treesInstancedRef = useRef<THREE.InstancedMesh>(null);
@@ -294,14 +293,6 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         map: emberTexture,
         transparent: true,
         opacity: 0.0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      }),
-      cryoMat: new THREE.PointsMaterial({
-        size: 0.65,
-        map: smokeTexture,
-        transparent: true,
-        opacity: 0.30,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       }),
@@ -472,34 +463,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     return { sparkGeom: geom, sparkData: data };
   }, [sparkCount]);
 
-  // 6. Cryogenic Vapour Data
-  const cryoCount = 48;
-  const { cryoGeom, cryoData } = useMemo(() => {
-    const geom = new THREE.BufferGeometry();
-    const pos = new Float32Array(cryoCount * 3);
-    const data = [];
-
-    for (let i = 0; i < cryoCount; i++) {
-      const angle = (i / cryoCount) * Math.PI * 2;
-      const r = 0.44;
-      pos[i * 3] = Math.cos(angle) * r;
-      pos[i * 3 + 1] = 0.45;
-      pos[i * 3 + 2] = Math.sin(angle) * r;
-
-      data.push({
-        vx: Math.cos(angle) * 0.18 + (Math.random() - 0.5) * 0.1,
-        vy: -(0.35 + Math.random() * 0.45),
-        vz: Math.sin(angle) * 0.18 + (Math.random() - 0.5) * 0.1,
-        age: Math.random() * 1.5,
-        life: 1.2 + Math.random() * 0.8,
-      });
-    }
-
-    geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    return { cryoGeom: geom, cryoData: data };
-  }, [cryoCount]);
-
-  // 7. Simulation Frame Controller
+  // 6. Simulation Frame Controller
   useFrame((state, delta) => {
     const sp = scrollProgressRef.current;
     const t = state.clock.getElapsedTime();
@@ -545,32 +509,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       umbilicalArmsRef.current.rotation.y = swingAngle;
     }
 
-    // 3. Cryogenic Vapour Venting
-    if (cryoVapourRef.current) {
-      const posAttr = cryoGeom.getAttribute('position') as THREE.BufferAttribute;
-      const posArray = posAttr.array as Float32Array;
-
-      const isVenting = !isLiftoffActive || liftoffTime < 3.0;
-      materials.cryoMat.opacity = isVenting ? 0.35 : Math.max(0, 0.35 - (liftoffTime - 3.0) * 0.35);
-
-      for (let i = 0; i < cryoCount; i++) {
-        const p = cryoData[i];
-        p.age += delta;
-
-        if (p.age >= p.life) {
-          p.age = 0;
-          const angle = (i / cryoCount) * Math.PI * 2;
-          posArray[i * 3] = Math.cos(angle) * 0.44;
-          posArray[i * 3 + 1] = 0.45;
-          posArray[i * 3 + 2] = Math.sin(angle) * 0.44;
-        } else {
-          posArray[i * 3] += p.vx * delta;
-          posArray[i * 3 + 1] += p.vy * delta;
-          posArray[i * 3 + 2] += p.vz * delta;
-        }
-      }
-      posAttr.needsUpdate = true;
-    }
+    // 3. Bilateral Trench Smoke & Deluge Steam
 
     // 4. Bilateral Trench Smoke & Deluge Steam
     const isSmoking = (isLiftoffActive && liftoffTime >= 0.2) || isIgnited || sp > 0.005;
@@ -771,11 +710,11 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         ))}
 
         {/* Retractable Umbilical Service Arms (Pivoting clear at T+4.5s) */}
-        <group ref={umbilicalArmsRef} position={[0, 1.2, 0.5]}>
+        <group ref={umbilicalArmsRef} position={[0, 0.9, 0.5]}>
           {[
             { y: 0.4, len: 1.0 },
-            { y: 1.5, len: 1.0 },
-            { y: 2.6, len: 0.9 },
+            { y: 0.8, len: 1.0 },
+            { y: 1.25, len: 0.9 },
           ].map((arm, aIdx) => (
             <group key={`arm-${aIdx}`} position={[0, arm.y, 0]}>
               <mesh position={[0, 0, arm.len / 2]} material={materials.towerSteel}>
@@ -835,10 +774,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         args={[treeGeom, materials.pineNeedleMat, treeCount]}
       />
 
-      {/* 7. Cryogenic Vapour Venting Points */}
-      <points ref={cryoVapourRef} geometry={cryoGeom} material={materials.cryoMat} />
-
-      {/* 8. Lateral Trench Bilateral Billowing Smoke & Steam */}
+      {/* 7. Lateral Trench Bilateral Billowing Smoke & Steam */}
       <points ref={smokePointsRef} geometry={smokeGeom} material={materials.smokeMat} />
 
       {/* 9. Flying Sparks from Flame Trench */}

@@ -312,7 +312,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       }
 
       vehicleGroup.current.position.x = thrustVibeX;
-      vehicleGroup.current.position.y = 0.38 + thrustVibeY;
+      vehicleGroup.current.position.y = 1.06 + thrustVibeY;
       vehicleGroup.current.rotation.z = THREE.MathUtils.lerp(
         vehicleGroup.current.rotation.z,
         targetRotZ,
@@ -416,8 +416,12 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           if (scrollProgress < 0.22) {
             boosterFlameLeft.current.visible = true;
             boosterFlameRight.current.visible = true;
-            const bFlicker = (1.0 + thrustBoost * 0.25) * (1.0 + Math.sin(t * 48) * 0.12);
-            const wPulsate = 1.0 + Math.sin(t * 32) * 0.06;
+            let bRamp = 1.0;
+            if (la) {
+              bRamp = Math.min(lt / 1.2, 1.0);
+            }
+            const bFlicker = (1.0 + thrustBoost * 0.25) * (1.0 + Math.sin(t * 48) * 0.12) * bRamp;
+            const wPulsate = (1.0 + Math.sin(t * 32) * 0.06) * bRamp;
             boosterFlameLeft.current.scale.set(wPulsate, bFlicker, wPulsate);
             boosterFlameRight.current.scale.set(wPulsate, bFlicker, wPulsate);
           } else {
@@ -429,8 +433,12 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         // Twin L110 core Vikas engine exhaust flames (active during ascent < 0.28)
         if (coreFlamesRef.current) {
           coreFlamesRef.current.visible = true;
-          const vFlicker = (1.0 + thrustBoost * 0.2) * (1.0 + Math.sin(t * 54) * 0.1);
-          coreFlamesRef.current.scale.set(1.0, vFlicker, 1.0);
+          let cRamp = 1.0;
+          if (la) {
+            cRamp = Math.min(lt / 1.2, 1.0);
+          }
+          const vFlicker = (1.0 + thrustBoost * 0.2) * (1.0 + Math.sin(t * 54) * 0.1) * cRamp;
+          coreFlamesRef.current.scale.set(cRamp, vFlicker, cRamp);
         }
       } else {
         flamePointsRef.current.visible = false;
@@ -611,7 +619,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   });
 
   return (
-    <group ref={vehicleGroup} position={[0, 0.38, 0]} scale={[0.29, 0.29, 0.29]}>
+    <group ref={vehicleGroup} position={[0, 1.06, 0]} scale={[0.29, 0.29, 0.29]}>
       {/* =========================================================================
           1. SATELLITE PAYLOAD (EMERGES FROM INSIDE FAIRING & CONTINUES ENTIRE JOURNEY)
          ========================================================================= */}

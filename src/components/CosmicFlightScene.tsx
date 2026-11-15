@@ -59,7 +59,7 @@ const FlightCameraRig: React.FC<{
 
     const baseOffsetX = baseCamX + mouse.x * (isMobile ? 0.04 : 0.12);
     let targetCamX = baseOffsetX;
-    let targetCamY = isMobile ? 0.45 : 0.4;
+    let targetCamY = isMobile ? 0.95 : 0.75;
     let targetCamZ = baseCamZ;
 
     let pitchTilt = 0;
@@ -67,12 +67,12 @@ const FlightCameraRig: React.FC<{
     // Continuous spline interpolation across stages
     if (isLiftoffActive) {
       if (liftoffTime < 4.5) {
-        targetCamY = isMobile ? 0.35 : 0.2;
+        targetCamY = isMobile ? 0.90 : 0.75;
         targetCamZ = baseCamZ;
       } else {
         const climbSec = liftoffTime - 4.5;
         const climbRatio = Math.min(climbSec / 5.5, 1.0);
-        targetCamY = (isMobile ? 0.35 : 0.2) + Math.pow(climbRatio, 1.35) * 0.40;
+        targetCamY = (isMobile ? 0.90 : 0.75) + Math.pow(climbRatio, 1.35) * 0.40;
         targetCamZ = baseCamZ + climbRatio * 0.2;
         if (liftoffTime >= 6.0) {
           pitchTilt = Math.min((liftoffTime - 6.0) / 4.0, 1.0) * 0.12;
@@ -81,32 +81,32 @@ const FlightCameraRig: React.FC<{
     } else if (sp < 0.18) {
       // Ground zero -> lift-off
       const p = sp / 0.18;
-      targetCamY = (isMobile ? 0.35 : 0.2) + p * 0.40;
+      targetCamY = (isMobile ? 0.90 : 0.75) + p * 0.40;
       targetCamZ = baseCamZ + p * 0.2;
     } else if (sp < 0.36) {
       // Atmospheric ascent & cloud punch: Camera pulls back and tilts up as speed rises
       const p = (sp - 0.18) / 0.18;
-      targetCamY = (isMobile ? 0.75 : 0.60) + p * 0.25;
+      targetCamY = (isMobile ? 1.30 : 1.15) + p * 0.25;
       targetCamZ = baseCamZ + 0.2 + p * 0.55;
     } else if (sp < 0.52) {
       // LEO & translunar injection
       const p = (sp - 0.36) / 0.16;
-      targetCamY = (isMobile ? 0.95 : 0.80) - p * 0.15;
+      targetCamY = (isMobile ? 1.50 : 1.35) - p * 0.15;
       targetCamZ = baseCamZ + 0.3 + p * 0.1;
     } else if (sp < 0.72) {
       // Lunar flyby
       const p = (sp - 0.52) / 0.20;
-      targetCamY = (isMobile ? 0.80 : 0.65) - p * 0.15;
+      targetCamY = (isMobile ? 1.35 : 1.20) - p * 0.15;
       targetCamZ = baseCamZ + 0.35;
     } else if (sp < 0.88) {
       // Mars encounter
       const p = (sp - 0.72) / 0.16;
-      targetCamY = (isMobile ? 0.65 : 0.50) - p * 0.10;
+      targetCamY = (isMobile ? 1.20 : 1.05) - p * 0.10;
       targetCamZ = baseCamZ + 0.35 - p * 0.2;
     } else {
       // Terminal deep space uplink
       const p = (sp - 0.88) / 0.12;
-      targetCamY = (isMobile ? 0.55 : 0.40) - p * 0.15;
+      targetCamY = (isMobile ? 1.10 : 0.95) - p * 0.15;
       targetCamZ = baseCamZ + 0.15 - p * 0.3;
     }
 
