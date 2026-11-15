@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Volume2, VolumeX, ChevronDown, Rocket } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
@@ -11,11 +11,11 @@ export interface StageWaypoint {
 
 export const STAGES: StageWaypoint[] = [
   { id: 'pad', stageName: 'Launch Pad', altitude: '0 km (Ground Zero)', scrollFraction: 0.0 },
-  { id: 'ascent', stageName: 'Ascent (Max-Q)', altitude: '14 km (Atmosphere)', scrollFraction: 0.20 },
-  { id: 'orbit', stageName: 'Low Earth Orbit', altitude: '420 km (LEO & EVA)', scrollFraction: 0.40 },
-  { id: 'moon', stageName: 'Lunar Flyby', altitude: '384,400 km (Lunar)', scrollFraction: 0.60 },
+  { id: 'ascent', stageName: 'Ascent (Max-Q)', altitude: '14 km (Atmosphere)', scrollFraction: 0.27 },
+  { id: 'orbit', stageName: 'Low Earth Orbit', altitude: '420 km (LEO & EVA)', scrollFraction: 0.39 },
+  { id: 'moon', stageName: 'Lunar Flyby', altitude: '384,400 km (Lunar)', scrollFraction: 0.58 },
   { id: 'mars', stageName: 'Mars Encounter', altitude: '225M km (Mangalyaan)', scrollFraction: 0.78 },
-  { id: 'signal', stageName: 'Uplink Transmission', altitude: 'Deep Space (Terminal)', scrollFraction: 0.95 },
+  { id: 'signal', stageName: 'Uplink Transmission', altitude: 'Deep Space (Terminal)', scrollFraction: 0.94 },
 ];
 
 interface FlightHUDProps {
@@ -35,7 +35,96 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  const currentStage = STAGES[activeStageIndex] || STAGES[0];
+  // Dynamic Aerospace Telemetry Computer
+  const telemetry = useMemo(() => {
+    const sp = scrollProgress;
+    if (sp < 0.035) {
+      return {
+        status: 'STANDBY // HOLD-DOWN ACTIVE',
+        altitude: '0.0 KM',
+        velocity: '0 M/S',
+        dynPressure: '101.3 KPA',
+        gForce: '1.00 G',
+      };
+    } else if (sp < 0.080) {
+      return {
+        status: 'STEP 01 // MAIN ENGINE IGNITION',
+        altitude: '0.0 KM',
+        velocity: '0 M/S',
+        dynPressure: '101.3 KPA',
+        gForce: '1.25 G',
+      };
+    } else if (sp < 0.125) {
+      return {
+        status: 'STEP 02 // UMBILICAL CLAMPS RELEASE',
+        altitude: '0.0 KM',
+        velocity: '0 M/S',
+        dynPressure: '101.3 KPA',
+        gForce: '1.40 G',
+      };
+    } else if (sp < 0.170) {
+      return {
+        status: 'STEP 03 // WATER DELUGE & TRENCH SMOKE',
+        altitude: '0.0 KM',
+        velocity: '0 M/S',
+        dynPressure: '101.3 KPA',
+        gForce: '1.50 G',
+      };
+    } else if (sp < 0.240) {
+      const climbFrac = (sp - 0.170) / 0.070;
+      return {
+        status: 'STEP 04 // POSITIVE LIFTOFF CLIMB',
+        altitude: `${(0.1 + climbFrac * 11.9).toFixed(1)} KM`,
+        velocity: `${Math.round(climbFrac * 420)} M/S`,
+        dynPressure: `${(101.3 - climbFrac * 45).toFixed(1)} KPA`,
+        gForce: `${(1.62 + climbFrac * 0.4).toFixed(2)} G`,
+      };
+    } else if (sp < 0.360) {
+      const ascFrac = (sp - 0.240) / 0.120;
+      const isMaxQ = sp >= 0.27 && sp <= 0.31;
+      return {
+        status: isMaxQ ? 'STAGE 01 // TRANSONIC MAX-Q' : 'STAGE 01 // ATMOSPHERIC ASCENT',
+        altitude: `${Math.round(12 + ascFrac * 173)} KM`,
+        velocity: `${(0.42 + ascFrac * 7.24).toFixed(2)} KM/S`,
+        dynPressure: isMaxQ ? '35.8 KPA (MAX-Q)' : `${(56.3 * Math.exp(-ascFrac * 4.5)).toFixed(2)} KPA`,
+        gForce: `${(2.10 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
+      };
+    } else if (sp < 0.520) {
+      return {
+        status: 'STAGE 02 // LOW EARTH ORBIT (LEO)',
+        altitude: '420 KM (CIRCULAR)',
+        velocity: '7.66 KM/S (ORBITAL)',
+        dynPressure: '0.00 KPA (HARD VACUUM)',
+        gForce: '0.00 G (MICROGRAVITY)',
+      };
+    } else if (sp < 0.740) {
+      const moonFrac = (sp - 0.520) / 0.220;
+      return {
+        status: 'STAGE 03 // TRANSLUNAR TRAJECTORY',
+        altitude: `${Math.round(420 + moonFrac * 384000).toLocaleString()} KM`,
+        velocity: '10.82 KM/S (TLI)',
+        dynPressure: '0.00 KPA',
+        gForce: '0.00 G',
+      };
+    } else if (sp < 0.880) {
+      const marsFrac = (sp - 0.740) / 0.140;
+      return {
+        status: 'STAGE 04 // MARS TRANSFER TRAJECTORY',
+        altitude: `${Math.round(384400 + marsFrac * 224600000).toLocaleString()} KM`,
+        velocity: '32.40 KM/S (HELIOCENTRIC)',
+        dynPressure: '0.00 KPA',
+        gForce: '0.00 G',
+      };
+    } else {
+      return {
+        status: 'STAGE 05 // DEEP SPACE TERMINAL',
+        altitude: '> 225M KM (DEEP SPACE)',
+        velocity: '17.20 KM/S (SOLAR ESCAPE)',
+        dynPressure: '0.00 KPA',
+        gForce: '0.00 G',
+      };
+    }
+  }, [scrollProgress]);
 
   return (
     <header className="fixed inset-0 pointer-events-none z-30 select-none">
@@ -148,23 +237,32 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
         </div>
       </nav>
 
-      {/* ===== BOTTOM STATUS BADGE & SCROLL PROMPT ===== */}
-      <div className="absolute bottom-5 left-0 right-0 flex flex-col items-center justify-center gap-1.5 pointer-events-none">
-        {scrollProgress < 0.08 && (
-          <div className="flex flex-col items-center gap-1 animate-bounce opacity-85">
-            <span className="text-[10px] font-mono tracking-[0.2em] text-slate-300 uppercase font-medium">
-              SCROLL // OR PRESS IGNITION TO LAUNCH
+      {/* ===== BOTTOM AEROSPACE TELEMETRY HUD BAR ===== */}
+      <div className="absolute bottom-5 left-0 right-0 flex flex-col items-center justify-center gap-1.5 pointer-events-none px-4">
+        {scrollProgress < 0.035 ? (
+          <div className="flex flex-col items-center gap-1 animate-bounce opacity-90">
+            <span className="text-[10px] font-mono tracking-[0.25em] text-amber-300 uppercase font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              SCROLL DOWN TO COMMENCE ENGINE IGNITION // STEP 01
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+            <ChevronDown className="w-4 h-4 text-orange-400 animate-pulse" />
           </div>
-        )}
+        ) : (
+          <div className="px-4 py-2 rounded-xl bg-[#0e131f]/90 backdrop-blur-xl border border-cyan-500/35 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 shadow-[0_0_24px_rgba(6,182,212,0.25)]">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${scrollProgress < 0.24 ? 'bg-orange-400' : 'bg-cyan-400'} animate-ping`} />
+              <span className={`text-[10px] font-mono ${scrollProgress < 0.24 ? 'text-orange-300' : 'text-cyan-300'} font-semibold tracking-wider uppercase`}>
+                {telemetry.status}
+              </span>
+            </div>
 
-        {scrollProgress >= 0.08 && (
-          <div className="px-3.5 py-1.5 rounded-full bg-[#0e131f]/85 backdrop-blur-xl border border-cyan-500/30 flex items-center gap-2 shadow-[0_0_18px_rgba(6,182,212,0.2)]">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-[10px] font-mono text-cyan-200/90 tracking-wider uppercase font-medium">
-              LIVE TELEMETRY // {currentStage.altitude}
-            </span>
+            <div className="h-3 w-[1px] bg-white/20 hidden sm:block" />
+
+            <div className="flex items-center gap-3 text-[10px] font-mono">
+              <span className="text-slate-400">ALT: <span className="text-white font-medium">{telemetry.altitude}</span></span>
+              <span className="text-slate-400">VEL: <span className="text-white font-medium">{telemetry.velocity}</span></span>
+              <span className="text-slate-400 hidden md:inline">Q: <span className="text-cyan-300 font-medium">{telemetry.dynPressure}</span></span>
+              <span className="text-slate-400 hidden md:inline">ACCEL: <span className="text-amber-300 font-medium">{telemetry.gForce}</span></span>
+            </div>
           </div>
         )}
       </div>

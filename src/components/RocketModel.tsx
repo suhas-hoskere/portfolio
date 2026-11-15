@@ -415,7 +415,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
     // 2. REALISTIC DYNAMIC ROCKET EXHAUST FIRE PLUME ("first scroll gives fire")
     // Ignites at Step 1 (sp >= 0.035) and burns through early ascent (< 0.280)
-    const isBurning = scrollProgress >= 0.035 && scrollProgress < 0.280;
+    const isBurning = scrollProgress >= 0.035 && scrollProgress < 0.355;
     if (flamePointsRef.current) {
       if (isBurning) {
         flamePointsRef.current.visible = true;
@@ -470,7 +470,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         }
 
         if (boosterFlameLeft.current && boosterFlameRight.current) {
-          if (scrollProgress < 0.22) {
+          if (scrollProgress < 0.315) {
             boosterFlameLeft.current.visible = true;
             boosterFlameRight.current.visible = true;
             const bFlicker = (1.0 + thrustBoost * 0.2) * (1.0 + Math.sin(t * 48) * 0.10) * fireRamp;
@@ -497,15 +497,15 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       }
     }
 
-    // 3. SOLID ROCKET BOOSTERS: Separate cleanly at 0.22 and drop away
+    // 3. SOLID ROCKET BOOSTERS: Separate cleanly at 0.315 and drop away
     if (boosterLeft.current && boosterRight.current) {
-      if (scrollProgress >= 0.28) {
+      if (scrollProgress >= 0.340) {
         boosterLeft.current.visible = false;
         boosterRight.current.visible = false;
-      } else if (scrollProgress >= 0.22) {
+      } else if (scrollProgress >= 0.315) {
         boosterLeft.current.visible = true;
         boosterRight.current.visible = true;
-        const sep = (scrollProgress - 0.22) / 0.06;
+        const sep = (scrollProgress - 0.315) / 0.025;
         boosterLeft.current.position.x = -0.76 - sep * 3.5;
         boosterLeft.current.position.y = -2.1 - sep * 3.0;
         boosterLeft.current.rotation.z = sep * 0.4;
@@ -523,8 +523,8 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     }
 
     // 4. FAIRING JETTISON & LOWER BODY ELIMINATION (scroll 0.27 to 0.32):
-    const isDeploying = scrollProgress >= 0.27;
-    const isFullyDeployed = scrollProgress >= 0.32;
+    const isDeploying = scrollProgress >= 0.340;
+    const isFullyDeployed = scrollProgress >= 0.360;
 
     // A. INTACT FAIRING vs SEPARATING HALVES:
     // Before 0.27: Intact 100% solid fairing with ZERO gap or protruding seam!
@@ -538,7 +538,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         rocketBodyGroup.current.visible = false;
       } else if (isDeploying) {
         rocketBodyGroup.current.visible = true;
-        const sepRatio = (scrollProgress - 0.27) / 0.05;
+        const sepRatio = (scrollProgress - 0.340) / 0.020;
         rocketBodyGroup.current.position.y = -sepRatio * 20.0;
         rocketBodyGroup.current.rotation.z = sepRatio * 0.2;
       } else {
@@ -556,7 +556,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       } else {
         fairingLeft.current.visible = true;
         fairingRight.current.visible = true;
-        const sepRatio = (scrollProgress - 0.27) / 0.05;
+        const sepRatio = (scrollProgress - 0.340) / 0.020;
         fairingLeft.current.position.x = -sepRatio * 5.5;
         fairingLeft.current.position.y = 3.0 - sepRatio * 2.8;
         fairingLeft.current.rotation.z = sepRatio * 0.8;
@@ -570,7 +570,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     if (satelliteGroup.current) {
       if (isDeploying) {
         satelliteGroup.current.visible = true;
-        const deployRatio = Math.min((scrollProgress - 0.27) / 0.10, 1.0);
+        const deployRatio = Math.min((scrollProgress - 0.340) / 0.08, 1.0);
 
         // Slide upwards out of the booster adapter ring
         const baseY = THREE.MathUtils.lerp(2.8, 0.4, deployRatio);
@@ -628,11 +628,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
     // 6. TRANSLUNAR INJECTION (TLI) HYPERGOLIC BURN (scroll 0.43 to 0.48):
     // Spacecraft fires thruster to depart Earth orbit toward the Moon
-    const isTliBurning = scrollProgress >= 0.43 && scrollProgress <= 0.48;
+    const isTliBurning = scrollProgress >= 0.470 && scrollProgress <= 0.515;
     if (tliFlameRef.current) {
       if (isTliBurning) {
         tliFlameRef.current.visible = true;
-        const tliProgress = (scrollProgress - 0.43) / 0.05;
+        const tliProgress = (scrollProgress - 0.470) / 0.045;
         const tliBell = Math.sin(tliProgress * Math.PI);
         materials.tliFlameMat.opacity = tliBell * 0.85;
         const tliFlicker = (1.0 + Math.sin(t * 45) * 0.2) * tliBell;

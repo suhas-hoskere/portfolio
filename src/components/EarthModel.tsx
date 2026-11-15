@@ -207,17 +207,17 @@ export const EarthModel: React.FC<EarthModelProps> = ({
     const scrollProgress = scrollProgressRef.current;
     if (!earthGroup.current) return;
 
-    // Earth and its satellites belong strictly to Stage 2: Low Earth Orbit (0.285 to 0.475)
-    // Sinks and departs completely before the Moon arrives at 0.495, ensuring Earth and Moon are never in the same view!
-    if (scrollProgress >= 0.285 && scrollProgress <= 0.475) {
+    // Earth and its satellites belong strictly to Stage 2: Low Earth Orbit (0.320 to 0.515)
+    // Sinks and departs completely before the Moon arrives at 0.520, ensuring Earth and Moon are never in the same view!
+    if (scrollProgress >= 0.320 && scrollProgress <= 0.515) {
       earthGroup.current.visible = true;
 
-      // 1. Smooth Fade-in (0.285 to 0.34) and Depart Fade-out (0.43 to 0.475)
+      // 1. Smooth Fade-in (0.320 to 0.365) and Depart Fade-out (0.475 to 0.515)
       let opacity = 0;
-      if (scrollProgress < 0.34) {
-        opacity = Math.min((scrollProgress - 0.285) / 0.055, 1.0);
-      } else if (scrollProgress > 0.43) {
-        opacity = Math.max(1.0 - (scrollProgress - 0.43) / 0.045, 0.0);
+      if (scrollProgress < 0.365) {
+        opacity = Math.min((scrollProgress - 0.320) / 0.045, 1.0);
+      } else if (scrollProgress > 0.475) {
+        opacity = Math.max(1.0 - (scrollProgress - 0.475) / 0.040, 0.0);
       } else {
         opacity = 1.0;
       }
@@ -233,11 +233,11 @@ export const EarthModel: React.FC<EarthModelProps> = ({
 
       // 2. Majestic horizon rise from below (-28.0 -> -12.6) and depart (-12.6 -> -32.0)
       let targetY = -12.6;
-      if (scrollProgress < 0.34) {
-        const rise = (scrollProgress - 0.285) / 0.055;
+      if (scrollProgress < 0.365) {
+        const rise = (scrollProgress - 0.320) / 0.045;
         targetY = -28.0 + rise * 15.4;
-      } else if (scrollProgress > 0.43) {
-        const sink = (scrollProgress - 0.43) / 0.045;
+      } else if (scrollProgress > 0.475) {
+        const sink = (scrollProgress - 0.475) / 0.040;
         targetY = -12.6 - sink * 19.4;
       }
 

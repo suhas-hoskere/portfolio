@@ -76,15 +76,15 @@ const FlightCameraRig: React.FC<{
       targetCamY = (isMobile ? 0.90 : 0.75) + Math.pow(climb, 1.25) * 0.45;
       targetCamZ = baseCamZ + climb * 0.25;
       pitchTilt = climb * 0.08;
-    } else if (sp < 0.380) {
+    } else if (sp < 0.360) {
       // Stage 1: Atmospheric ascent & cloud punch
-      const p = (sp - 0.240) / (0.380 - 0.240);
+      const p = (sp - 0.240) / (0.360 - 0.240);
       targetCamY = (isMobile ? 1.35 : 1.20) + p * 0.25;
       targetCamZ = baseCamZ + 0.25 + p * 0.55;
       pitchTilt = 0.08 + p * 0.06;
     } else if (sp < 0.520) {
       // Stage 2: LEO & orbital injection
-      const p = (sp - 0.380) / 0.140;
+      const p = (sp - 0.360) / 0.160;
       targetCamY = (isMobile ? 1.50 : 1.35) - p * 0.15;
       targetCamZ = baseCamZ + 0.30 + p * 0.10;
     } else if (sp < 0.740) {

@@ -160,42 +160,59 @@ class CosmicAudio {
     this.droneGain = droneGain;
   }
 
-  // Real-time aerodynamic flight acoustics tracking
+  // Real-time aerodynamic flight acoustics tracking synchronized to granular scroll milestones
   public updateFallIntensity(flightProgress: number) {
     if (!this.ctx || !this.isRunning) return;
     const t = this.ctx.currentTime;
 
-    // Atmospheric Ascent (0.0 to 0.30): Roaring rocket motors
-    if (flightProgress < 0.30) {
-      const ascentRatio = flightProgress / 0.30;
-      // Frequency rises slightly with transonic speed, then drops in thin upper atmosphere
-      const subFreq = 42 + Math.sin(ascentRatio * Math.PI) * 12;
-      this.subOsc?.frequency.setTargetAtTime(subFreq, t, 0.08);
-
-      const subVol = THREE_Math_lerp(0.045, 0.07, ascentRatio);
+    // Phase 0: Standby at Launch Pad (0.0 to 0.035) - Silent engines, serene coastal wind
+    if (flightProgress < 0.035) {
+      this.subGain?.gain.setTargetAtTime(0.0001, t, 0.08);
+      this.noiseFilter?.frequency.setTargetAtTime(90, t, 0.08);
+      this.noiseGain?.gain.setTargetAtTime(0.002, t, 0.08);
+      this.droneGain?.gain.setTargetAtTime(0.0001, t, 0.08);
+    }
+    // Phase 1: Ignition & Trench Water Deluge (0.035 to 0.170)
+    else if (flightProgress < 0.170) {
+      const ignitionRatio = (flightProgress - 0.035) / 0.135;
+      const subVol = THREE_Math_lerp(0.015, 0.055, ignitionRatio);
+      this.subOsc?.frequency.setTargetAtTime(42, t, 0.08);
       this.subGain?.gain.setTargetAtTime(subVol, t, 0.08);
 
-      const filterFreq = THREE_Math_lerp(140, 280, ascentRatio);
+      const filterFreq = THREE_Math_lerp(120, 240, ignitionRatio);
+      const noiseVol = THREE_Math_lerp(0.015, 0.050, ignitionRatio);
       this.noiseFilter?.frequency.setTargetAtTime(filterFreq, t, 0.08);
-      this.noiseGain?.gain.setTargetAtTime(0.045, t, 0.08);
+      this.noiseGain?.gain.setTargetAtTime(noiseVol, t, 0.08);
+      this.droneGain?.gain.setTargetAtTime(0.0001, t, 0.08);
+    }
+    // Phase 2: Atmospheric Ascent & Transonic Max-Q (0.170 to 0.360)
+    else if (flightProgress < 0.360) {
+      const ascentRatio = (flightProgress - 0.170) / 0.190;
+      const subFreq = 42 + Math.sin(ascentRatio * Math.PI) * 14;
+      this.subOsc?.frequency.setTargetAtTime(subFreq, t, 0.08);
+
+      const subVol = THREE_Math_lerp(0.055, 0.075, Math.sin(ascentRatio * Math.PI));
+      this.subGain?.gain.setTargetAtTime(subVol, t, 0.08);
+
+      const filterFreq = THREE_Math_lerp(240, 320, Math.sin(ascentRatio * Math.PI));
+      this.noiseFilter?.frequency.setTargetAtTime(filterFreq, t, 0.08);
+      this.noiseGain?.gain.setTargetAtTime(0.052, t, 0.08);
       this.droneGain?.gain.setTargetAtTime(0.001, t, 0.1);
     }
-    // Low Earth Orbit & Translunar Cruise (0.30 to 0.70): Engine cutoff, silence, cosmic resonance
-    else if (flightProgress < 0.70) {
-      const spaceRatio = (flightProgress - 0.30) / 0.40;
-      // Roar fades smoothly as vacuum takes over
-      this.noiseGain?.gain.setTargetAtTime(0.003, t, 0.15);
-      this.subGain?.gain.setTargetAtTime(0.015, t, 0.15);
+    // Phase 3: Low Earth Orbit & Translunar Trajectory (0.360 to 0.740) - Vacuum silence & cosmic resonance
+    else if (flightProgress < 0.740) {
+      const spaceRatio = (flightProgress - 0.360) / 0.380;
+      this.noiseGain?.gain.setTargetAtTime(0.001, t, 0.15);
+      this.subGain?.gain.setTargetAtTime(0.005, t, 0.15);
 
-      // Deep space ambient drone rises with serene clarity
-      const droneVol = THREE_Math_lerp(0.005, 0.028, spaceRatio);
+      const droneVol = THREE_Math_lerp(0.008, 0.028, spaceRatio);
       this.droneGain?.gain.setTargetAtTime(droneVol, t, 0.15);
     }
-    // Mars Encounter & Deep Space Terminal (0.70 to 1.0)
+    // Phase 4: Mars Encounter & Deep Space Terminal Uplink (0.740 to 1.0)
     else {
-      this.noiseGain?.gain.setTargetAtTime(0.001, t, 0.15);
-      this.subGain?.gain.setTargetAtTime(0.01, t, 0.15);
-      this.droneGain?.gain.setTargetAtTime(0.032, t, 0.15);
+      this.noiseGain?.gain.setTargetAtTime(0.0005, t, 0.15);
+      this.subGain?.gain.setTargetAtTime(0.003, t, 0.15);
+      this.droneGain?.gain.setTargetAtTime(0.034, t, 0.15);
     }
   }
 
