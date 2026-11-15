@@ -154,6 +154,13 @@ const FlightCameraRig: React.FC<{
     const delta = state.clock.getDelta();
     const lerpFactor = 1 - Math.exp(-8.5 * delta);
 
+    const override = (typeof window !== 'undefined' && (window as any).__cameraOverride) ? (window as any).__cameraOverride : null;
+    if (override) {
+      state.camera.position.set(override.x, override.y, override.z);
+      state.camera.lookAt(override.lookAt[0], override.lookAt[1], override.lookAt[2]);
+      return;
+    }
+
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetCamX + shakeX, lerpFactor);
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY + shakeY, lerpFactor);
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetCamZ, lerpFactor);

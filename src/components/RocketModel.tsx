@@ -44,6 +44,59 @@ function getCachedFlameParticleTexture() {
   return cachedFlameParticleTexture;
 }
 
+// Procedural 100% soft camera-facing rocket exhaust flame envelope texture (NO hard edges)
+let cachedSoftFlameSpriteTexture: THREE.CanvasTexture | null = null;
+function getCachedSoftFlameSpriteTexture() {
+  if (cachedSoftFlameSpriteTexture) return cachedSoftFlameSpriteTexture;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  const center = size / 2;
+  const grad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.95);
+  grad.addColorStop(0.00, 'rgba(255, 255, 255, 1.0)'); // Blinding white-hot core
+  grad.addColorStop(0.18, 'rgba(255, 245, 190, 0.95)'); // Incandescent cream
+  grad.addColorStop(0.38, 'rgba(255, 190, 45, 0.80)'); // Golden yellow
+  grad.addColorStop(0.62, 'rgba(255, 100, 10, 0.45)'); // Fiery orange
+  grad.addColorStop(0.82, 'rgba(220, 35, 5, 0.15)'); // Amber flame edge
+  grad.addColorStop(1.00, 'rgba(160, 10, 0, 0.0)'); // Smooth 100% transparent falloff
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  cachedSoftFlameSpriteTexture = new THREE.CanvasTexture(canvas);
+  cachedSoftFlameSpriteTexture.generateMipmaps = false;
+  return cachedSoftFlameSpriteTexture;
+}
+
+// Procedural blinding white-hot supersonic core flame sprite texture
+let cachedSoftCoreSpriteTexture: THREE.CanvasTexture | null = null;
+function getCachedSoftCoreSpriteTexture() {
+  if (cachedSoftCoreSpriteTexture) return cachedSoftCoreSpriteTexture;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  const center = size / 2;
+  const grad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.90);
+  grad.addColorStop(0.00, 'rgba(255, 255, 255, 1.0)');
+  grad.addColorStop(0.25, 'rgba(255, 255, 230, 0.95)');
+  grad.addColorStop(0.55, 'rgba(255, 215, 110, 0.40)');
+  grad.addColorStop(0.85, 'rgba(255, 160, 30, 0.08)');
+  grad.addColorStop(1.00, 'rgba(255, 120, 0, 0.0)');
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  cachedSoftCoreSpriteTexture = new THREE.CanvasTexture(canvas);
+  cachedSoftCoreSpriteTexture.generateMipmaps = false;
+  return cachedSoftCoreSpriteTexture;
+}
+
 export const RocketModel: React.FC<RocketModelProps> = ({
   scrollProgressRef,
   scrollSpeedRef,
@@ -76,14 +129,13 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   // Dynamic particle flame system
   const flameLightRef = useRef<THREE.PointLight>(null);
   const flamePointsRef = useRef<THREE.Points>(null);
-  const shock1 = useRef<THREE.Mesh>(null);
-  const shock2 = useRef<THREE.Mesh>(null);
-  const shock3 = useRef<THREE.Mesh>(null);
   const boosterFlameLeft = useRef<THREE.Group>(null);
   const boosterFlameRight = useRef<THREE.Group>(null);
   const coreFlamesRef = useRef<THREE.Group>(null);
 
   const flameTexture = useMemo(() => getCachedFlameParticleTexture(), []);
+  const softPlumeTexture = useMemo(() => getCachedSoftFlameSpriteTexture(), []);
+  const softCoreTexture = useMemo(() => getCachedSoftCoreSpriteTexture(), []);
 
   // 280 particles distributed across ALL FOUR ENGINE NOZZLES (Twin S200 Solid Boosters + Twin L110 Vikas Engines)
   const particleCount = 280;
@@ -167,6 +219,20 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         vertexColors: true,
+      }),
+      softPlumeMat: new THREE.SpriteMaterial({
+        map: softPlumeTexture,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: false,
+      }),
+      softCoreMat: new THREE.SpriteMaterial({
+        map: softCoreTexture,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: false,
       }),
       flameShock: new THREE.MeshBasicMaterial({
         color: '#67e8f9', // Mach diamond supersonic shock cyan
@@ -261,7 +327,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         blending: THREE.AdditiveBlending,
       }),
     };
-  }, [flameTexture]);
+  }, [flameTexture, softPlumeTexture, softCoreTexture]);
 
   useFrame((state, delta) => {
     const scrollProgress = scrollProgressRef.current;
@@ -397,14 +463,6 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
         posAttr.needsUpdate = true;
         colAttr.needsUpdate = true;
-
-        // Mach Shock Diamonds
-        if (shock1.current && shock2.current && shock3.current) {
-          const pulse = 1.0 + Math.sin(t * 60) * 0.25;
-          shock1.current.scale.setScalar(pulse);
-          shock2.current.scale.setScalar(pulse * 0.85);
-          shock3.current.scale.setScalar(pulse * 0.7);
-        }
 
         // Dynamic Point Light illuminating rocket aft skirt and nozzle
         if (flameLightRef.current) {
@@ -865,24 +923,15 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         <group ref={coreFlamesRef} visible={false}>
           {[-0.16, 0.16].map((vx, vIdx) => (
             <group key={`core-flame-${vIdx}`} position={[vx, -4.25, 0]}>
-              {/* White-Hot Supersonic Core */}
-              <mesh position={[0, -0.85, 0]} material={materials.boosterPlumeWhite} renderOrder={10}>
-                <cylinderGeometry args={[0.13, 0.22, 1.8, 16, 1, true]} />
-              </mesh>
-              {/* Golden Outer Supersonic Sheath */}
-              <mesh position={[0, -1.15, 0]} material={materials.boosterPlumeOrange} renderOrder={9}>
-                <coneGeometry args={[0.34, 2.5, 16, 1, true]} />
-              </mesh>
-              {/* Supersonic Diamond Shock Ring */}
-              <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-                <ringGeometry args={[0.02, 0.14, 16]} />
-              </mesh>
-              <mesh position={[0, -1.25, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-                <ringGeometry args={[0.02, 0.18, 16]} />
-              </mesh>
+              {/* Blinding White-Hot Core Sprites (Additive, Camera-Facing, Soft Radial Falloff) */}
+              <sprite position={[0, -0.10, 0]} scale={[0.8, 1.1, 1]} material={materials.softCoreMat} renderOrder={30} />
+              <sprite position={[0, -0.45, 0]} scale={[1.4, 1.7, 1]} material={materials.softCoreMat} renderOrder={30} />
+              {/* Incandescent Golden/Orange Expanding Plume Sprites (Zero Hard Silhouette Edges) */}
+              <sprite position={[0, -0.95, 0]} scale={[2.1, 2.6, 1]} material={materials.softPlumeMat} renderOrder={29} />
+              <sprite position={[0, -1.65, 0]} scale={[3.0, 3.6, 1]} material={materials.softPlumeMat} renderOrder={28} />
             </group>
           ))}
-          <pointLight position={[0, -4.8, 0]} color="#ffaa33" intensity={12} distance={8} />
+          <pointLight position={[0, -4.5, 0]} color="#ffaa33" intensity={16} distance={10} />
         </group>
 
         {/* =========================================================================
@@ -940,27 +989,15 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <coneGeometry args={[0.25, 0.46, 24, 1, true]} />
           </mesh>
 
-          {/* Booster Dual-Layer Supersonic Thrust Fire Plume */}
+          {/* Booster Soft Additive Supersonic Thrust Fire Plume */}
           <group ref={boosterFlameLeft} position={[0, -1.55, 0]} visible={false}>
-            {/* Blinding White-Hot Supersonic Core Column */}
-            <mesh position={[0, -1.1, 0]} material={materials.boosterPlumeWhite} renderOrder={10}>
-              <cylinderGeometry args={[0.22, 0.32, 2.4, 16, 1, true]} />
-            </mesh>
-            {/* Incandescent Outer Orange Expanding Flame Sheath */}
-            <mesh position={[0, -1.45, 0]} material={materials.boosterPlumeOrange} renderOrder={9}>
-              <coneGeometry args={[0.54, 3.2, 16, 1, true]} />
-            </mesh>
-            {/* Supersonic Shock Discs */}
-            <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-              <ringGeometry args={[0.02, 0.22, 16]} />
-            </mesh>
-            <mesh position={[0, -1.35, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-              <ringGeometry args={[0.02, 0.28, 16]} />
-            </mesh>
-            <mesh position={[0, -2.05, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-              <ringGeometry args={[0.02, 0.34, 16]} />
-            </mesh>
-            <pointLight position={[0, -0.7, 0]} color="#ffaa22" intensity={14} distance={9} />
+            {/* Soft Camera-Facing Incandescent Plume Sprites (Zero Hard Silhouette Edges) */}
+            <sprite position={[0, -0.08, 0]} scale={[1.2, 1.4, 1]} material={materials.softCoreMat} renderOrder={30} />
+            <sprite position={[0, -0.42, 0]} scale={[1.8, 2.0, 1]} material={materials.softCoreMat} renderOrder={30} />
+            <sprite position={[0, -0.95, 0]} scale={[2.5, 2.8, 1]} material={materials.softPlumeMat} renderOrder={29} />
+            <sprite position={[0, -1.65, 0]} scale={[3.4, 3.8, 1]} material={materials.softPlumeMat} renderOrder={28} />
+            <sprite position={[0, -2.55, 0]} scale={[4.4, 5.0, 1]} material={materials.softPlumeMat} renderOrder={27} />
+            <pointLight position={[0, -0.5, 0]} color="#ffaa22" intensity={18} distance={12} />
           </group>
         </group>
 
@@ -1016,27 +1053,15 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <coneGeometry args={[0.25, 0.46, 24, 1, true]} />
           </mesh>
 
-          {/* Booster Dual-Layer Supersonic Thrust Fire Plume */}
+          {/* Booster Soft Additive Supersonic Thrust Fire Plume */}
           <group ref={boosterFlameRight} position={[0, -1.55, 0]} visible={false}>
-            {/* Blinding White-Hot Supersonic Core Column */}
-            <mesh position={[0, -1.1, 0]} material={materials.boosterPlumeWhite} renderOrder={10}>
-              <cylinderGeometry args={[0.22, 0.32, 2.4, 16, 1, true]} />
-            </mesh>
-            {/* Incandescent Outer Orange Expanding Flame Sheath */}
-            <mesh position={[0, -1.45, 0]} material={materials.boosterPlumeOrange} renderOrder={9}>
-              <coneGeometry args={[0.54, 3.2, 16, 1, true]} />
-            </mesh>
-            {/* Supersonic Shock Discs */}
-            <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-              <ringGeometry args={[0.02, 0.22, 16]} />
-            </mesh>
-            <mesh position={[0, -1.35, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-              <ringGeometry args={[0.02, 0.28, 16]} />
-            </mesh>
-            <mesh position={[0, -2.05, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.flameShock} renderOrder={11}>
-              <ringGeometry args={[0.02, 0.34, 16]} />
-            </mesh>
-            <pointLight position={[0, -0.7, 0]} color="#ffaa22" intensity={14} distance={9} />
+            {/* Soft Camera-Facing Incandescent Plume Sprites (Zero Hard Silhouette Edges) */}
+            <sprite position={[0, -0.08, 0]} scale={[1.2, 1.4, 1]} material={materials.softCoreMat} renderOrder={30} />
+            <sprite position={[0, -0.42, 0]} scale={[1.8, 2.0, 1]} material={materials.softCoreMat} renderOrder={30} />
+            <sprite position={[0, -0.95, 0]} scale={[2.5, 2.8, 1]} material={materials.softPlumeMat} renderOrder={29} />
+            <sprite position={[0, -1.65, 0]} scale={[3.4, 3.8, 1]} material={materials.softPlumeMat} renderOrder={28} />
+            <sprite position={[0, -2.55, 0]} scale={[4.4, 5.0, 1]} material={materials.softPlumeMat} renderOrder={27} />
+            <pointLight position={[0, -0.5, 0]} color="#ffaa22" intensity={18} distance={12} />
           </group>
         </group>
 
@@ -1052,19 +1077,8 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           distance={8}
         />
 
-        {/* Dynamic GPU flame particles */}
+        {/* Dynamic GPU flame particles & incandescent supersonic exhaust sparks */}
         <points ref={flamePointsRef} geometry={particleGeom} material={materials.flamePointsMat} visible={false} />
-
-        {/* Supersonic Mach Shock Diamonds */}
-        <mesh ref={shock1} position={[0, -4.85, 0]} material={materials.flameShock}>
-          <octahedronGeometry args={[0.075, 0]} />
-        </mesh>
-        <mesh ref={shock2} position={[0, -5.25, 0]} material={materials.flameShock}>
-          <octahedronGeometry args={[0.065, 0]} />
-        </mesh>
-        <mesh ref={shock3} position={[0, -5.65, 0]} material={materials.flameShock}>
-          <octahedronGeometry args={[0.055, 0]} />
-        </mesh>
       </group>
     </group>
   );
