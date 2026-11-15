@@ -533,7 +533,7 @@ const SceneEntities: React.FC<{
       />
 
       {/* Atmospheric Cloud Deck & Transonic Mach Vapor Punch centered on rocket at x = 2.6 */}
-      <group position={[2.6, 0, 0]}>
+      <group position={[1.75, 0, 0]}>
         <AtmosphericClouds
           scrollProgressRef={scrollProgressRef}
           scrollSpeedRef={scrollSpeedRef}
@@ -541,7 +541,7 @@ const SceneEntities: React.FC<{
       </group>
 
       {/* Ground Launch Base & Slender Rocket positioned cleanly on the right (x = 2.6) */}
-      <group position={[2.6, 0, 0]}>
+      <group position={[1.75, 0, 0]}>
         <Stage00LaunchPad
           scrollProgressRef={scrollProgressRef}
           isIgnited={isIgnited}

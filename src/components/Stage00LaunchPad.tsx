@@ -237,7 +237,7 @@ function getCachedEmberTexture(): THREE.CanvasTexture {
 
 export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   scrollProgressRef,
-  isIgnited = false,
+  isIgnited: _isIgnited = false,
   liftoffTime,
   isLiftoffActive,
 }) => {
@@ -1179,7 +1179,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     // 3. Bilateral Trench Smoke & Deluge Steam
 
     // 4. Bilateral Trench Smoke & Deluge Steam
-    const isSmoking = (isLiftoffActive && liftoffTime >= 0.2) || isIgnited || sp > 0.005;
+    const isSmoking = (isLiftoffActive && liftoffTime >= 0.2) || sp > 0.005;
     if (smokePointsRef.current) {
       if (isSmoking) {
         smokePointsRef.current.visible = true;
@@ -1333,6 +1333,22 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         <mesh position={[0.95, 0.14, 0]} material={materials.mlpDeckSteel}>
           <boxGeometry args={[1.1, 0.08, 2.6]} />
         </mesh>
+                {/* 4 Hold-Down Launch Support Pedestals elevating the vehicle above the deck */}
+        {[
+          { x: -0.22, z: 0.12 },
+          { x: -0.22, z: -0.12 },
+          { x: 0.22, z: 0.12 },
+          { x: 0.22, z: -0.12 },
+        ].map((clamp, cIdx) => (
+          <group key={`launch-clamp-${cIdx}`} position={[clamp.x, 0.18, clamp.z]}>
+            <mesh position={[0, 0.04, 0]} material={materials.towerSteel}>
+              <boxGeometry args={[0.09, 0.10, 0.09]} />
+            </mesh>
+            <mesh position={[0, 0.10, 0]} material={materials.mlpDeckSteel}>
+              <boxGeometry args={[0.06, 0.04, 0.06]} />
+            </mesh>
+          </group>
+        ))}
         {/* Flame Trench Cutout Pit beneath vehicle */}
         <mesh position={[0, -0.22, 0]} material={materials.trenchPit}>
           <boxGeometry args={[1.2, 0.44, 2.2]} />
@@ -1496,7 +1512,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       <points ref={smokePointsRef} geometry={smokeGeom} material={materials.smokeMat} />
 
       {/* 9. Flying Sparks from Flame Trench */}
-      <points ref={sparkPointsRef} geometry={sparkGeom} material={materials.sparkMat} />
+      {/* Floating spark discs removed: pure rocket fire & soft trench smoke only */}
 
       {/* 10. Flame Trench Lighting & Ignition Flash */}
       <pointLight

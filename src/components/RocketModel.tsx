@@ -127,7 +127,7 @@ function getCachedVapourTexture() {
 export const RocketModel: React.FC<RocketModelProps> = ({
   scrollProgressRef,
   scrollSpeedRef,
-  isIgnited = false,
+  isIgnited: _isIgnited = false,
   liftoffTime = 0,
   isLiftoffActive = false,
 }) => {
@@ -399,7 +399,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       const la = isLiftoffActiveRef.current;
       const isBurningNow =
         (la && lt >= 0.0) ||
-        ((isIgnited || scrollProgress > 0.005) && scrollProgress < 0.22);
+        (scrollProgress > 0.005 && scrollProgress < 0.22);
 
       if (isBurningNow) {
         let intensity = 1.0;
@@ -420,7 +420,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       }
 
       vehicleGroup.current.position.x = thrustVibeX;
-      vehicleGroup.current.position.y = 1.06 + thrustVibeY;
+      vehicleGroup.current.position.y = 1.28 + thrustVibeY;
       vehicleGroup.current.rotation.z = THREE.MathUtils.lerp(
         vehicleGroup.current.rotation.z,
         targetRotZ,
@@ -434,7 +434,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     const la = isLiftoffActiveRef.current;
     const isBurning =
       (la && lt >= 0.0) ||
-      ((isIgnited || scrollProgress > 0.005) && scrollProgress < 0.28);
+      (scrollProgress > 0.005 && scrollProgress < 0.28);
     if (flamePointsRef.current) {
       if (isBurning) {
         flamePointsRef.current.visible = true;
@@ -738,7 +738,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   });
 
   return (
-    <group ref={vehicleGroup} position={[0, 1.06, 0]} scale={[0.29, 0.29, 0.29]}>
+    <group ref={vehicleGroup} position={[0, 1.28, 0]} scale={[0.29, 0.29, 0.29]}>
       {/* =========================================================================
           1. SATELLITE PAYLOAD (EMERGES FROM INSIDE FAIRING & CONTINUES ENTIRE JOURNEY)
          ========================================================================= */}
@@ -973,19 +973,17 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           <cylinderGeometry args={[0.44, 0.35, 0.25, 32]} />
         </mesh>
 
-        {/* Twin Vikas Liquid Engine Bells (Dual-engine cluster of ISRO L110 core) */}
+        {/* Twin Vikas Liquid Engine Bells (Dual-engine cluster of L110 core) */}
         {[-0.16, 0.16].map((vx, vIdx) => (
-          <group key={`vikas-engine-${vIdx}`} position={[vx, -4.25, 0]}>
-            {/* Engine Gimbal Bell */}
-            <mesh rotation={[Math.PI, 0, 0]} material={materials.engineMetal}>
-              <coneGeometry args={[0.16, 0.42, 20, 1, true]} />
-            </mesh>
-            {/* Turbopump Exhaust Duct */}
-            <mesh position={[0.08, 0.1, 0]} material={materials.engineMetal}>
-              <cylinderGeometry args={[0.02, 0.02, 0.25, 8]} />
-            </mesh>
-          </group>
-        ))}
+          <mesh
+            key={`vikas-bell-${vIdx}`}
+            position={[vx, -4.22, 0]}
+            rotation={[Math.PI, 0, 0]}
+            material={materials.engineMetal}
+          >
+            <coneGeometry args={[0.13, 0.32, 24, 1, true]} />
+          </mesh>
+        ))}\n
 
         {/* Twin Core Vikas Supersonic Exhaust Flames (Ignited at T-0 along with Boosters) */}
         <group ref={coreFlamesRef} visible={false}>
@@ -1059,13 +1057,19 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
           {/* Booster Soft Additive Supersonic Thrust Fire Plume */}
           <group ref={boosterFlameLeft} position={[0, -1.55, 0]} visible={false}>
-            {/* Soft Camera-Facing Incandescent Plume Sprites (Zero Hard Silhouette Edges) */}
-            <sprite position={[0, -0.08, 0]} scale={[1.2, 1.4, 1]} material={materials.softCoreMat} renderOrder={30} />
-            <sprite position={[0, -0.42, 0]} scale={[1.8, 2.0, 1]} material={materials.softCoreMat} renderOrder={30} />
-            <sprite position={[0, -0.95, 0]} scale={[2.5, 2.8, 1]} material={materials.softPlumeMat} renderOrder={29} />
-            <sprite position={[0, -1.65, 0]} scale={[3.4, 3.8, 1]} material={materials.softPlumeMat} renderOrder={28} />
-            <sprite position={[0, -2.55, 0]} scale={[4.4, 5.0, 1]} material={materials.softPlumeMat} renderOrder={27} />
-            <pointLight position={[0, -0.5, 0]} color="#ffaa22" intensity={18} distance={12} />
+            {/* Multi-Stage Soft Camera-Facing Supersonic Flame Column (Zero Hard Silhouette Edges) */}
+            {/* 1. Blinding Incandescent Supersonic Core */}
+            <sprite position={[0, -0.10, 0]} scale={[1.4, 1.6, 1]} material={materials.softCoreMat} renderOrder={32} />
+            <sprite position={[0, -0.55, 0]} scale={[2.2, 2.5, 1]} material={materials.softCoreMat} renderOrder={31} />
+            <sprite position={[0, -1.30, 0]} scale={[3.0, 3.4, 1]} material={materials.softCoreMat} renderOrder={30} />
+            <sprite position={[0, -2.25, 0]} scale={[3.8, 4.2, 1]} material={materials.softCoreMat} renderOrder={29} />
+            {/* 2. Expanding Incandescent Golden & Fiery Amber Plume Envelope */}
+            <sprite position={[0, -3.40, 0]} scale={[4.8, 5.4, 1]} material={materials.softPlumeMat} renderOrder={28} />
+            <sprite position={[0, -4.80, 0]} scale={[5.8, 6.6, 1]} material={materials.softPlumeMat} renderOrder={27} />
+            <sprite position={[0, -6.50, 0]} scale={[6.8, 8.0, 1]} material={materials.softPlumeMat} renderOrder={26} />
+            <sprite position={[0, -8.60, 0]} scale={[7.8, 9.6, 1]} material={materials.softPlumeMat} renderOrder={25} />
+            <pointLight position={[0, -1.2, 0]} color="#ffaa22" intensity={24} distance={16} />
+            <pointLight position={[0, -5.0, 0]} color="#ff6600" intensity={18} distance={14} />
           </group>
         </group>
 
@@ -1123,13 +1127,19 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
           {/* Booster Soft Additive Supersonic Thrust Fire Plume */}
           <group ref={boosterFlameRight} position={[0, -1.55, 0]} visible={false}>
-            {/* Soft Camera-Facing Incandescent Plume Sprites (Zero Hard Silhouette Edges) */}
-            <sprite position={[0, -0.08, 0]} scale={[1.2, 1.4, 1]} material={materials.softCoreMat} renderOrder={30} />
-            <sprite position={[0, -0.42, 0]} scale={[1.8, 2.0, 1]} material={materials.softCoreMat} renderOrder={30} />
-            <sprite position={[0, -0.95, 0]} scale={[2.5, 2.8, 1]} material={materials.softPlumeMat} renderOrder={29} />
-            <sprite position={[0, -1.65, 0]} scale={[3.4, 3.8, 1]} material={materials.softPlumeMat} renderOrder={28} />
-            <sprite position={[0, -2.55, 0]} scale={[4.4, 5.0, 1]} material={materials.softPlumeMat} renderOrder={27} />
-            <pointLight position={[0, -0.5, 0]} color="#ffaa22" intensity={18} distance={12} />
+            {/* Multi-Stage Soft Camera-Facing Supersonic Flame Column (Zero Hard Silhouette Edges) */}
+            {/* 1. Blinding Incandescent Supersonic Core */}
+            <sprite position={[0, -0.10, 0]} scale={[1.4, 1.6, 1]} material={materials.softCoreMat} renderOrder={32} />
+            <sprite position={[0, -0.55, 0]} scale={[2.2, 2.5, 1]} material={materials.softCoreMat} renderOrder={31} />
+            <sprite position={[0, -1.30, 0]} scale={[3.0, 3.4, 1]} material={materials.softCoreMat} renderOrder={30} />
+            <sprite position={[0, -2.25, 0]} scale={[3.8, 4.2, 1]} material={materials.softCoreMat} renderOrder={29} />
+            {/* 2. Expanding Incandescent Golden & Fiery Amber Plume Envelope */}
+            <sprite position={[0, -3.40, 0]} scale={[4.8, 5.4, 1]} material={materials.softPlumeMat} renderOrder={28} />
+            <sprite position={[0, -4.80, 0]} scale={[5.8, 6.6, 1]} material={materials.softPlumeMat} renderOrder={27} />
+            <sprite position={[0, -6.50, 0]} scale={[6.8, 8.0, 1]} material={materials.softPlumeMat} renderOrder={26} />
+            <sprite position={[0, -8.60, 0]} scale={[7.8, 9.6, 1]} material={materials.softPlumeMat} renderOrder={25} />
+            <pointLight position={[0, -1.2, 0]} color="#ffaa22" intensity={24} distance={16} />
+            <pointLight position={[0, -5.0, 0]} color="#ff6600" intensity={18} distance={14} />
           </group>
         </group>
 
