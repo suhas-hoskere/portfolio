@@ -6,6 +6,7 @@ import { FlightHUD } from './components/FlightHUD';
 import { FlightMissionOverlays } from './components/FlightMissionOverlays';
 import type { ProjectData } from './components/FlightMissionOverlays';
 import { FlightMissionModal } from './components/FlightMissionModal';
+import { MissionTerminalModal } from './components/MissionTerminalModal';
 import { CustomCursor } from './components/CustomCursor';
 import { LaunchPreloader } from './components/LaunchPreloader';
 import { cosmicAudio } from './components/AudioEngine';
@@ -40,6 +41,27 @@ export const App: React.FC = () => {
   const [audioActive, setAudioActive] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
 
+  // Camera Perspective, Holographic Blueprint & CLI Terminal State
+  const [cameraMode, setCameraMode] = useState<'CINEMATIC' | 'BOOSTER' | 'CHASE'>('CINEMATIC');
+  const [blueprintMode, setBlueprintMode] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const playedCallouts = useRef<Set<string>>(new Set());
+
+  // Global Keyboard Shortcuts (~ or ` toggles Terminal, Escape closes)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '`' || e.key === '~') {
+        e.preventDefault();
+        setIsTerminalOpen((prev) => !prev);
+        cosmicAudio.playTelemetryChirp(1200, 0.04);
+      } else if (e.key === 'Escape' && isTerminalOpen) {
+        setIsTerminalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTerminalOpen]);
+
   // High-performance mutable refs read directly inside Three.js useFrame
   const scrollProgressRef = useRef(0);
   const scrollSpeedRef = useRef(0);
@@ -65,6 +87,23 @@ export const App: React.FC = () => {
     if (stage !== lastStageRef.current) {
       cosmicAudio.playStagingSound();
       lastStageRef.current = stage;
+    }
+
+    // VHF Radio Voice Callouts at key aerospace telemetry thresholds
+    if (progress < 0.02) {
+      playedCallouts.current.clear();
+    } else if (progress >= 0.035 && progress < 0.080 && !playedCallouts.current.has('ignition')) {
+      playedCallouts.current.add('ignition');
+      cosmicAudio.playRadioCallout('Engine ignition confirmed. Full thrust nominal.');
+    } else if (progress >= 0.170 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
+      playedCallouts.current.add('liftoff');
+      cosmicAudio.playRadioCallout('Vehicle has cleared the tower. Trajectory is nominal.');
+    } else if (progress >= 0.270 && progress < 0.320 && !playedCallouts.current.has('maxq')) {
+      playedCallouts.current.add('maxq');
+      cosmicAudio.playRadioCallout('Passing Max-Q. Aerodynamic pressures nominal.');
+    } else if (progress >= 0.360 && progress < 0.420 && !playedCallouts.current.has('orbit')) {
+      playedCallouts.current.add('orbit');
+      cosmicAudio.playRadioCallout('Booster separation complete. Low Earth orbit insertion nominal.');
     }
 
     setActiveStageIndex(stage);
@@ -179,9 +218,8 @@ export const App: React.FC = () => {
         scrollProgressRef={scrollProgressRef}
         scrollSpeedRef={scrollSpeedRef}
         activeStageIndex={activeStageIndex}
-        
-        
-        
+        cameraMode={cameraMode}
+        blueprintMode={blueprintMode}
       />
 
       {/* Dashboard Overlays: Reveal smoothly at T-3.00 seconds */}
@@ -195,6 +233,11 @@ export const App: React.FC = () => {
           audioActive={audioActive}
           onToggleAudio={handleToggleAudio}
           onJumpToStage={handleJumpToStage}
+          cameraMode={cameraMode}
+          onSetCameraMode={setCameraMode}
+          blueprintMode={blueprintMode}
+          onToggleBlueprint={() => setBlueprintMode((prev) => !prev)}
+          onOpenTerminal={() => setIsTerminalOpen(true)}
         />
 
         {/* Cinematic Pinned Narrative Storyboard on the Left */}
@@ -205,6 +248,18 @@ export const App: React.FC = () => {
           onSelectProject={setSelectedProject}
         />
       </div>
+
+      {/* Mission Control Interactive CLI Terminal Modal */}
+      <MissionTerminalModal
+        isOpen={isTerminalOpen}
+        onClose={() => setIsTerminalOpen(false)}
+        scrollProgress={uiScrollProgress}
+        activeStageIndex={activeStageIndex}
+        cameraMode={cameraMode}
+        onSetCameraMode={setCameraMode}
+        blueprintMode={blueprintMode}
+        onToggleBlueprint={() => setBlueprintMode((prev) => !prev)}
+      />
 
 
 

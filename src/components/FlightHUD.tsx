@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Volume2, VolumeX, ChevronDown, Rocket } from 'lucide-react';
+import { Volume2, VolumeX, ChevronDown, Rocket, Terminal, Layers, Camera } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
 export interface StageWaypoint {
@@ -24,6 +24,11 @@ interface FlightHUDProps {
   audioActive: boolean;
   onToggleAudio: () => void;
   onJumpToStage: (fraction: number) => void;
+  cameraMode?: 'CINEMATIC' | 'BOOSTER' | 'CHASE';
+  onSetCameraMode?: (mode: 'CINEMATIC' | 'BOOSTER' | 'CHASE') => void;
+  blueprintMode?: boolean;
+  onToggleBlueprint?: () => void;
+  onOpenTerminal?: () => void;
 }
 
 export const FlightHUD: React.FC<FlightHUDProps> = ({
@@ -32,6 +37,11 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
   audioActive,
   onToggleAudio,
   onJumpToStage,
+  cameraMode = 'CINEMATIC',
+  onSetCameraMode,
+  blueprintMode = false,
+  onToggleBlueprint,
+  onOpenTerminal,
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
@@ -150,24 +160,95 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
           </div>
         </div>
 
-        {/* Minimal Audio Toggle */}
-        <button
-          onClick={onToggleAudio}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e131f]/80 border border-white/15 hover:border-cyan-400/60 text-slate-200 hover:text-white font-mono text-xs backdrop-blur-md transition-all pointer-events-auto cursor-pointer shadow-sm"
-          aria-label="Toggle Rocket Acoustic Sound"
-        >
-          {audioActive ? (
-            <>
-              <Volume2 className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-              <span className="text-cyan-300 text-[11px] font-mono font-medium">ACOUSTICS: ON</span>
-            </>
-          ) : (
-            <>
-              <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-slate-400 text-[11px] font-mono">ACOUSTICS: OFF</span>
-            </>
+        {/* Aerospace Flight Controls Action Station */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {/* Multi-Angle Camera Switcher */}
+          {onSetCameraMode && (
+            <div className="hidden md:flex items-center p-1 rounded-lg bg-[#0e131f]/85 border border-white/15 backdrop-blur-md gap-1">
+              <Camera className="w-3 h-3 text-slate-400 ml-1.5 mr-0.5" />
+              {(
+                [
+                  { id: 'CINEMATIC', label: 'MISSION' },
+                  { id: 'BOOSTER', label: 'BOOSTER' },
+                  { id: 'CHASE', label: 'CHASE' },
+                ] as const
+              ).map((cam) => {
+                const isActive = cameraMode === cam.id;
+                return (
+                  <button
+                    key={cam.id}
+                    onClick={() => {
+                      cosmicAudio.playTelemetryChirp(1180, 0.04);
+                      onSetCameraMode(cam.id);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-cyan-500/25 border border-cyan-400/50 text-cyan-300 font-semibold shadow-[0_0_8px_rgba(6,182,212,0.35)]'
+                        : 'text-slate-400 hover:text-white border border-transparent'
+                    }`}
+                    title={`Switch camera to ${cam.label} perspective`}
+                  >
+                    {cam.label}
+                  </button>
+                );
+              })}
+            </div>
           )}
-        </button>
+
+          {/* Holographic X-Ray Blueprint Toggle */}
+          {onToggleBlueprint && (
+            <button
+              onClick={() => {
+                cosmicAudio.playTelemetryChirp(1380, 0.04);
+                onToggleBlueprint();
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-mono text-[11px] backdrop-blur-md transition-all cursor-pointer shadow-sm ${
+                blueprintMode
+                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'bg-[#0e131f]/80 border-white/15 hover:border-cyan-400/60 text-slate-300 hover:text-white'
+              }`}
+              title="Toggle Holographic Structural Blueprint Mode"
+            >
+              <Layers className={`w-3.5 h-3.5 ${blueprintMode ? 'text-cyan-400 animate-pulse' : 'text-slate-400'}`} />
+              <span className="hidden sm:inline">BLUEPRINT</span>
+            </button>
+          )}
+
+          {/* Mission Terminal CLI Modal Trigger */}
+          {onOpenTerminal && (
+            <button
+              onClick={() => {
+                cosmicAudio.playTelemetryChirp(1200, 0.04);
+                onOpenTerminal();
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0e131f]/80 border border-white/15 hover:border-emerald-400/60 text-slate-300 hover:text-emerald-300 font-mono text-[11px] backdrop-blur-md transition-all cursor-pointer shadow-sm group"
+              title="Open Mission Control Terminal (~ key)"
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-400 group-hover:animate-pulse" />
+              <span className="hidden sm:inline">CLI</span>
+              <kbd className="text-[9px] px-1 py-0.2 rounded bg-white/10 text-slate-400 group-hover:text-emerald-300">~</kbd>
+            </button>
+          )}
+
+          {/* Minimal Audio Toggle */}
+          <button
+            onClick={onToggleAudio}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e131f]/80 border border-white/15 hover:border-cyan-400/60 text-slate-200 hover:text-white font-mono text-xs backdrop-blur-md transition-all cursor-pointer shadow-sm"
+            aria-label="Toggle Rocket Acoustic Sound"
+          >
+            {audioActive ? (
+              <>
+                <Volume2 className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span className="text-cyan-300 text-[11px] font-mono font-medium">ACOUSTICS: ON</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-slate-400 text-[11px] font-mono">ACOUSTICS: OFF</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ===== SLEEK MINIMAL VERTICAL FLIGHT RAIL (Right Margin) ===== */}

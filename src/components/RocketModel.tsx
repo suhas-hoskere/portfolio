@@ -18,6 +18,7 @@ interface RocketModelProps {
   isIgnited?: boolean;
   liftoffTime?: number;
   isLiftoffActive?: boolean;
+  blueprintMode?: boolean;
 }
 
 // Procedural soft glowing radial particle texture for supersonic rocket exhaust
@@ -130,6 +131,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   isIgnited: _isIgnited = false,
   liftoffTime = 0,
   isLiftoffActive = false,
+  blueprintMode = false,
 }) => {
   const liftoffTimeRef = useRef(liftoffTime);
   const isLiftoffActiveRef = useRef(isLiftoffActive);
@@ -385,6 +387,19 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         opacity: 0.0,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
+      }),
+      blueprintWireMat: new THREE.MeshBasicMaterial({
+        color: '#06b6d4',
+        wireframe: true,
+        transparent: true,
+        opacity: 0.75,
+      }),
+      blueprintGlowMat: new THREE.MeshBasicMaterial({
+        color: '#22d3ee',
+        wireframe: false,
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.DoubleSide,
       }),
     };
   }, [flameTexture, softPlumeTexture, softCoreTexture]);
@@ -724,6 +739,34 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
   return (
     <group ref={vehicleGroup} position={[0, 1.28, 0]} scale={[0.29, 0.29, 0.29]}>
+      {/* 0. HOLOGRAPHIC BLUEPRINT X-RAY OVERLAY (ACTIVE IN BLUEPRINT MODE) */}
+      {blueprintMode && (
+        <group renderOrder={99}>
+          {/* Upper Cryogenic Stage Wireframe */}
+          <mesh position={[0, 1.8, 0]} material={materials.blueprintWireMat}>
+            <cylinderGeometry args={[0.45, 0.45, 2.45, 24, 6, true]} />
+          </mesh>
+          {/* Core Vikas Liquid Stage Wireframe */}
+          <mesh position={[0, -1.8, 0]} material={materials.blueprintWireMat}>
+            <cylinderGeometry args={[0.45, 0.45, 3.85, 24, 8, true]} />
+          </mesh>
+          {/* Twin S200 Boosters Wireframe */}
+          {[-0.76, 0.76].map((bx, bi) => (
+            <group key={`bp-booster-${bi}`} position={[bx, -1.8, 0]}>
+              <mesh material={materials.blueprintWireMat}>
+                <cylinderGeometry args={[0.35, 0.35, 5.2, 20, 10, true]} />
+              </mesh>
+              <mesh position={[0, 2.85, 0]} material={materials.blueprintWireMat}>
+                <coneGeometry args={[0.35, 1.2, 20, 4, true]} />
+              </mesh>
+            </group>
+          ))}
+          {/* Blueprint Scanning Grid Plane */}
+          <mesh position={[0, 0, 0]} material={materials.blueprintGlowMat}>
+            <planeGeometry args={[3.2, 12.0]} />
+          </mesh>
+        </group>
+      )}
       {/* =========================================================================
           1. SATELLITE PAYLOAD (EMERGES FROM INSIDE FAIRING & CONTINUES ENTIRE JOURNEY)
          ========================================================================= */}

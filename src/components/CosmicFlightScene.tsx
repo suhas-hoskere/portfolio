@@ -18,23 +18,27 @@ interface CosmicFlightSceneProps {
   isIgnited?: boolean;
   liftoffTime?: number;
   isLiftoffActive?: boolean;
+  cameraMode?: 'CINEMATIC' | 'BOOSTER' | 'CHASE';
+  blueprintMode?: boolean;
 }
 
-// 3D Camera Rig: Telephoto architectural alignment (view vector strictly parallel to -Z)
-// Completely eliminates perspective keystoning / slant, keeping the rocket & launch tower 100% plumb vertical!
+// 3D Camera Rig: Multi-angle aerospace camera system (Cinematic Plumb, Interstage Booster GoPro, Low-Angle Chase)
 // Cleanly frames the launch vehicle & spacecraft on the right half, leaving the left 50% open for story cards!
 const FlightCameraRig: React.FC<{
   scrollProgressRef: React.MutableRefObject<number>;
   isIgnited?: boolean;
   liftoffTime?: number;
   isLiftoffActive?: boolean;
+  cameraMode?: 'CINEMATIC' | 'BOOSTER' | 'CHASE';
 }> = ({
   scrollProgressRef,
   isIgnited: _isIgnited = false,
   liftoffTime: _liftoffTime = 0,
   isLiftoffActive: _isLiftoffActive = false,
+  cameraMode = 'CINEMATIC',
 }) => {
   const mouseRef = useRef(new THREE.Vector2(0, 0));
+  const currentLookAt = useRef(new THREE.Vector3(0.4, 0.75, 0));
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -139,6 +143,34 @@ const FlightCameraRig: React.FC<{
       shakeY = 0;
     }
 
+    // Architectural alignment with subtle pitch elevation tilt during ascent
+    if (sp >= 0.18 && sp < 0.36) {
+      const p = (sp - 0.18) / 0.18;
+      pitchTilt = p * 0.12;
+    }
+
+    let targetLookAtX = targetCamX;
+    let targetLookAtY = targetCamY + pitchTilt;
+    let targetLookAtZ = 0.0;
+
+    if (cameraMode === 'BOOSTER') {
+      // High-angle interstage onboard camera looking down rocket flank toward roaring engine bells & ground
+      targetCamX = 1.75 + 0.38 + mouse.x * 0.04;
+      targetCamY = targetCamY + 0.62 + mouse.y * 0.04;
+      targetCamZ = 0.95;
+      targetLookAtX = 1.75 + 0.05;
+      targetLookAtY = targetCamY - 3.8;
+      targetLookAtZ = 0.0;
+    } else if (cameraMode === 'CHASE') {
+      // Low-angle dramatic trailing camera tracking up at ascending rocket hull, fairing, and stars
+      targetCamX = 1.75 + (isMobile ? 0.0 : 0.40) + mouse.x * 0.06;
+      targetCamY = targetCamY - 1.45 + mouse.y * 0.05;
+      targetCamZ = 3.6;
+      targetLookAtX = 1.75;
+      targetLookAtY = targetCamY + 1.35;
+      targetLookAtZ = 0.0;
+    }
+
     // Frame-rate independent cinematic camera damping (pure butter-smooth tracking with zero artificial jitter)
     const delta = state.clock.getDelta();
     const lerpFactor = 1 - Math.exp(-8.5 * delta);
@@ -154,12 +186,11 @@ const FlightCameraRig: React.FC<{
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY + shakeY, lerpFactor);
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetCamZ, lerpFactor);
 
-    // Architectural alignment with subtle pitch elevation tilt during ascent
-    if (sp >= 0.18 && sp < 0.36) {
-      const p = (sp - 0.18) / 0.18;
-      pitchTilt = p * 0.12;
-    }
-    state.camera.lookAt(state.camera.position.x, state.camera.position.y + pitchTilt, 0);
+    currentLookAt.current.x = THREE.MathUtils.lerp(currentLookAt.current.x, targetLookAtX, lerpFactor);
+    currentLookAt.current.y = THREE.MathUtils.lerp(currentLookAt.current.y, targetLookAtY, lerpFactor);
+    currentLookAt.current.z = THREE.MathUtils.lerp(currentLookAt.current.z, targetLookAtZ, lerpFactor);
+
+    state.camera.lookAt(currentLookAt.current);
   });
 
   return null;
@@ -505,6 +536,7 @@ const SceneEntities: React.FC<{
   isIgnited?: boolean;
   liftoffTime?: number;
   isLiftoffActive?: boolean;
+  blueprintMode?: boolean;
 }> = ({
   scrollProgressRef,
   scrollSpeedRef,
@@ -512,6 +544,7 @@ const SceneEntities: React.FC<{
   isIgnited: _isIgnited,
   liftoffTime: _liftoffTime = 0,
   isLiftoffActive: _isLiftoffActive = false,
+  blueprintMode = false,
 }) => {
   return (
     <>
@@ -544,6 +577,7 @@ const SceneEntities: React.FC<{
           isIgnited={_isIgnited}
           liftoffTime={_liftoffTime}
           isLiftoffActive={_isLiftoffActive}
+          blueprintMode={blueprintMode}
         />
       </group>
 
@@ -595,6 +629,8 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
   isIgnited: _isIgnited,
   liftoffTime: _liftoffTime = 0,
   isLiftoffActive: _isLiftoffActive = false,
+  cameraMode = 'CINEMATIC',
+  blueprintMode = false,
 }) => {
   return (
     <div className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-[#030611]">
@@ -616,6 +652,7 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
           isIgnited={_isIgnited}
           liftoffTime={_liftoffTime}
           isLiftoffActive={_isLiftoffActive}
+          cameraMode={cameraMode}
         />
 
         {/* Dynamic Coastal Dawn Fog at Ground Level */}
@@ -631,6 +668,7 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
           isIgnited={_isIgnited}
           liftoffTime={_liftoffTime}
           isLiftoffActive={_isLiftoffActive}
+          blueprintMode={blueprintMode}
         />
       </Canvas>
     </div>

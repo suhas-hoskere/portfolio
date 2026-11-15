@@ -320,6 +320,67 @@ class CosmicAudio {
       // Fallback
     }
   }
+
+  // Authentic Aerospace Quindar Telemetry Tone (2524Hz Intro, 2475Hz Outro)
+  public playQuindarTone(isIntro = true) {
+    if (this.isMuted) return;
+    try {
+      this.init();
+      if (!this.ctx || !this.masterGain) return;
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isIntro ? 2524 : 2475, t);
+
+      gain.gain.setValueAtTime(0.035, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(t);
+      osc.stop(t + 0.05);
+    } catch {
+      // Fallback
+    }
+  }
+
+  // Authentic Mission Control VHF Radio Callout with Quindar Beep
+  private lastCalloutTime = 0;
+  public playRadioCallout(calloutText: string) {
+    if (this.isMuted) return;
+    const now = Date.now();
+    if (now - this.lastCalloutTime < 3200) return; // Prevent overlapping speech
+    this.lastCalloutTime = now;
+
+    this.playQuindarTone(true);
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(calloutText);
+        utter.rate = 1.08;
+        utter.pitch = 0.92;
+        utter.volume = 0.85;
+
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(
+          (v) => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('David'))
+        );
+        if (voice) utter.voice = voice;
+
+        utter.onend = () => {
+          this.playQuindarTone(false);
+        };
+
+        window.speechSynthesis.speak(utter);
+      } catch {
+        // Fallback
+      }
+    }
+  }
 }
 
 function THREE_Math_lerp(x: number, y: number, t: number) {
