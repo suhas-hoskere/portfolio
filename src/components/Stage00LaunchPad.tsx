@@ -248,6 +248,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   const beaconLightRef = useRef<THREE.PointLight>(null);
   const flameTrenchLightRef = useRef<THREE.PointLight>(null);
   const casuarinaRef = useRef<THREE.InstancedMesh>(null);
+  const palmyraRef = useRef<THREE.InstancedMesh>(null);
   const palmsRef = useRef<THREE.InstancedMesh>(null);
   const eucalyptusRef = useRef<THREE.InstancedMesh>(null);
   const scrubRef = useRef<THREE.InstancedMesh>(null);
@@ -343,6 +344,12 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         metalness: 0.04,
         vertexColors: true,
       }),
+      palmyraMat: new THREE.MeshStandardMaterial({
+        roughness: 0.85,
+        metalness: 0.04,
+        vertexColors: true,
+        side: THREE.DoubleSide,
+      }),
       palmMat: new THREE.MeshStandardMaterial({
         roughness: 0.82,
         metalness: 0.05,
@@ -414,56 +421,61 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   }, []);
 
   // 3. Authentic Indian Coastal Vegetation Geometries & Instanced Groves
-  // A. Tall Casuarina equisetifolia (Savukku / Gaali Mara - slender coastal windbreak trees)
+  // A. Tall Casuarina equisetifolia (Savukku - Slender weeping coastal windbreak spires)
   const casuarinaGeom = useMemo(() => {
     const parts: THREE.BufferGeometry[] = [];
 
-    // Slender dark woody trunk, lower 45% bare
-    const trunk = new THREE.CylinderGeometry(0.045, 0.08, 4.4, 8, 4);
+    // Slender dark woody trunk, lower 40% clean
+    const trunk = new THREE.CylinderGeometry(0.045, 0.075, 4.8, 8, 4);
     trunk.deleteAttribute('uv');
     trunk.deleteAttribute('normal');
-    trunk.translate(0, 2.2, 0);
+    trunk.translate(0, 2.4, 0);
     const tpos = trunk.attributes.position;
     const tCols = new Float32Array(tpos.count * 3);
     for (let i = 0; i < tpos.count; i++) {
-      tCols[i * 3] = 0.28;
-      tCols[i * 3 + 1] = 0.22;
-      tCols[i * 3 + 2] = 0.18;
+      tCols[i * 3] = 0.26;
+      tCols[i * 3 + 1] = 0.20;
+      tCols[i * 3 + 2] = 0.16;
     }
     trunk.setAttribute('color', new THREE.BufferAttribute(tCols, 3));
     parts.push(trunk.toNonIndexed());
 
-    // 4 overlapping vertically-stretched feathery needle lobes (smooth organic canopy, no flat cuts)
-    const lobes = [
-      { y: 2.3, rx: 0.40, ry: 0.75, rz: 0.40 },
-      { y: 3.0, rx: 0.48, ry: 0.85, rz: 0.48 },
-      { y: 3.7, rx: 0.36, ry: 0.80, rz: 0.36 },
-      { y: 4.4, rx: 0.22, ry: 0.70, rz: 0.22 },
+    // 6 Descending Tiers of Weeping Feathery Needles (Narrow conical spire tapering upwards)
+    const tiers = [
+      { y: 1.8, rBase: 0.52, len: 1.1, numNeedles: 8 },
+      { y: 2.4, rBase: 0.46, len: 1.0, numNeedles: 8 },
+      { y: 3.0, rBase: 0.38, len: 0.9, numNeedles: 7 },
+      { y: 3.6, rBase: 0.28, len: 0.8, numNeedles: 6 },
+      { y: 4.1, rBase: 0.18, len: 0.7, numNeedles: 5 },
+      { y: 4.6, rBase: 0.09, len: 0.6, numNeedles: 4 },
     ];
 
-    lobes.forEach((lb, idx) => {
-      const sphere = new THREE.SphereGeometry(1.0, 10, 8);
-      sphere.deleteAttribute('uv');
-      sphere.deleteAttribute('normal');
-      sphere.scale(lb.rx, lb.ry, lb.rz);
-      sphere.translate(0, lb.y, 0);
+    tiers.forEach((tr, tIdx) => {
+      for (let n = 0; n < tr.numNeedles; n++) {
+        const angle = (n / tr.numNeedles) * Math.PI * 2 + tIdx * 0.45;
+        const nGeom = new THREE.CylinderGeometry(0.015, tr.rBase * 0.25, tr.len, 5, 2);
+        nGeom.deleteAttribute('uv');
+        nGeom.deleteAttribute('normal');
+        nGeom.translate(0, -tr.len / 2, 0);
 
-      const spos = sphere.attributes.position;
-      const sCols = new Float32Array(spos.count * 3);
-      for (let i = 0; i < spos.count; i++) {
-        const y = spos.getY(i);
-        const jx = Math.sin(y * 6.0 + idx) * 0.04;
-        const jz = Math.cos(y * 6.0 + idx) * 0.04;
-        spos.setX(i, spos.getX(i) + jx);
-        spos.setZ(i, spos.getZ(i) + jz);
+        // Weeping droop angle (~42 degrees downward from trunk)
+        const droopAngle = 0.72 + (n % 2) * 0.08;
+        const quat = new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(Math.sin(angle) * droopAngle, 0, Math.cos(angle) * droopAngle)
+        );
+        nGeom.applyQuaternion(quat);
+        nGeom.translate(Math.cos(angle) * 0.04, tr.y, Math.sin(angle) * 0.04);
 
-        // Natural feathery grey-green Casuarina needle tint
-        sCols[i * 3] = 0.20 + idx * 0.02;
-        sCols[i * 3 + 1] = 0.36 + idx * 0.03;
-        sCols[i * 3 + 2] = 0.22 + idx * 0.02;
+        const npos = nGeom.attributes.position;
+        const nCols = new Float32Array(npos.count * 3);
+        for (let i = 0; i < npos.count; i++) {
+          nCols[i * 3] = 0.20 + tIdx * 0.015;
+          nCols[i * 3 + 1] = 0.34 + tIdx * 0.02;
+          nCols[i * 3 + 2] = 0.22 + tIdx * 0.015;
+        }
+        nGeom.setAttribute('color', new THREE.BufferAttribute(nCols, 3));
+        parts.push(nGeom.toNonIndexed());
       }
-      sphere.setAttribute('color', new THREE.BufferAttribute(sCols, 3));
-      parts.push(sphere.toNonIndexed());
     });
 
     const merged = mergeGeometries(parts, false);
@@ -596,6 +608,84 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       parts.push(nut.toNonIndexed());
     }
 
+    const merged = mergeGeometries(parts, false);
+    merged.computeVertexNormals();
+    return merged;
+  }, []);
+
+  // B2. Authentic Palmyra Palm (Borassus flabellifer - Iconic Indian coastal fan palm)
+  const palmyraGeom = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = [];
+
+    // Stout columnar dark charcoal-black trunk with ring scars
+    const trunk = new THREE.CylinderGeometry(0.065, 0.09, 4.4, 10, 16);
+    trunk.deleteAttribute('uv');
+    trunk.deleteAttribute('normal');
+    trunk.translate(0, 2.2, 0);
+    const tpos = trunk.attributes.position;
+    const tCols = new Float32Array(tpos.count * 3);
+    for (let i = 0; i < tpos.count; i++) {
+      const y = tpos.getY(i);
+      const ring = Math.sin(y * 32.0) * 0.05;
+      const isPersistent = y > 3.85;
+      if (isPersistent) {
+        tCols[i * 3] = 0.24 + ring;
+        tCols[i * 3 + 1] = 0.20 + ring;
+        tCols[i * 3 + 2] = 0.16 + ring;
+      } else {
+        tCols[i * 3] = 0.18 + ring;
+        tCols[i * 3 + 1] = 0.17 + ring;
+        tCols[i * 3 + 2] = 0.16 + ring;
+      }
+    }
+    trunk.setAttribute('color', new THREE.BufferAttribute(tCols, 3));
+    parts.push(trunk.toNonIndexed());
+
+    // Globose compact head of 24 stiff fan-shaped (costapalmate) radiating fronds
+    const numLeaves = 24;
+    for (let f = 0; f < numLeaves; f++) {
+      const angle = (f / numLeaves) * Math.PI * 2;
+      const tier = f % 3;
+      const pitch = tier === 0 ? 0.42 : tier === 1 ? 0.05 : -0.52;
+      const leafLen = 1.35 + (f % 3) * 0.15;
+      const fGeom = new THREE.BufferGeometry();
+      const fVerts: number[] = [];
+      const fCols: number[] = [];
+
+      const petioleLen = 0.55;
+      const pX1 = Math.cos(angle) * Math.cos(pitch) * petioleLen;
+      const pY1 = 4.4 + Math.sin(pitch) * petioleLen;
+      const pZ1 = Math.sin(angle) * Math.cos(pitch) * petioleLen;
+
+      const fanSegments = 7;
+      const fanSpan = 0.82;
+      for (let seg = 0; seg < fanSegments; seg++) {
+        const segFrac0 = (seg / fanSegments - 0.5) * fanSpan;
+        const segFrac1 = ((seg + 1) / fanSegments - 0.5) * fanSpan;
+        const tipLen = leafLen * (1.0 - Math.abs(seg - fanSegments / 2) * 0.12);
+        const droop = tier === 2 ? -0.24 : -0.10;
+        const a0 = angle + segFrac0;
+        const a1 = angle + segFrac1;
+
+        const tX0 = Math.cos(a0) * Math.cos(pitch) * tipLen;
+        const tY0 = pY1 + Math.sin(pitch) * (tipLen - petioleLen) + droop;
+        const tZ0 = Math.sin(a0) * Math.cos(pitch) * tipLen;
+        const tX1 = Math.cos(a1) * Math.cos(pitch) * tipLen;
+        const tY1 = pY1 + Math.sin(pitch) * (tipLen - petioleLen) + droop;
+        const tZ1 = Math.sin(a1) * Math.cos(pitch) * tipLen;
+
+        fVerts.push(pX1, pY1, pZ1);
+        fCols.push(0.20, 0.36, 0.22);
+        fVerts.push(tX0, tY0, tZ0);
+        fCols.push(0.24, 0.44, 0.26);
+        fVerts.push(tX1, tY1, tZ1);
+        fCols.push(0.22, 0.40, 0.24);
+      }
+
+      fGeom.setAttribute('position', new THREE.Float32BufferAttribute(fVerts, 3));
+      fGeom.setAttribute('color', new THREE.Float32BufferAttribute(fCols, 3));
+      parts.push(fGeom);
+    }
     const merged = mergeGeometries(parts, false);
     merged.computeVertexNormals();
     return merged;
@@ -828,6 +918,36 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     return data;
   }, []);
 
+  // Palmyra Palm Instances (Iconic South Indian coastal silhouette)
+  const palmyraInstances = useMemo(() => {
+    const count = 16;
+    const dummy = new THREE.Object3D();
+    const data: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
+    const palette = [
+      new THREE.Color(1.00, 1.00, 1.00),
+      new THREE.Color(1.03, 1.01, 0.98),
+      new THREE.Color(0.97, 1.02, 0.97),
+    ];
+    for (let i = 0; i < count; i++) {
+      let tx: number, tz: number;
+      if (i < 8) {
+        tx = -14 - (i % 4) * 2.8 + Math.sin(i * 1.9) * 1.1;
+        tz = -20 - Math.floor(i / 4) * 4.2 - Math.cos(i * 2.3) * 1.4;
+      } else {
+        tx = 15 + ((i - 8) % 4) * 2.6 + Math.sin(i * 2.5) * 1.0;
+        tz = -20 - Math.floor((i - 8) / 4) * 4.0;
+      }
+      const scale = 0.95 + (i % 4) * 0.12;
+      const hScale = scale * (0.95 + (i % 3) * 0.18);
+      dummy.position.set(tx, -0.42, tz);
+      dummy.scale.set(scale, hScale, scale);
+      dummy.rotation.set(0, (i * 1.7) % (Math.PI * 2), 0);
+      dummy.updateMatrix();
+      data.push({ matrix: dummy.matrix.clone(), color: palette[i % palette.length] });
+    }
+    return data;
+  }, []);
+
   // Indian Broadleaf Shade Tree Instances (Neem / Tamarind / Peepal)
   const eucalyptusInstances = useMemo(() => {
     const count = 10;
@@ -907,6 +1027,15 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
+    if (palmyraRef.current) {
+      const mesh = palmyraRef.current;
+      palmyraInstances.forEach((inst, idx) => {
+        mesh.setMatrixAt(idx, inst.matrix);
+        mesh.setColorAt(idx, inst.color);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
     if (palmsRef.current) {
       const mesh = palmsRef.current;
       palmInstances.forEach((inst, idx) => {
@@ -934,7 +1063,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
-  }, [casuarinaInstances, palmInstances, eucalyptusInstances, scrubInstances]);
+  }, [casuarinaInstances, palmyraInstances, palmInstances, eucalyptusInstances, scrubInstances]);
 
   // 4. Bilateral Trench Smoke Simulation Data
   const smokeCount = STAGE_CONFIG.stage00_launchPad.fireAndSmoke.maxSmokeParticles;
@@ -1329,6 +1458,10 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       <instancedMesh
         ref={casuarinaRef}
         args={[casuarinaGeom, materials.casuarinaMat, casuarinaInstances.length]}
+      />
+      <instancedMesh
+        ref={palmyraRef}
+        args={[palmyraGeom, materials.palmyraMat, palmyraInstances.length]}
       />
       <instancedMesh
         ref={palmsRef}

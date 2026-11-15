@@ -355,6 +355,7 @@ export function getCachedCarbonBackingTexture(): THREE.CanvasTexture {
 
 let cachedGenericBoosterTexture: THREE.CanvasTexture | null = null;
 let cachedGenericFairingTexture: THREE.CanvasTexture | null = null;
+let cachedGenericCoreTexture: THREE.CanvasTexture | null = null;
 let cachedRocketBumpMap: THREE.CanvasTexture | null = null;
 
 export function getCachedRocketBumpMap(): THREE.CanvasTexture {
@@ -387,9 +388,110 @@ export function getCachedRocketBumpMap(): THREE.CanvasTexture {
     }
   });
 
+  // Vertical panel seams in bump map
+  [128, 256, 384].forEach((x) => {
+    ctx.strokeStyle = '#606060';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  });
+
   cachedRocketBumpMap = new THREE.CanvasTexture(canvas);
   cachedRocketBumpMap.generateMipmaps = true;
   return cachedRocketBumpMap;
+}
+
+export function getCachedGenericCoreTexture(): THREE.CanvasTexture {
+  if (cachedGenericCoreTexture) return cachedGenericCoreTexture;
+
+  const width = 512;
+  const height = 2048;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  // 1. Glossy aerospace white with cylindrical lighting gradient
+  const baseGrad = ctx.createLinearGradient(0, 0, width, 0);
+  baseGrad.addColorStop(0.0, '#eaeff5');
+  baseGrad.addColorStop(0.18, '#f8fafc');
+  baseGrad.addColorStop(0.82, '#f1f5f9');
+  baseGrad.addColorStop(1.0, '#e2e8f0');
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  // Subtle vertical panel strips
+  ctx.fillStyle = 'rgba(203, 213, 225, 0.14)';
+  for (let x = 0; x < width; x += 64) {
+    ctx.fillRect(x, 0, 32, height);
+  }
+
+  // 2. Interstage and tank weld seams
+  const jointYs = [280, 620, 980, 1340, 1720];
+  jointYs.forEach((jy) => {
+    // Dark gasket ring
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, jy - 8, width, 16);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(0, jy - 3, width, 6);
+
+    // Fastener rivets along seam
+    ctx.fillStyle = '#cbd5e1';
+    for (let bx = 10; bx < width; bx += 20) {
+      ctx.beginPath();
+      ctx.arc(bx, jy - 12, 2.5, 0, Math.PI * 2);
+      ctx.arc(bx, jy + 12, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // 3. Cryogenic LOX tank frost band (natural frost buildup between 400 and 800)
+  const frostGrad = ctx.createLinearGradient(0, 420, 0, 780);
+  frostGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0)');
+  frostGrad.addColorStop(0.2, 'rgba(240, 249, 255, 0.55)');
+  frostGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.70)');
+  frostGrad.addColorStop(0.8, 'rgba(235, 248, 255, 0.50)');
+  frostGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = frostGrad;
+  ctx.fillRect(0, 420, width, 360);
+
+  // Vertical condensation runoff streaks down from frost band
+  ctx.fillStyle = 'rgba(224, 242, 254, 0.22)';
+  for (let sx = 20; sx < width; sx += 36) {
+    const sw = 3 + (sx % 5);
+    const sh = 180 + (sx % 90);
+    ctx.fillRect(sx, 740, sw, sh);
+  }
+
+  // 4. Umbilical and avionics service access panels
+  const panels = [
+    { y: 320, w: 80, h: 100 },
+    { y: 1100, w: 90, h: 120 },
+    { y: 1500, w: 75, h: 90 },
+  ];
+  panels.forEach((p) => {
+    const px = (width - p.w) / 2;
+    ctx.fillStyle = 'rgba(226, 232, 240, 0.95)';
+    ctx.fillRect(px, p.y, p.w, p.h);
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px, p.y, p.w, p.h);
+
+    // Corner latches
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(px + 4, p.y + 4, 6, 6);
+    ctx.fillRect(px + p.w - 10, p.y + 4, 6, 6);
+    ctx.fillRect(px + 4, p.y + p.h - 10, 6, 6);
+    ctx.fillRect(px + p.w - 10, p.y + p.h - 10, 6, 6);
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  cachedGenericCoreTexture = texture;
+  return cachedGenericCoreTexture;
 }
 
 export function getCachedGenericBoosterTexture(): THREE.CanvasTexture {

@@ -6,9 +6,10 @@ import {
   getCachedGoldMliTexture,
   getCachedGoldMliBumpMap,
   getCachedCarbonBackingTexture,
-  getCachedIsroBoosterTexture,
-  getCachedIndiaBoosterTexture,
-  getCachedChandrayaanFairingTexture,
+  getCachedGenericBoosterTexture,
+  getCachedGenericCoreTexture,
+  getCachedGenericFairingTexture,
+  getCachedRocketBumpMap,
 } from './aerospaceTextures';
 
 interface RocketModelProps {
@@ -97,6 +98,32 @@ function getCachedSoftCoreSpriteTexture() {
   return cachedSoftCoreSpriteTexture;
 }
 
+// Procedural soft translucent cryogenic boil-off vapour puff texture
+let cachedVapourTexture: THREE.CanvasTexture | null = null;
+function getCachedVapourTexture() {
+  if (cachedVapourTexture) return cachedVapourTexture;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  const center = size / 2;
+  const grad = ctx.createRadialGradient(center, center, 0, center, center, center * 0.95);
+  grad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)');
+  grad.addColorStop(0.25, 'rgba(240, 248, 255, 0.32)');
+  grad.addColorStop(0.55, 'rgba(224, 242, 254, 0.16)');
+  grad.addColorStop(0.80, 'rgba(210, 230, 250, 0.05)');
+  grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  cachedVapourTexture = new THREE.CanvasTexture(canvas);
+  cachedVapourTexture.generateMipmaps = false;
+  return cachedVapourTexture;
+}
+
 export const RocketModel: React.FC<RocketModelProps> = ({
   scrollProgressRef,
   scrollSpeedRef,
@@ -125,6 +152,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   // Translunar Injection (TLI) Thruster Pulse
   const tliFlameRef = useRef<THREE.Mesh>(null);
   const tliLightRef = useRef<THREE.PointLight>(null);
+
+  // Idle Cryogenic Boil-Off Vapour Venting
+  const cryoVapourGroup = useRef<THREE.Group>(null);
 
   // Dynamic particle flame system
   const flameLightRef = useRef<THREE.PointLight>(null);
@@ -275,21 +305,33 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         roughness: 0.22,
         metalness: 0.92,
       }),
-      isroBoosterMat: new THREE.MeshStandardMaterial({
-        map: getCachedIsroBoosterTexture(),
-        roughness: 0.28,
+      coreHullMat: new THREE.MeshStandardMaterial({
+        map: getCachedGenericCoreTexture(),
+        bumpMap: getCachedRocketBumpMap(),
+        bumpScale: 0.04,
+        roughness: 0.22,
         metalness: 0.12,
       }),
-      indiaBoosterMat: new THREE.MeshStandardMaterial({
-        map: getCachedIndiaBoosterTexture(),
-        roughness: 0.28,
+      boosterHullMat: new THREE.MeshStandardMaterial({
+        map: getCachedGenericBoosterTexture(),
+        bumpMap: getCachedRocketBumpMap(),
+        bumpScale: 0.04,
+        roughness: 0.24,
         metalness: 0.12,
       }),
-      fairingDecalMat: new THREE.MeshStandardMaterial({
-        map: getCachedChandrayaanFairingTexture(),
-        roughness: 0.25,
+      fairingHullMat: new THREE.MeshStandardMaterial({
+        map: getCachedGenericFairingTexture(),
+        bumpMap: getCachedRocketBumpMap(),
+        bumpScale: 0.03,
+        roughness: 0.22,
         metalness: 0.10,
+      }),
+      cryoVapourMat: new THREE.SpriteMaterial({
+        map: getCachedVapourTexture(),
         transparent: true,
+        opacity: 0.35,
+        blending: THREE.NormalBlending,
+        depthWrite: false,
       }),
       solarPhotovoltaic: new THREE.MeshStandardMaterial({
         map: getCachedSolarPanelTexture(),
@@ -674,6 +716,25 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         signalRing2.current.visible = false;
       }
     }
+
+    // 8. CRYOGENIC BOIL-OFF VAPOUR VENTING (Pad Idle):
+    if (cryoVapourGroup.current) {
+      const isIdleOnPad = scrollProgress < 0.02 && !isBurning;
+      cryoVapourGroup.current.visible = isIdleOnPad;
+      if (isIdleOnPad) {
+        const vChildren = cryoVapourGroup.current.children;
+        for (let vi = 0; vi < vChildren.length; vi++) {
+          const sprite = vChildren[vi] as THREE.Sprite;
+          const cycle = (t * 0.5 + vi * 0.33) % 1.0;
+          sprite.position.x = 0.48 + cycle * 0.85;
+          sprite.position.y = 0.45 + Math.sin(cycle * Math.PI) * 0.12;
+          sprite.position.z = 0.05 - cycle * 0.30;
+          const scale = 0.4 + cycle * 0.8;
+          sprite.scale.set(scale, scale * 0.75, 1);
+          (sprite.material as THREE.SpriteMaterial).opacity = Math.sin(cycle * Math.PI) * 0.32;
+        }
+      }
+    }
   });
 
   return (
@@ -828,11 +889,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
          ========================================================================= */}
       <group ref={intactFairingGroup}>
         {/* Aerodynamic Ogive Nose Cone */}
-        <mesh position={[0, 4.7, 0]} material={materials.hullWhite}>
+        <mesh position={[0, 4.7, 0]} material={materials.fairingHullMat}>
           <coneGeometry args={[0.44, 1.6, 32]} />
         </mesh>
         {/* Fairing Cylindrical Barrel Base */}
-        <mesh position={[0, 3.45, 0]} material={materials.hullWhite}>
+        <mesh position={[0, 3.45, 0]} material={materials.fairingHullMat}>
           <cylinderGeometry args={[0.44, 0.44, 0.9, 32]} />
         </mesh>
         {/* Interstage Seam Ring */}
@@ -874,10 +935,17 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           3. ROCKET BOOSTER BODY (DROPS DOWNWARDS WHEN ELIMINATED)
          ========================================================================= */}
       <group ref={rocketBodyGroup}>
-        {/* Upper Stage Core (Clean 32-segment cylinder flush with fairing at y = 3.0) */}
-        <mesh position={[0, 1.8, 0]} material={materials.hullWhite}>
+        {/* Upper Stage Core with Panel Weld Seams and Cryogenic Insulation */}
+        <mesh position={[0, 1.8, 0]} material={materials.coreHullMat}>
           <cylinderGeometry args={[0.44, 0.44, 2.4, 32]} />
         </mesh>
+
+        {/* Gentle Cryogenic Boil-off Vapour Vent (Pad Idle) */}
+        <group ref={cryoVapourGroup} position={[0, 0, 0]} visible={false}>
+          {[0, 1, 2].map((idx) => (
+            <sprite key={`cryo-vent-${idx}`} material={materials.cryoVapourMat} />
+          ))}
+        </group>
 
         {/* Interstage Separation Ring with Circumferential Stiffener Flanges */}
         <mesh position={[0, 0.45, 0]} material={materials.hullDark}>
@@ -888,7 +956,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         </mesh>
 
         {/* First Stage Main Liquid Propellant Core Tank */}
-        <mesh position={[0, -1.8, 0]} material={materials.hullWhite}>
+        <mesh position={[0, -1.8, 0]} material={materials.coreHullMat}>
           <cylinderGeometry args={[0.44, 0.44, 4.2, 32]} />
         </mesh>
 
@@ -961,8 +1029,8 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             </group>
           ))}
 
-          {/* Main S200 Booster Solid Propellant Casing with ISRO Markings */}
-          <mesh position={[0, 0.25, 0]} rotation={[0, Math.PI, 0]} material={materials.isroBoosterMat}>
+          {/* Main S200 Booster Solid Propellant Casing (Generic PBR Finish with Panel Welds & Frost) */}
+          <mesh position={[0, 0.25, 0]} rotation={[0, Math.PI, 0]} material={materials.boosterHullMat}>
             <cylinderGeometry args={[0.34, 0.34, 2.8, 32]} />
           </mesh>
 
@@ -1025,8 +1093,8 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             </group>
           ))}
 
-          {/* Main S200 Booster Solid Propellant Casing with INDIA Markings */}
-          <mesh position={[0, 0.25, 0]} rotation={[0, Math.PI, 0]} material={materials.indiaBoosterMat}>
+          {/* Main S200 Booster Solid Propellant Casing (Generic PBR Finish with Panel Welds & Frost) */}
+          <mesh position={[0, 0.25, 0]} rotation={[0, Math.PI, 0]} material={materials.boosterHullMat}>
             <cylinderGeometry args={[0.34, 0.34, 2.8, 32]} />
           </mesh>
 
