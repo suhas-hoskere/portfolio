@@ -1,6 +1,7 @@
+import { Stage00ScrollCards } from './Stage00ScrollCards';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, Rocket, Mail, ExternalLink, Play, Sparkles, MapPin } from 'lucide-react';
+import { ArrowUpRight, Mail, ExternalLink, Play, Sparkles } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
 
@@ -117,6 +118,7 @@ export const PROJECTS: ProjectData[] = [
 
 interface FlightMissionOverlaysProps {
   activeStageIndex: number;
+  scrollProgress?: number;
   onLaunch: () => void;
   onSelectProject: (proj: ProjectData) => void;
   onNextStage?: () => void;
@@ -130,76 +132,24 @@ const cardTransition = {
 
 export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
   activeStageIndex,
+  scrollProgress = 0,
   onLaunch,
   onSelectProject,
-  isLiftoffActive = false,
+  isLiftoffActive: _isLiftoffActive = false,
 }) => {
   return (
     <div className="fixed inset-0 pointer-events-none z-20 flex items-end sm:items-center justify-start px-4 sm:px-8 md:px-12 lg:px-16 pb-6 sm:pb-0 select-none">
       <div className="w-full max-w-[92vw] sm:max-w-[480px] lg:max-w-[520px] pointer-events-auto">
         <AnimatePresence>
           {/* =========================================================================
-              STAGE 0: GROUND ZERO — INDIA LAUNCH COMPLEX
+              STAGE 0: GROUND ZERO — INDIA LAUNCH COMPLEX (SCROLL-DRIVEN MILESTONES)
              ========================================================================= */}
           {activeStageIndex === 0 && (
-            <motion.div
-              key="stage-0"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: isLiftoffActive ? 0 : 1, y: isLiftoffActive ? -14 : 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={cardTransition}
-              className={`space-y-4 sm:space-y-5 text-left transition-opacity duration-700 ${
-                isLiftoffActive ? 'pointer-events-none' : 'pointer-events-auto'
-              }`}
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-lg bg-[#0e131f]/80 border border-orange-400/40 text-orange-400 text-xs font-mono font-medium tracking-widest uppercase flex items-center gap-1.5 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>INDIA LAUNCH COMPLEX // 00</span>
-                </span>
-                <span className="text-xs font-mono text-slate-300">
-                  Karnataka & Sriharikota Coordinates
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <h1 className="text-[clamp(2.4rem,5.5vw,5.5rem)] font-space font-bold text-white leading-[0.95] tracking-tight whitespace-nowrap drop-shadow-[0_15px_45px_rgba(0,0,0,0.95)]">
-                  Suhas Hoskere
-                </h1>
-                <div className="font-kannada text-sm sm:text-base font-semibold text-amber-400 tracking-wide">
-                  ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
-                </div>
-              </div>
-
-              <p className="text-sm sm:text-base text-slate-200 font-sans font-light leading-relaxed drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">
-                B.Tech in Artificial Intelligence & Machine Learning at PES University, Bangalore. Architecting intelligent systems, voice pipelines, and deep software.
-              </p>
-
-              <div className="pt-1 flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => {
-                    cosmicAudio.playStagingSound();
-                    onLaunch();
-                  }}
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-orange-500 via-amber-400 to-amber-500 hover:from-orange-400 hover:to-amber-300 text-slate-950 font-space font-bold text-xs tracking-wider uppercase flex items-center gap-2 shadow-[0_0_25px_rgba(249,115,22,0.45)] transition-all transform hover:scale-105 cursor-pointer"
-                >
-                  <Rocket className="w-4 h-4 text-slate-950" />
-                  <span>Ignite & Lift Off From India</span>
-                </button>
-
-                <a
-                  href="https://github.com/suhashoskere"
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => cosmicAudio.playTelemetryChirp(1200, 0.05)}
-                  className="px-4 py-3 rounded-xl bg-[#0e131f]/85 hover:bg-[#161c28] border border-white/15 hover:border-cyan-400 text-slate-200 hover:text-white font-mono text-xs flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer shadow-lg"
-                >
-                  <GithubIcon className="w-4 h-4" />
-                  <span>github.com/suhashoskere</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </a>
-              </div>
-            </motion.div>
+            <Stage00ScrollCards
+              scrollProgress={scrollProgress}
+              onLaunch={onLaunch}
+              cardTransition={cardTransition}
+            />
           )}
 
           {/* =========================================================================

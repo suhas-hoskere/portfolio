@@ -238,8 +238,8 @@ function getCachedEmberTexture(): THREE.CanvasTexture {
 export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   scrollProgressRef,
   isIgnited: _isIgnited = false,
-  liftoffTime,
-  isLiftoffActive,
+  liftoffTime: _liftoffTime,
+  isLiftoffActive: _isLiftoffActive,
 }) => {
   const padRootRef = useRef<THREE.Group>(null);
   const umbilicalArmsRef = useRef<THREE.Group>(null);
@@ -1139,16 +1139,17 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     if (padRootRef.current) {
       padRootRef.current.visible = true;
 
-      // Realistic physical liftoff downward motion:
+      // Purely scroll-driven pad downward motion:
       let padDrop = 0;
-      if (isLiftoffActive) {
-        if (liftoffTime > 4.5) {
-          const climbSec = liftoffTime - 4.5;
-          padDrop = 0.5 * 1.6 * climbSec * climbSec;
-        }
-      } else if (sp > 0.01) {
-        const altProgress = Math.min((sp - 0.01) / 0.18, 1.0);
-        padDrop = Math.pow(altProgress, 1.5) * 28.0;
+      if (sp < 0.170) {
+        // Steps 0, 1, 2, 3: Pad stays completely locked in place at ground zero!
+        padDrop = 0;
+      } else if (sp < 0.260) {
+        // Step 4: Vertical movement begins! Pad drops smoothly as rocket clears the tower
+        const climbProgress = (sp - 0.170) / (0.260 - 0.170);
+        padDrop = Math.pow(climbProgress, 1.4) * 26.0;
+      } else {
+        padDrop = 26.0;
       }
 
       padRootRef.current.position.y = -padDrop;
@@ -1165,38 +1166,38 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       beaconLightRef.current.intensity = 1.2 + beaconPulse * 3.8;
     }
 
-    // 2. Umbilical Service Arms Retraction (swings clear at T+4.5s release)
+    // 2. Umbilical Service Arms Retraction ("second releases locks")
     if (umbilicalArmsRef.current) {
       let swingAngle = 0;
-      if (isLiftoffActive && liftoffTime >= 4.2) {
-        swingAngle = Math.min((liftoffTime - 4.2) / 1.2, 1.0) * 0.95;
-      } else if (sp > 0.03) {
-        swingAngle = Math.min((sp - 0.03) / 0.05, 1.0) * 0.95;
+      if (sp < 0.080) {
+        // Step 0 & 1: Arms firmly connected to rocket body
+        swingAngle = 0;
+      } else if (sp < 0.125) {
+        // Step 2: Arms swing smoothly 55 degrees away from the vehicle as you scroll
+        const swingProgress = (sp - 0.080) / (0.125 - 0.080);
+        swingAngle = Math.min(Math.max(swingProgress, 0), 1.0) * 0.95;
+      } else {
+        // Step 3 & 4: Fully swung clear
+        swingAngle = 0.95;
       }
       umbilicalArmsRef.current.rotation.y = swingAngle;
     }
 
     // 3. Bilateral Trench Smoke & Deluge Steam
 
-    // 4. Bilateral Trench Smoke & Deluge Steam
-    const isSmoking = (isLiftoffActive && liftoffTime >= 0.2) || sp > 0.005;
+    // 4. Bilateral Trench Smoke & Deluge Steam ("third gives smoke")
+    const isSmoking = sp >= 0.125 && sp < 0.260;
     if (smokePointsRef.current) {
       if (isSmoking) {
         smokePointsRef.current.visible = true;
 
         let smokeDensity = 0;
-        if (isLiftoffActive) {
-          if (liftoffTime < 1.5) {
-            smokeDensity = (liftoffTime / 1.5) * 0.50;
-          } else if (liftoffTime < 4.5) {
-            smokeDensity = 0.50 + ((liftoffTime - 1.5) / 3.0) * 0.45;
-          } else if (liftoffTime < 8.0) {
-            smokeDensity = 0.95;
-          } else {
-            smokeDensity = Math.max(0, 0.95 - (liftoffTime - 8.0) * 0.35);
-          }
+        if (sp < 0.170) {
+          // Step 3: Deluge steam and massive trench smoke billows outwards
+          smokeDensity = (sp - 0.125) / (0.170 - 0.125);
         } else {
-          smokeDensity = sp < 0.12 ? 0.85 : Math.max(0, 1.0 - (sp - 0.12) / 0.12);
+          // Step 4: Disperses as vehicle climbs
+          smokeDensity = Math.max(0, 1.0 - (sp - 0.170) / 0.090);
         }
 
         materials.smokeMat.opacity = smokeDensity * 0.60;
@@ -1247,13 +1248,10 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
 
     // 5. Fire Trench Light & Ignition Flash
     if (flameTrenchLightRef.current) {
-      if (isSmoking) {
-        let flash = 0;
-        if (isLiftoffActive && liftoffTime < 1.2) {
-          flash = Math.sin((liftoffTime / 1.2) * Math.PI) * STAGE_CONFIG.stage00_launchPad.ignitionFlashIntensity;
-        }
-        const flicker = 8.0 + Math.sin(t * 55) * 3.0;
-        flameTrenchLightRef.current.intensity = flicker + flash;
+      if (sp >= 0.035 && sp < 0.240) {
+        const fireIntensity = Math.min((sp - 0.035) / 0.025, 1.0);
+        const flicker = (8.0 + Math.sin(t * 55) * 3.0) * fireIntensity;
+        flameTrenchLightRef.current.intensity = flicker;
       } else {
         flameTrenchLightRef.current.intensity = 0;
       }
@@ -1261,7 +1259,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
 
     // 6. Flying Sparks Simulation
     if (sparkPointsRef.current) {
-      if (isSmoking && liftoffTime < 5.5) {
+      if (isSmoking && sp < 0.22) {
         sparkPointsRef.current.visible = true;
         materials.sparkMat.opacity = 0.85;
 

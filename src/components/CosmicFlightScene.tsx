@@ -30,9 +30,9 @@ const FlightCameraRig: React.FC<{
   isLiftoffActive?: boolean;
 }> = ({
   scrollProgressRef,
-  isIgnited = false,
-  liftoffTime = 0,
-  isLiftoffActive = false,
+  isIgnited: _isIgnited = false,
+  liftoffTime: _liftoffTime = 0,
+  isLiftoffActive: _isLiftoffActive = false,
 }) => {
   const mouseRef = useRef(new THREE.Vector2(0, 0));
 
@@ -64,48 +64,42 @@ const FlightCameraRig: React.FC<{
 
     let pitchTilt = 0;
 
-    // Continuous spline interpolation across stages
-    if (isLiftoffActive) {
-      if (liftoffTime < 4.5) {
-        targetCamY = isMobile ? 0.90 : 0.75;
-        targetCamZ = baseCamZ;
-      } else {
-        const climbSec = liftoffTime - 4.5;
-        const climbRatio = Math.min(climbSec / 5.5, 1.0);
-        targetCamY = (isMobile ? 0.90 : 0.75) + Math.pow(climbRatio, 1.35) * 0.40;
-        targetCamZ = baseCamZ + climbRatio * 0.2;
-        if (liftoffTime >= 6.0) {
-          pitchTilt = Math.min((liftoffTime - 6.0) / 4.0, 1.0) * 0.12;
-        }
-      }
-    } else if (sp < 0.18) {
-      // Ground zero -> lift-off
-      const p = sp / 0.18;
-      targetCamY = (isMobile ? 0.90 : 0.75) + p * 0.40;
-      targetCamZ = baseCamZ + p * 0.2;
-    } else if (sp < 0.36) {
-      // Atmospheric ascent & cloud punch: Camera pulls back and tilts up as speed rises
-      const p = (sp - 0.18) / 0.18;
-      targetCamY = (isMobile ? 1.30 : 1.15) + p * 0.25;
-      targetCamZ = baseCamZ + 0.2 + p * 0.55;
-    } else if (sp < 0.52) {
-      // LEO & translunar injection
-      const p = (sp - 0.36) / 0.16;
+    // 100% Scroll-Driven Camera Waypoints across granular flight phases
+    if (sp < 0.170) {
+      // Step 0 to Step 3: Standby, Fire Ignition, Lock Release, and Deluge Smoke
+      // Camera stays firmly parked at ground zero framing the launch complex!
+      targetCamY = isMobile ? 0.90 : 0.75;
+      targetCamZ = baseCamZ;
+    } else if (sp < 0.240) {
+      // Step 4: Vertical Liftoff Clearance - Camera tracks smoothly upward with ascending rocket!
+      const climb = (sp - 0.170) / (0.240 - 0.170);
+      targetCamY = (isMobile ? 0.90 : 0.75) + Math.pow(climb, 1.25) * 0.45;
+      targetCamZ = baseCamZ + climb * 0.25;
+      pitchTilt = climb * 0.08;
+    } else if (sp < 0.380) {
+      // Stage 1: Atmospheric ascent & cloud punch
+      const p = (sp - 0.240) / (0.380 - 0.240);
+      targetCamY = (isMobile ? 1.35 : 1.20) + p * 0.25;
+      targetCamZ = baseCamZ + 0.25 + p * 0.55;
+      pitchTilt = 0.08 + p * 0.06;
+    } else if (sp < 0.520) {
+      // Stage 2: LEO & orbital injection
+      const p = (sp - 0.380) / 0.140;
       targetCamY = (isMobile ? 1.50 : 1.35) - p * 0.15;
-      targetCamZ = baseCamZ + 0.3 + p * 0.1;
-    } else if (sp < 0.72) {
-      // Lunar flyby
-      const p = (sp - 0.52) / 0.20;
+      targetCamZ = baseCamZ + 0.30 + p * 0.10;
+    } else if (sp < 0.740) {
+      // Stage 3: Lunar flyby
+      const p = (sp - 0.520) / 0.220;
       targetCamY = (isMobile ? 1.35 : 1.20) - p * 0.15;
       targetCamZ = baseCamZ + 0.35;
-    } else if (sp < 0.88) {
-      // Mars encounter
-      const p = (sp - 0.72) / 0.16;
+    } else if (sp < 0.880) {
+      // Stage 4: Mars encounter
+      const p = (sp - 0.740) / 0.140;
       targetCamY = (isMobile ? 1.20 : 1.05) - p * 0.10;
       targetCamZ = baseCamZ + 0.35 - p * 0.2;
     } else {
-      // Terminal deep space uplink
-      const p = (sp - 0.88) / 0.12;
+      // Stage 5: Terminal deep space uplink
+      const p = (sp - 0.880) / 0.120;
       targetCamY = (isMobile ? 1.10 : 0.95) - p * 0.15;
       targetCamZ = baseCamZ + 0.15 - p * 0.3;
     }
@@ -116,23 +110,18 @@ const FlightCameraRig: React.FC<{
     const t = state.clock.getElapsedTime();
     let shakeX = 0;
     let shakeY = 0;
-    if (isLiftoffActive) {
-      let shakeAmt = 0.0003;
-      if (liftoffTime < 1.5) {
-        shakeAmt = THREE.MathUtils.lerp(0.0004, 0.0022, liftoffTime / 1.5);
-      } else if (liftoffTime < 4.5) {
-        shakeAmt = THREE.MathUtils.lerp(0.0022, 0.0068, (liftoffTime - 1.5) / 3.0);
-      } else if (liftoffTime < 6.0) {
-        shakeAmt = THREE.MathUtils.lerp(0.0068, 0.0082, (liftoffTime - 4.5) / 1.5);
+    if (sp >= 0.035 && sp < 0.240) {
+      // Step 1 to 4: Camera rumble scales directly with engine burn and liftoff
+      let shakeAmt = 0.001;
+      if (sp < 0.080) {
+        shakeAmt = THREE.MathUtils.lerp(0.0006, 0.0028, (sp - 0.035) / 0.045);
+      } else if (sp < 0.170) {
+        shakeAmt = THREE.MathUtils.lerp(0.0028, 0.0062, (sp - 0.080) / 0.090);
       } else {
-        shakeAmt = THREE.MathUtils.lerp(0.0082, 0.0035, (liftoffTime - 6.0) / 4.0);
+        shakeAmt = THREE.MathUtils.lerp(0.0062, 0.0078, (sp - 0.170) / 0.070);
       }
       shakeX = (Math.sin(t * 88) * 0.7 + Math.cos(t * 124) * 0.3) * shakeAmt;
       shakeY = (Math.cos(t * 96) * 0.7 + Math.sin(t * 140) * 0.3) * shakeAmt;
-    } else if ((isIgnited || sp > 0.005) && sp < 0.08) {
-      const shakeAmt = STAGE_CONFIG.stage00_launchPad.padCameraShake;
-      shakeX = (Math.sin(t * 78) * 0.7 + Math.cos(t * 112) * 0.3) * shakeAmt;
-      shakeY = (Math.cos(t * 88) * 0.7 + Math.sin(t * 130) * 0.3) * shakeAmt;
     } else if (sp >= STAGE_CONFIG.stage01_ascent.maxQScrollRange[0] && sp <= STAGE_CONFIG.stage01_ascent.maxQScrollRange[1]) {
       const qRange = STAGE_CONFIG.stage01_ascent.maxQScrollRange;
       const qProgress = (sp - qRange[0]) / (qRange[1] - qRange[0]);
@@ -520,9 +509,9 @@ const SceneEntities: React.FC<{
   scrollProgressRef,
   scrollSpeedRef,
   activeStageIndex,
-  isIgnited,
-  liftoffTime = 0,
-  isLiftoffActive = false,
+  isIgnited: _isIgnited,
+  liftoffTime: _liftoffTime = 0,
+  isLiftoffActive: _isLiftoffActive = false,
 }) => {
   return (
     <>
@@ -544,17 +533,17 @@ const SceneEntities: React.FC<{
       <group position={[1.75, 0, 0]}>
         <Stage00LaunchPad
           scrollProgressRef={scrollProgressRef}
-          isIgnited={isIgnited}
-          liftoffTime={liftoffTime}
-          isLiftoffActive={isLiftoffActive}
+          isIgnited={_isIgnited}
+          liftoffTime={_liftoffTime}
+          isLiftoffActive={_isLiftoffActive}
         />
 
         <RocketModel
           scrollProgressRef={scrollProgressRef}
           scrollSpeedRef={scrollSpeedRef}
-          isIgnited={isIgnited}
-          liftoffTime={liftoffTime}
-          isLiftoffActive={isLiftoffActive}
+          isIgnited={_isIgnited}
+          liftoffTime={_liftoffTime}
+          isLiftoffActive={_isLiftoffActive}
         />
       </group>
 
@@ -603,9 +592,9 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
   scrollProgressRef,
   scrollSpeedRef,
   activeStageIndex,
-  isIgnited,
-  liftoffTime = 0,
-  isLiftoffActive = false,
+  isIgnited: _isIgnited,
+  liftoffTime: _liftoffTime = 0,
+  isLiftoffActive: _isLiftoffActive = false,
 }) => {
   return (
     <div className="fixed inset-0 w-full h-full pointer-events-none z-0 bg-[#030611]">
@@ -624,9 +613,9 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
         <AdaptiveQualityController />
         <FlightCameraRig
           scrollProgressRef={scrollProgressRef}
-          isIgnited={isIgnited}
-          liftoffTime={liftoffTime}
-          isLiftoffActive={isLiftoffActive}
+          isIgnited={_isIgnited}
+          liftoffTime={_liftoffTime}
+          isLiftoffActive={_isLiftoffActive}
         />
 
         {/* Dynamic Coastal Dawn Fog at Ground Level */}
@@ -639,9 +628,9 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
           scrollProgressRef={scrollProgressRef}
           scrollSpeedRef={scrollSpeedRef}
           activeStageIndex={activeStageIndex}
-          isIgnited={isIgnited}
-          liftoffTime={liftoffTime}
-          isLiftoffActive={isLiftoffActive}
+          isIgnited={_isIgnited}
+          liftoffTime={_liftoffTime}
+          isLiftoffActive={_isLiftoffActive}
         />
       </Canvas>
     </div>

@@ -64,29 +64,28 @@ export const AtmosphericClouds: React.FC<AtmosphericCloudsProps> = ({
     }
     masterGroup.current.visible = true;
 
+    const climbProg = Math.max(0, (scrollProgress - 0.170) / (0.35 - 0.170));
+
     // 1. Low cloud deck
     if (lowCloudDeckRef.current) {
-      const lowY = 5.0 - (scrollProgress / 0.18) * 18.0;
-      lowCloudDeckRef.current.position.y = lowY;
+      lowCloudDeckRef.current.position.y = 5.0 - climbProg * 18.0;
     }
 
     // 2. Dense mid-level cloud punch deck
     if (midCloudDeckRef.current) {
-      const midY = 10.0 - (scrollProgress / 0.28) * 26.0;
-      midCloudDeckRef.current.position.y = midY;
+      midCloudDeckRef.current.position.y = 10.0 - climbProg * 26.0;
     }
 
     // 3. High cirrus deck
     if (highCloudDeckRef.current) {
-      const highY = 16.0 - (scrollProgress / 0.34) * 32.0;
-      highCloudDeckRef.current.position.y = highY;
+      highCloudDeckRef.current.position.y = 16.0 - climbProg * 32.0;
     }
 
     // 4. Sea of clouds below from the stratosphere
     if (cloudSeaRef.current) {
-      if (scrollProgress >= 0.18) {
+      if (scrollProgress >= 0.240) {
         cloudSeaRef.current.visible = true;
-        const seaProgress = Math.min((scrollProgress - 0.18) / 0.16, 1.0);
+        const seaProgress = Math.min((scrollProgress - 0.240) / 0.12, 1.0);
         cloudSeaRef.current.position.y = -2.8 - seaProgress * 4.5;
       } else {
         cloudSeaRef.current.visible = false;

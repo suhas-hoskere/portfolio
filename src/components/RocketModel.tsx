@@ -392,31 +392,16 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         targetRotZ = -0.14 + Math.sin(t * 0.5) * 0.012;
       }
 
-      // Subtle physical thrust acoustic vibration during high-thrust atmospheric burn
+      // Subtle physical thrust acoustic vibration starting at Step 1 (Engine Ignition)
       let thrustVibeX = 0;
       let thrustVibeY = 0;
-      const lt = liftoffTimeRef.current;
-      const la = isLiftoffActiveRef.current;
-      const isBurningNow =
-        (la && lt >= 0.0) ||
-        (scrollProgress > 0.005 && scrollProgress < 0.22);
+      const isBurningNow = scrollProgress >= 0.035 && scrollProgress < 0.220;
 
       if (isBurningNow) {
-        let intensity = 1.0;
-        if (la) {
-          if (lt < 1.5) {
-            intensity = 0.5 + (lt / 1.5) * 1.5;
-          } else if (lt < 4.5) {
-            intensity = 2.0 + Math.sin(t * 30) * 0.5;
-          } else {
-            intensity = 2.4;
-          }
-        } else {
-          intensity = 1.0 + Math.min(scrollSpeed * 2.5, 2.0);
-        }
-
-        thrustVibeX = (Math.sin(t * 72) * 0.0012 + Math.cos(t * 110) * 0.0008) * intensity;
-        thrustVibeY = (Math.cos(t * 85) * 0.0016 + Math.sin(t * 125) * 0.0009) * intensity;
+        const vRamp = Math.min((scrollProgress - 0.035) / 0.030, 1.0);
+        const intensity = 0.8 + vRamp * 1.4;
+        thrustVibeX = (Math.sin(t * 72) * 0.0010 + Math.cos(t * 110) * 0.0006) * intensity;
+        thrustVibeY = (Math.cos(t * 85) * 0.0012 + Math.sin(t * 125) * 0.0007) * intensity;
       }
 
       vehicleGroup.current.position.x = thrustVibeX;
@@ -428,13 +413,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       );
     }
 
-    // 2. REALISTIC DYNAMIC ROCKET EXHAUST FIRE PLUME (Particles + Shock Diamonds + Light)
-    // Starts at T-00.00 ignition or when liftoff sequence begins or when user begins scrolling
-    const lt = liftoffTimeRef.current;
-    const la = isLiftoffActiveRef.current;
-    const isBurning =
-      (la && lt >= 0.0) ||
-      (scrollProgress > 0.005 && scrollProgress < 0.28);
+    // 2. REALISTIC DYNAMIC ROCKET EXHAUST FIRE PLUME ("first scroll gives fire")
+    // Ignites at Step 1 (sp >= 0.035) and burns through early ascent (< 0.280)
+    const isBurning = scrollProgress >= 0.035 && scrollProgress < 0.280;
     if (flamePointsRef.current) {
       if (isBurning) {
         flamePointsRef.current.visible = true;
@@ -444,59 +425,37 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         const posArray = posAttr.array as Float32Array;
         const colArray = colAttr.array as Float32Array;
 
-        const thrustBoost = 1.0 + Math.min(scrollSpeed * 2.0, 2.5);
+        const fireRamp = Math.min((scrollProgress - 0.035) / 0.025, 1.0);
+        const thrustBoost = 1.0 + Math.min(scrollSpeed * 1.5, 2.0);
 
         for (let i = 0; i < particleCount; i++) {
           const p = particleData[i];
-          p.age += delta * (1.6 + thrustBoost * 0.6);
-
-          if (p.age >= p.lifespan) {
+          p.age += delta * (1.2 + thrustBoost * 0.3) * fireRamp;
+          if (p.age > p.lifespan) {
             p.age = 0;
-            p.lifespan = 0.3 + Math.random() * 0.25;
-
-            // If boosters have separated at scroll >= 0.22, hide booster particles offscreen
-            if (p.isBooster && scrollProgress >= 0.22) {
-              posArray[i * 3 + 1] = -999;
-              p.vy = 0;
-            } else {
-              posArray[i * 3] = p.originX + (Math.random() - 0.5) * 0.16;
-              posArray[i * 3 + 1] = p.originY;
-              posArray[i * 3 + 2] = (Math.random() - 0.5) * 0.16;
-
-              p.vx = (Math.random() - 0.5) * 0.45;
-              p.vy = -(3.6 + Math.random() * 4.4 + thrustBoost * 3.0);
-              p.vz = (Math.random() - 0.5) * 0.45;
-            }
-          } else {
-            // Integrate turbulent particle motion
-            posArray[i * 3] += p.vx * delta;
-            posArray[i * 3 + 1] += p.vy * delta;
-            posArray[i * 3 + 2] += p.vz * delta;
-
-            // Turbulent outward plume expansion with altitude
-            p.vx *= 1.03;
-            p.vz *= 1.03;
+            posArray[i * 3] = p.originX + (Math.random() - 0.5) * 0.15;
+            posArray[i * 3 + 1] = p.originY;
+            posArray[i * 3 + 2] = (Math.random() - 0.5) * 0.15;
           }
 
-          // Dynamic combustion color grading along exhaust plume
+          posArray[i * 3] += p.vx * delta * fireRamp;
+          posArray[i * 3 + 1] += p.vy * delta * fireRamp;
+          posArray[i * 3 + 2] += p.vz * delta * fireRamp;
+
           const ratio = p.age / p.lifespan;
           if (ratio < 0.2) {
-            // White-hot core
             colArray[i * 3] = 1.0;
             colArray[i * 3 + 1] = 0.98;
             colArray[i * 3 + 2] = 0.85;
           } else if (ratio < 0.5) {
-            // Incandescent golden plasma
             colArray[i * 3] = 1.0;
             colArray[i * 3 + 1] = 0.75;
             colArray[i * 3 + 2] = 0.15;
           } else if (ratio < 0.8) {
-            // Fiery orange thrust
             colArray[i * 3] = 0.98;
             colArray[i * 3 + 1] = 0.42;
             colArray[i * 3 + 2] = 0.08;
           } else {
-            // Crimson edge
             colArray[i * 3] = 0.75;
             colArray[i * 3 + 1] = 0.15;
             colArray[i * 3 + 2] = 0.05;
@@ -506,22 +465,16 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         posAttr.needsUpdate = true;
         colAttr.needsUpdate = true;
 
-        // Dynamic Point Light illuminating rocket aft skirt and nozzle
         if (flameLightRef.current) {
-          flameLightRef.current.intensity = 4.0 + Math.sin(t * 45) * 1.5;
+          flameLightRef.current.intensity = (4.0 + Math.sin(t * 45) * 1.5) * fireRamp;
         }
 
-        // Twin solid booster exhaust flames (active before separation < 0.22)
         if (boosterFlameLeft.current && boosterFlameRight.current) {
           if (scrollProgress < 0.22) {
             boosterFlameLeft.current.visible = true;
             boosterFlameRight.current.visible = true;
-            let bRamp = 1.0;
-            if (la) {
-              bRamp = Math.min(lt / 1.2, 1.0);
-            }
-            const bFlicker = (1.0 + thrustBoost * 0.25) * (1.0 + Math.sin(t * 48) * 0.12) * bRamp;
-            const wPulsate = (1.0 + Math.sin(t * 32) * 0.06) * bRamp;
+            const bFlicker = (1.0 + thrustBoost * 0.2) * (1.0 + Math.sin(t * 48) * 0.10) * fireRamp;
+            const wPulsate = (1.0 + Math.sin(t * 32) * 0.05) * fireRamp;
             boosterFlameLeft.current.scale.set(wPulsate, bFlicker, wPulsate);
             boosterFlameRight.current.scale.set(wPulsate, bFlicker, wPulsate);
           } else {
@@ -530,15 +483,10 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           }
         }
 
-        // Twin L110 core Vikas engine exhaust flames (active during ascent < 0.28)
         if (coreFlamesRef.current) {
           coreFlamesRef.current.visible = true;
-          let cRamp = 1.0;
-          if (la) {
-            cRamp = Math.min(lt / 1.2, 1.0);
-          }
-          const vFlicker = (1.0 + thrustBoost * 0.2) * (1.0 + Math.sin(t * 54) * 0.1) * cRamp;
-          coreFlamesRef.current.scale.set(cRamp, vFlicker, cRamp);
+          const vFlicker = (1.0 + thrustBoost * 0.18) * (1.0 + Math.sin(t * 54) * 0.08) * fireRamp;
+          coreFlamesRef.current.scale.set(fireRamp, vFlicker, fireRamp);
         }
       } else {
         flamePointsRef.current.visible = false;

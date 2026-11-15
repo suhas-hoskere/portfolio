@@ -9,7 +9,7 @@ import { FlightMissionModal } from './components/FlightMissionModal';
 import { CustomCursor } from './components/CustomCursor';
 import { LaunchPreloader } from './components/LaunchPreloader';
 import { cosmicAudio } from './components/AudioEngine';
-import { STAGE_CONFIG } from './scene/stageConfig';
+// STAGE_CONFIG removed
 
 export const App: React.FC = () => {
   // Guarantee clean startup at Ground Zero (0 km, Stage 0) with zero accidental scroll restoration
@@ -23,16 +23,7 @@ export const App: React.FC = () => {
   // Pre-flight Launch Initialization State (Plays 5-second entrance intro on every load/reload)
   const [isPreloading, setIsPreloading] = useState(true);
   const [showDashboard, setShowDashboard] = useState(false);
-  const [isIgnited, setIsIgnited] = useState(false);
-
-  // 10-Second Cinematic Liftoff State Machine
-  const [isLiftoffActive, setIsLiftoffActive] = useState(false);
-  const [liftoffTime, setLiftoffTime] = useState(0);
-  const liftoffActiveRef = useRef(false);
-  const liftoffCompletedRef = useRef(false);
-  const liftoffTimeRef = useRef(0);
-  const prefersReducedMotion = typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
 
   const handleShowDashboard = useCallback(() => {
     setShowDashboard(true);
@@ -41,7 +32,6 @@ export const App: React.FC = () => {
   const handlePreloaderComplete = useCallback(() => {
     setShowDashboard(true);
     setIsPreloading(false);
-    // Cold pad on entry: no fire at starting itself. Fire only ignites when user scrolls or launches.
   }, []);
 
   // Discrete Stage State (Choreographed flight stage 0 to 5)
@@ -60,72 +50,6 @@ export const App: React.FC = () => {
   const rafThrottler = useRef<number | null>(null);
   const lastStageRef = useRef<number>(0);
 
-  const startLiftoff = useCallback(() => {
-    if (liftoffActiveRef.current || liftoffCompletedRef.current) return;
-    liftoffActiveRef.current = true;
-    setIsLiftoffActive(true);
-    setIsIgnited(true);
-    liftoffTimeRef.current = 0;
-    setLiftoffTime(0);
-
-    // Lock scroll while sequence plays so it cannot be skipped or desynchronized
-    if (lenisRef.current) {
-      lenisRef.current.stop();
-    }
-
-    const totalDuration = prefersReducedMotion
-      ? STAGE_CONFIG.stage00_launchPad.liftoffMilestones.reducedMotionDuration
-      : STAGE_CONFIG.stage00_launchPad.liftoffMilestones.totalDuration;
-
-    let lastTime = performance.now();
-
-    const tick = (now: number) => {
-      const delta = (now - lastTime) / 1000;
-      lastTime = now;
-      const safeDelta = Math.min(Math.max(delta, 0), 0.1);
-
-      liftoffTimeRef.current += safeDelta;
-      setLiftoffTime(liftoffTimeRef.current);
-
-      if (liftoffTimeRef.current >= totalDuration) {
-        liftoffActiveRef.current = false;
-        liftoffCompletedRef.current = true;
-        setIsLiftoffActive(false);
-
-        // Unlock scroll when it ends and hand off smoothly into stage 01
-        if (lenisRef.current) {
-          lenisRef.current.start();
-          const maxScroll = (trackRef.current?.scrollHeight || 6000) - window.innerHeight;
-          lenisRef.current.scrollTo(0.16 * maxScroll, { duration: 1.2 });
-        }
-        return;
-      }
-
-      requestAnimationFrame(tick);
-    };
-
-    requestAnimationFrame(tick);
-  }, [prefersReducedMotion]);
-
-  const handleSkipLiftoff = useCallback(() => {
-    if (!liftoffActiveRef.current) return;
-    // Jump smoothly to the end state, not abruptly
-    const totalDuration = prefersReducedMotion
-      ? STAGE_CONFIG.stage00_launchPad.liftoffMilestones.reducedMotionDuration
-      : STAGE_CONFIG.stage00_launchPad.liftoffMilestones.totalDuration;
-    liftoffTimeRef.current = Math.max(liftoffTimeRef.current, totalDuration - 0.5);
-    setLiftoffTime(liftoffTimeRef.current);
-  }, [prefersReducedMotion]);
-
-  useEffect(() => {
-    (window as any).__startLiftoff = startLiftoff;
-    (window as any).__skipLiftoff = handleSkipLiftoff;
-    return () => {
-      delete (window as any).__startLiftoff;
-      delete (window as any).__skipLiftoff;
-    };
-  }, [startLiftoff, handleSkipLiftoff]);
-
   // Throttled UI State updater
   const updateUI = useCallback((progress: number) => {
     scrollProgressRef.current = progress;
@@ -133,9 +57,9 @@ export const App: React.FC = () => {
     let stage = 0;
     if (progress >= 0.88) stage = 5;
     else if (progress >= 0.74) stage = 4;
-    else if (progress >= 0.50) stage = 3;
-    else if (progress >= 0.30) stage = 2;
-    else if (progress >= 0.12) stage = 1;
+    else if (progress >= 0.52) stage = 3;
+    else if (progress >= 0.36) stage = 2;
+    else if (progress >= 0.24) stage = 1;
     else stage = 0;
 
     if (stage !== lastStageRef.current) {
@@ -167,13 +91,7 @@ export const App: React.FC = () => {
     rafId = requestAnimationFrame(raf);
 
     lenis.on('scroll', (e: { scroll: number }) => {
-      // Trigger cinematic liftoff sequence if user begins scrolling at ground zero
-      if (e.scroll > 2 && !liftoffCompletedRef.current && !liftoffActiveRef.current) {
-        startLiftoff();
-        return;
-      }
-
-      const maxScroll = (trackRef.current?.scrollHeight || 6000) - window.innerHeight;
+      const maxScroll = (trackRef.current?.scrollHeight || 8000) - window.innerHeight;
       const progress = Math.min(Math.max(e.scroll / Math.max(maxScroll, 1), 0), 1);
       scrollProgressRef.current = progress;
 
@@ -219,11 +137,13 @@ export const App: React.FC = () => {
   };
 
   const handleLaunch = () => {
-    if (!liftoffCompletedRef.current) {
-      startLiftoff();
-    } else {
-      handleJumpToStage(0.20);
-    }
+    if (!lenisRef.current || !trackRef.current) return;
+    const maxScroll = trackRef.current.scrollHeight - window.innerHeight;
+    // Smoothly scroll forward through the liftoff sequence into Stage 01
+    lenisRef.current.scrollTo(0.25 * maxScroll, {
+      duration: 3.2,
+      easing: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+    });
   };
 
   // Background atmosphere color dynamically shifts from dawn sky to cosmic black
@@ -239,7 +159,7 @@ export const App: React.FC = () => {
   return (
     <div
       ref={trackRef}
-      className={`relative min-h-[500vh] ${bgColors[activeStageIndex]} text-[#f4f2ed] overflow-x-hidden selection:bg-orange-500/30 selection:text-orange-200 transition-colors duration-700`}
+      className={`relative min-h-[850vh] ${bgColors[activeStageIndex]} text-[#f4f2ed] overflow-x-hidden selection:bg-orange-500/30 selection:text-orange-200 transition-colors duration-700`}
     >
       {/* Subtle comet follower ring cursor */}
       <CustomCursor />
@@ -259,9 +179,9 @@ export const App: React.FC = () => {
         scrollProgressRef={scrollProgressRef}
         scrollSpeedRef={scrollSpeedRef}
         activeStageIndex={activeStageIndex}
-        isIgnited={isIgnited}
-        liftoffTime={liftoffTime}
-        isLiftoffActive={isLiftoffActive}
+        
+        
+        
       />
 
       {/* Dashboard Overlays: Reveal smoothly at T-3.00 seconds */}
@@ -280,21 +200,13 @@ export const App: React.FC = () => {
         {/* Cinematic Pinned Narrative Storyboard on the Left */}
         <FlightMissionOverlays
           activeStageIndex={activeStageIndex}
+          scrollProgress={uiScrollProgress}
           onLaunch={handleLaunch}
           onSelectProject={setSelectedProject}
-          isLiftoffActive={isLiftoffActive}
         />
       </div>
 
-      {/* Small Minimalist Skip Liftoff Button */}
-      {isLiftoffActive && (
-        <button
-          onClick={handleSkipLiftoff}
-          className="fixed bottom-6 right-6 z-30 font-mono text-[11px] tracking-[0.25em] uppercase text-cyan-300 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-cyan-400/30 hover:border-cyan-400 px-3.5 py-1.5 rounded-md backdrop-blur-md transition-all duration-200 cursor-pointer shadow-[0_0_15px_rgba(56,189,248,0.25)] active:scale-95"
-        >
-          SKIP LIFTOFF
-        </button>
-      )}
+
 
       {/* Architectural Mission Details Modal */}
       <FlightMissionModal
