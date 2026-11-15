@@ -177,6 +177,14 @@ export const App: React.FC = () => {
 
   const handleLaunch = () => {
     if (!lenisRef.current || !trackRef.current) return;
+    // Auto-engage acoustic audio engine on launch action
+    if (!audioActive) {
+      cosmicAudio.unmute();
+      setAudioActive(true);
+    }
+    cosmicAudio.playQuindarTone(true);
+    cosmicAudio.playRadioCallout('Initiating liftoff sequence. Dual Vikas core ignited.');
+
     const maxScroll = trackRef.current.scrollHeight - window.innerHeight;
     // Smoothly scroll forward through the liftoff sequence into Stage 01
     lenisRef.current.scrollTo(0.25 * maxScroll, {

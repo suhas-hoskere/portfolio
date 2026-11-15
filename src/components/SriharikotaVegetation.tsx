@@ -98,8 +98,8 @@ function getCachedCoconutFrondTexture(): THREE.CanvasTexture {
     }
   }
 
-  // Draw golden-green rachis on top
-  ctx.strokeStyle = '#9eb545';
+  // Draw main woody rachis spine
+  ctx.strokeStyle = '#6d4c2a';
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(pts[0][0], pts[0][1]);
@@ -122,51 +122,44 @@ function getCachedPalmyraTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d')!;
 
   const cx = size / 2;
-  const cy = size - 70;
+  const cy = size - 40;
 
-  // Petiole
-  ctx.strokeStyle = '#5a4f32';
-  ctx.lineWidth = 8;
-  ctx.beginPath();
-  ctx.moveTo(cx, size);
-  ctx.lineTo(cx, cy);
-  ctx.stroke();
+  // 36 Radiating pleated fan blade segments
+  const segments = 36;
+  const baseAngle = -Math.PI * 0.85;
+  const totalAngle = Math.PI * 0.70;
 
-  // Radiating pleated segments
-  const segs = 34;
-  for (let s = 0; s < segs; s++) {
-    const angle = Math.PI * 0.14 + (s / (segs - 1)) * (Math.PI * 0.72);
-    const segLen = 195 + Math.sin((s / segs) * Math.PI) * 85;
-    const tipX = cx + Math.cos(angle) * segLen;
-    const tipY = cy - Math.sin(angle) * segLen;
+  for (let s = 0; s < segments; s++) {
+    const a = baseAngle + (s / segments) * totalAngle;
+    const nextA = baseAngle + ((s + 0.95) / segments) * totalAngle;
+    const r = 240 + Math.sin(s * 1.5) * 20;
 
-    const da = 0.022;
-    const p1x = cx + Math.cos(angle - da) * (segLen * 0.28);
-    const p1y = cy - Math.sin(angle - da) * (segLen * 0.28);
-    const p2x = cx + Math.cos(angle + da) * (segLen * 0.28);
-    const p2y = cy - Math.sin(angle + da) * (segLen * 0.28);
+    const x1 = cx + Math.cos(a) * r;
+    const y1 = cy + Math.sin(a) * r;
+    const x2 = cx + Math.cos(nextA) * r;
+    const y2 = cy + Math.sin(nextA) * r;
 
-    const grad = ctx.createLinearGradient(cx, cy, tipX, tipY);
-    grad.addColorStop(0, '#224426');
-    grad.addColorStop(0.7, '#2f5732');
-    grad.addColorStop(1, '#5a6e38');
+    const grad = ctx.createLinearGradient(cx, cy, (x1 + x2) / 2, (y1 + y2) / 2);
+    const isCrease = s % 2 === 0;
+    grad.addColorStop(0, '#224a20');
+    grad.addColorStop(0.5, isCrease ? '#2f632c' : '#3a7536');
+    grad.addColorStop(0.9, isCrease ? '#447d3d' : '#57964e');
+    grad.addColorStop(1, '#827838');
 
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(p1x, p1y);
-    ctx.lineTo(tipX, tipY);
-    ctx.lineTo(p2x, p2y);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(x1, y1);
+    ctx.lineTo(x2, y2);
     ctx.closePath();
     ctx.fill();
-
-    // Central crease line
-    ctx.strokeStyle = '#1b3820';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(tipX, tipY);
-    ctx.stroke();
   }
+
+  // Stiff spiny hastula petiole base
+  ctx.fillStyle = '#423118';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 32, 0, Math.PI * 2);
+  ctx.fill();
 
   cachedPalmyraTexture = new THREE.CanvasTexture(canvas);
   return cachedPalmyraTexture;
@@ -181,21 +174,30 @@ function getCachedTdefTexture(): THREE.CanvasTexture {
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  const cx = size / 2;
-  const cy = size / 2;
+  // Dense organic canopy cloud with dappled leaf clusters
+  for (let i = 0; i < 320; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.pow(Math.random(), 0.65) * 210;
+    const x = size / 2 + Math.cos(angle) * dist;
+    const y = size / 2 + Math.sin(angle) * (dist * 0.75);
 
-  // Dappled organic leaf cluster
-  for (let i = 0; i < 90; i++) {
-    const angle = (i / 90) * Math.PI * 2 + ((i * 19) % 5);
-    const r = Math.sin((i / 90) * Math.PI * 3.5) * 160 + 50;
-    const x = cx + Math.cos(angle) * r;
-    const y = cy + Math.sin(angle) * r;
-    const leafR = 25 + ((i * 7) % 25);
-
+    const leafR = 14 + Math.random() * 22;
     const grad = ctx.createRadialGradient(x, y, 0, x, y, leafR);
-    grad.addColorStop(0, 'rgba(42, 85, 45, 0.95)');
-    grad.addColorStop(0.6, 'rgba(32, 68, 35, 0.85)');
-    grad.addColorStop(1, 'rgba(25, 55, 30, 0)');
+    const shade = (i % 4);
+    if (shade === 0) {
+      grad.addColorStop(0, 'rgba(46, 82, 38, 0.95)');
+      grad.addColorStop(0.8, 'rgba(38, 68, 32, 0.8)');
+    } else if (shade === 1) {
+      grad.addColorStop(0, 'rgba(64, 115, 52, 0.92)');
+      grad.addColorStop(0.8, 'rgba(50, 92, 42, 0.7)');
+    } else if (shade === 2) {
+      grad.addColorStop(0, 'rgba(88, 145, 68, 0.88)');
+      grad.addColorStop(0.8, 'rgba(72, 122, 56, 0.65)');
+    } else {
+      grad.addColorStop(0, 'rgba(30, 55, 26, 0.98)');
+      grad.addColorStop(0.8, 'rgba(24, 44, 20, 0.85)');
+    }
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -208,28 +210,43 @@ function getCachedTdefTexture(): THREE.CanvasTexture {
 }
 
 // ============================================================================
-// 3D GEOMETRY BUILDERS
+// TERRAIN ELEVATION ADAPTATION (Matches Stage00LaunchPad Ground Mesh exactly)
 // ============================================================================
 
-export function buildCasuarinaGeometry(): THREE.BufferGeometry {
-  const parts: THREE.BufferGeometry[] = [];
+export function getGroundElevation(x: number, z: number): number {
+  const dist = Math.hypot(x, z);
+  if (dist <= 4.5) return -0.42;
+  const falloff = Math.min((dist - 4.5) / 15.0, 1.0);
+  const elev =
+    (Math.sin(x * 0.12) * Math.cos(z * 0.14) * 0.35 +
+      Math.sin(x * 0.28 - z * 0.22) * 0.18) *
+    falloff;
+  return -0.42 + elev;
+}
 
-  // Trunk: Slender dark woody trunk, lower 35% clean
-  const trunk = new THREE.CylinderGeometry(0.04, 0.075, 4.8, 7, 3);
+// ============================================================================
+// DEDICATED TRUNK & FOLIAGE GEOMETRY BUILDERS (Zero Alpha Discard on Trunks)
+// ============================================================================
+
+export function buildCasuarinaTrunkGeometry(): THREE.BufferGeometry {
+  const trunk = new THREE.CylinderGeometry(0.045, 0.085, 4.8, 8, 4);
   trunk.translate(0, 2.4, 0);
-  const tPos = trunk.attributes.position;
-  const tCols = new Float32Array(tPos.count * 3);
-  for (let i = 0; i < tPos.count; i++) {
-    const y = tPos.getY(i);
-    const grad = 0.18 + (y / 4.8) * 0.08;
-    tCols[i * 3] = grad * 1.1;
-    tCols[i * 3 + 1] = grad * 0.9;
-    tCols[i * 3 + 2] = grad * 0.7;
+  const pos = trunk.attributes.position;
+  const cols = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    const grad = 0.22 + (y / 4.8) * 0.08;
+    cols[i * 3] = grad * 1.1;
+    cols[i * 3 + 1] = grad * 0.9;
+    cols[i * 3 + 2] = grad * 0.7;
   }
-  trunk.setAttribute('color', new THREE.BufferAttribute(tCols, 3));
-  parts.push(trunk.toNonIndexed());
+  trunk.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  trunk.computeVertexNormals();
+  return trunk;
+}
 
-  // 6 Descending Tiers of Feathery Drooping Needle Sprays
+export function buildCasuarinaFoliageGeometry(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
   const tiers = [
     { y: 1.8, r: 0.62, len: 1.25, count: 9, droop: 0.75 },
     { y: 2.4, r: 0.54, len: 1.15, count: 9, droop: 0.70 },
@@ -245,7 +262,6 @@ export function buildCasuarinaGeometry(): THREE.BufferGeometry {
       const quad = new THREE.PlaneGeometry(0.55, tr.len, 1, 2);
       quad.translate(0, -tr.len * 0.5, 0);
 
-      // Droop curvature
       const pos = quad.attributes.position;
       for (let i = 0; i < pos.count; i++) {
         const y = pos.getY(i);
@@ -253,12 +269,10 @@ export function buildCasuarinaGeometry(): THREE.BufferGeometry {
         pos.setZ(i, pos.getZ(i) - t * t * tr.droop);
       }
 
-      // Rotate around trunk
       quad.rotateX(-0.45 - tr.droop * 0.3);
       quad.rotateY(angle);
       quad.translate(Math.cos(angle) * (tr.r * 0.25), tr.y, Math.sin(angle) * (tr.r * 0.25));
 
-      // Vertex color modulation
       const qCols = new Float32Array(pos.count * 3);
       for (let i = 0; i < pos.count; i++) {
         qCols[i * 3] = 0.95 + (n % 3) * 0.05;
@@ -275,11 +289,9 @@ export function buildCasuarinaGeometry(): THREE.BufferGeometry {
   return merged;
 }
 
-export function buildCoconutGeometry(): THREE.BufferGeometry {
+export function buildCoconutTrunkGeometry(): { trunkGeom: THREE.BufferGeometry; topPos: THREE.Vector3 } {
   const parts: THREE.BufferGeometry[] = [];
-
-  // Curved fibrous trunk with coastal lean
-  const trunk = new THREE.CylinderGeometry(0.045, 0.085, 3.8, 8, 12);
+  const trunk = new THREE.CylinderGeometry(0.05, 0.09, 3.8, 8, 12);
   trunk.translate(0, 1.9, 0);
   const pos = trunk.attributes.position;
   const tColors = new Float32Array(pos.count * 3);
@@ -299,44 +311,14 @@ export function buildCoconutGeometry(): THREE.BufferGeometry {
     }
 
     const ring = Math.sin(y * 22.0) * 0.04;
-    tColors[i * 3] = 0.40 + ring;
-    tColors[i * 3 + 1] = 0.32 + ring;
-    tColors[i * 3 + 2] = 0.24 + ring;
+    tColors[i * 3] = 0.42 + ring;
+    tColors[i * 3 + 1] = 0.34 + ring;
+    tColors[i * 3 + 2] = 0.26 + ring;
   }
   trunk.setAttribute('color', new THREE.BufferAttribute(tColors, 3));
   parts.push(trunk.toNonIndexed());
 
-  // 16 Arching, Drooping Textured Fronds
-  const numFronds = 16;
-  for (let f = 0; f < numFronds; f++) {
-    const angle = (f / numFronds) * Math.PI * 2 + (f % 2) * 0.15;
-    const frondLen = 2.4 + (f % 3) * 0.25;
-    const quad = new THREE.PlaneGeometry(0.68, frondLen, 1, 6);
-    quad.translate(0, -frondLen * 0.5, 0);
-
-    // Natural arching curve
-    const fPos = quad.attributes.position;
-    for (let i = 0; i < fPos.count; i++) {
-      const y = fPos.getY(i);
-      const t = Math.abs(y) / frondLen;
-      fPos.setZ(i, fPos.getZ(i) - Math.pow(t, 1.7) * 0.85);
-    }
-
-    quad.rotateX(-0.55);
-    quad.rotateY(angle);
-    quad.translate(topX, 3.75, topZ);
-
-    const fCols = new Float32Array(fPos.count * 3);
-    for (let i = 0; i < fPos.count; i++) {
-      fCols[i * 3] = 0.96 + (f % 4) * 0.03;
-      fCols[i * 3 + 1] = 1.0;
-      fCols[i * 3 + 2] = 0.94;
-    }
-    quad.setAttribute('color', new THREE.BufferAttribute(fCols, 3));
-    parts.push(quad.toNonIndexed());
-  }
-
-  // Coconut cluster
+  // Coconut fruit cluster attached to trunk apex
   for (let c = 0; c < 5; c++) {
     const nut = new THREE.DodecahedronGeometry(0.08, 0);
     const na = (c / 5) * Math.PI * 2;
@@ -353,28 +335,63 @@ export function buildCoconutGeometry(): THREE.BufferGeometry {
 
   const merged = mergeGeometries(parts, false);
   merged.computeVertexNormals();
+  return { trunkGeom: merged, topPos: new THREE.Vector3(topX, 3.75, topZ) };
+}
+
+export function buildCoconutFoliageGeometry(topPos: THREE.Vector3): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const numFronds = 16;
+  for (let f = 0; f < numFronds; f++) {
+    const angle = (f / numFronds) * Math.PI * 2 + (f % 2) * 0.15;
+    const frondLen = 2.4 + (f % 3) * 0.25;
+    const quad = new THREE.PlaneGeometry(0.68, frondLen, 1, 6);
+    quad.translate(0, -frondLen * 0.5, 0);
+
+    const fPos = quad.attributes.position;
+    for (let i = 0; i < fPos.count; i++) {
+      const y = fPos.getY(i);
+      const t = Math.abs(y) / frondLen;
+      fPos.setZ(i, fPos.getZ(i) - Math.pow(t, 1.7) * 0.85);
+    }
+
+    quad.rotateX(-0.55);
+    quad.rotateY(angle);
+    quad.translate(topPos.x, topPos.y, topPos.z);
+
+    const fCols = new Float32Array(fPos.count * 3);
+    for (let i = 0; i < fPos.count; i++) {
+      fCols[i * 3] = 0.96 + (f % 4) * 0.03;
+      fCols[i * 3 + 1] = 1.0;
+      fCols[i * 3 + 2] = 0.94;
+    }
+    quad.setAttribute('color', new THREE.BufferAttribute(fCols, 3));
+    parts.push(quad.toNonIndexed());
+  }
+
+  const merged = mergeGeometries(parts, false);
+  merged.computeVertexNormals();
   return merged;
 }
 
-export function buildPalmyraGeometry(): THREE.BufferGeometry {
-  const parts: THREE.BufferGeometry[] = [];
-
-  // Stout columnar dark charcoal trunk
-  const trunk = new THREE.CylinderGeometry(0.08, 0.11, 4.9, 8, 6);
+export function buildPalmyraTrunkGeometry(): THREE.BufferGeometry {
+  const trunk = new THREE.CylinderGeometry(0.08, 0.12, 4.9, 8, 6);
   trunk.translate(0, 2.45, 0);
   const pos = trunk.attributes.position;
   const tColors = new Float32Array(pos.count * 3);
   for (let i = 0; i < pos.count; i++) {
     const y = pos.getY(i);
     const ring = Math.sin(y * 18.0) * 0.03;
-    tColors[i * 3] = 0.22 + ring;
-    tColors[i * 3 + 1] = 0.21 + ring;
-    tColors[i * 3 + 2] = 0.20 + ring;
+    tColors[i * 3] = 0.24 + ring;
+    tColors[i * 3 + 1] = 0.23 + ring;
+    tColors[i * 3 + 2] = 0.22 + ring;
   }
   trunk.setAttribute('color', new THREE.BufferAttribute(tColors, 3));
-  parts.push(trunk.toNonIndexed());
+  trunk.computeVertexNormals();
+  return trunk;
+}
 
-  // 22 Radiating Fan Leaves forming dense spherical crown
+export function buildPalmyraFoliageGeometry(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
   const numFronds = 22;
   for (let f = 0; f < numFronds; f++) {
     const angle = (f / numFronds) * Math.PI * 2 + (f % 3) * 0.12;
@@ -397,7 +414,7 @@ export function buildPalmyraGeometry(): THREE.BufferGeometry {
     parts.push(fan.toNonIndexed());
   }
 
-  // Dried hanging skirt fronds below green crown
+  // Dried hanging skirt fronds below crown
   for (let d = 0; d < 10; d++) {
     const da = (d / 10) * Math.PI * 2;
     const skirt = new THREE.PlaneGeometry(0.65, 0.90);
@@ -422,10 +439,8 @@ export function buildPalmyraGeometry(): THREE.BufferGeometry {
   return merged;
 }
 
-export function buildTdefGeometry(): THREE.BufferGeometry {
+export function buildTdefTrunkGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-
-  // Dividing mottled trunk
   const trunk = new THREE.CylinderGeometry(0.08, 0.13, 2.2, 7, 3);
   trunk.translate(0, 1.1, 0);
   const tPos = trunk.attributes.position;
@@ -458,7 +473,13 @@ export function buildTdefGeometry(): THREE.BufferGeometry {
     parts.push(branch.toNonIndexed());
   }
 
-  // Intersecting organic canopy cloud planes
+  const merged = mergeGeometries(parts, false);
+  merged.computeVertexNormals();
+  return merged;
+}
+
+export function buildTdefFoliageGeometry(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
   for (let c = 0; c < 8; c++) {
     const ca = (c / 8) * Math.PI * 2;
     const cRadius = 1.0 + (c % 2) * 0.4;
@@ -504,18 +525,29 @@ interface SriharikotaVegetationProps {
   padDrop?: number;
 }
 
-export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
-  padDrop = 0,
-}) => {
-  const casuarinaRef = useRef<THREE.InstancedMesh>(null);
-  const coconutRef = useRef<THREE.InstancedMesh>(null);
-  const palmyraRef = useRef<THREE.InstancedMesh>(null);
-  const tdefRef = useRef<THREE.InstancedMesh>(null);
+export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ padDrop = 0 }) => {
+  // Instanced mesh refs for Trunks (Solid standard bark)
+  const casuarinaTrunkRef = useRef<THREE.InstancedMesh>(null);
+  const coconutTrunkRef = useRef<THREE.InstancedMesh>(null);
+  const palmyraTrunkRef = useRef<THREE.InstancedMesh>(null);
+  const tdefTrunkRef = useRef<THREE.InstancedMesh>(null);
+
+  // Instanced mesh refs for Foliage (Alpha-tested leafy textures)
+  const casuarinaFoliageRef = useRef<THREE.InstancedMesh>(null);
+  const coconutFoliageRef = useRef<THREE.InstancedMesh>(null);
+  const palmyraFoliageRef = useRef<THREE.InstancedMesh>(null);
+  const tdefFoliageRef = useRef<THREE.InstancedMesh>(null);
   const scrubRef = useRef<THREE.InstancedMesh>(null);
 
-  // Materials with authentic procedural foliage textures & alpha-cutout
+  // Materials: Solid bark for trunks, procedural alpha-cutouts for fronds/needles
   const materials = useMemo(() => {
     return {
+      bark: new THREE.MeshStandardMaterial({
+        color: '#423225',
+        roughness: 0.88,
+        metalness: 0.04,
+        vertexColors: true,
+      }),
       casuarina: new THREE.MeshStandardMaterial({
         map: getCachedCasuarinaTexture(),
         transparent: true,
@@ -565,16 +597,21 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
 
   // Geometries
   const geoms = useMemo(() => {
+    const coconutTrunkData = buildCoconutTrunkGeometry();
     return {
-      casuarina: buildCasuarinaGeometry(),
-      coconut: buildCoconutGeometry(),
-      palmyra: buildPalmyraGeometry(),
-      tdef: buildTdefGeometry(),
+      casuarinaTrunk: buildCasuarinaTrunkGeometry(),
+      casuarinaFoliage: buildCasuarinaFoliageGeometry(),
+      coconutTrunk: coconutTrunkData.trunkGeom,
+      coconutFoliage: buildCoconutFoliageGeometry(coconutTrunkData.topPos),
+      palmyraTrunk: buildPalmyraTrunkGeometry(),
+      palmyraFoliage: buildPalmyraFoliageGeometry(),
+      tdefTrunk: buildTdefTrunkGeometry(),
+      tdefFoliage: buildTdefFoliageGeometry(),
       scrub: buildScrubGeometry(),
     };
   }, []);
 
-  // Instance distribution across authentic Sriharikota zones
+  // Instance distribution with exact terrain elevation anchoring
   const { casuarinaData, coconutData, palmyraData, tdefData, scrubData } = useMemo(() => {
     const dummy = new THREE.Object3D();
 
@@ -584,8 +621,8 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
       let x = 0, z = 0;
       if (i < 14) {
         // West/Southwest flank grove (visible behind left cards)
-        x = -4.8 - (i % 5) * 1.8 - Math.sin(i * 1.7) * 0.9;
-        z = -6.0 - Math.floor(i / 5) * 3.2 - Math.cos(i * 2.1) * 1.1;
+        x = -5.2 - (i % 5) * 1.8 - Math.sin(i * 1.7) * 0.9;
+        z = -6.5 - Math.floor(i / 5) * 3.2 - Math.cos(i * 2.1) * 1.1;
       } else if (i < 24) {
         // East coastal windbreak (framing right margin)
         x = 5.2 + ((i - 14) % 4) * 2.1 + Math.sin(i * 2.3) * 0.8;
@@ -598,7 +635,8 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
 
       const scale = 0.85 + (i % 4) * 0.12;
       const hScale = scale * (0.92 + (i % 3) * 0.18);
-      dummy.position.set(x, -0.42, z);
+      const groundY = getGroundElevation(x, z) - 0.12;
+      dummy.position.set(x, groundY, z);
       dummy.scale.set(scale, hScale, scale);
       dummy.rotation.set(0, (i * 1.6) % (Math.PI * 2), 0);
       dummy.updateMatrix();
@@ -613,17 +651,18 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
       let x = 0, z = 0;
       if (i < 12) {
         // East coast stand (leaning towards Bay of Bengal)
-        x = 4.5 + (i % 4) * 2.2 + Math.sin(i * 1.8) * 0.7;
-        z = -4.5 - Math.floor(i / 4) * 3.2 - Math.cos(i * 2.4) * 0.8;
+        x = 4.8 + (i % 4) * 2.2 + Math.sin(i * 1.8) * 0.7;
+        z = -4.8 - Math.floor(i / 4) * 3.2 - Math.cos(i * 2.4) * 0.8;
       } else {
         // West lagoon margin
-        x = -4.2 - ((i - 12) % 3) * 2.4 - Math.sin(i * 2.1) * 0.8;
-        z = -5.0 - Math.floor((i - 12) / 3) * 3.5;
+        x = -4.6 - ((i - 12) % 3) * 2.4 - Math.sin(i * 2.1) * 0.8;
+        z = -5.5 - Math.floor((i - 12) / 3) * 3.5;
       }
 
       const scale = 0.92 + (i % 3) * 0.12;
       const hScale = scale * (0.95 + (i % 4) * 0.15);
-      dummy.position.set(x, -0.42, z);
+      const groundY = getGroundElevation(x, z) - 0.12;
+      dummy.position.set(x, groundY, z);
       dummy.scale.set(scale, hScale, scale);
       dummy.rotation.set(0, (i * 2.1) % (Math.PI * 2), 0);
       dummy.updateMatrix();
@@ -637,8 +676,8 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
     for (let i = 0; i < 18; i++) {
       let x = 0, z = 0;
       if (i < 8) {
-        x = -6.0 - (i % 4) * 2.4 + Math.sin(i * 2.2) * 0.6;
-        z = -8.0 - Math.floor(i / 4) * 3.8;
+        x = -6.2 - (i % 4) * 2.4 + Math.sin(i * 2.2) * 0.6;
+        z = -8.2 - Math.floor(i / 4) * 3.8;
       } else if (i < 14) {
         x = 6.2 + ((i - 8) % 3) * 2.6 + Math.sin(i * 1.9) * 0.8;
         z = -7.5 - Math.floor((i - 8) / 3) * 3.6;
@@ -649,52 +688,59 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
 
       const scale = 0.90 + (i % 4) * 0.14;
       const hScale = scale * (0.95 + (i % 3) * 0.16);
-      dummy.position.set(x, -0.42, z);
+      const groundY = getGroundElevation(x, z) - 0.12;
+      dummy.position.set(x, groundY, z);
       dummy.scale.set(scale, hScale, scale);
-      dummy.rotation.set(0, (i * 1.7) % (Math.PI * 2), 0);
+      dummy.rotation.set(0, (i * 2.7) % (Math.PI * 2), 0);
       dummy.updateMatrix();
 
       const tint = new THREE.Color(0.98, 1.0, 0.96);
       pal.push({ matrix: dummy.matrix.clone(), color: tint });
     }
 
-    // 4. Tropical Dry Evergreen Forest (TDEF) Broadleaf Trees (14 trees)
+    // 4. Tropical Dry Evergreen Broadleaf Canopy (14 trees)
     const tdef: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
     for (let i = 0; i < 14; i++) {
       let x = 0, z = 0;
-      if (i < 7) {
-        x = -7.5 - (i % 3) * 2.8 - Math.sin(i * 2.1) * 0.8;
-        z = -9.0 - Math.floor(i / 3) * 4.0;
+      if (i < 6) {
+        x = -5.8 - (i % 3) * 2.6 - Math.sin(i * 1.9) * 0.8;
+        z = -5.5 - Math.floor(i / 3) * 4.2;
+      } else if (i < 10) {
+        x = 5.8 + ((i - 6) % 2) * 2.8 + Math.sin(i * 2.5) * 0.7;
+        z = -6.8 - Math.floor((i - 6) / 2) * 4.0;
       } else {
-        x = 7.8 + ((i - 7) % 3) * 2.8 + Math.sin(i * 2.5) * 0.8;
-        z = -9.5 - Math.floor((i - 7) / 3) * 4.0;
+        x = -14 + (i - 10) * 8.5;
+        z = -20 - (i % 2) * 4.0;
       }
 
       const scale = 0.95 + (i % 3) * 0.15;
-      dummy.position.set(x, -0.42, z);
+      const groundY = getGroundElevation(x, z) - 0.12;
+      dummy.position.set(x, groundY, z);
       dummy.scale.set(scale, scale, scale);
-      dummy.rotation.set(0, (i * 1.9) % (Math.PI * 2), 0);
-      dummy.updateMatrix();
-
-      const tint = new THREE.Color(0.95 + (i % 2) * 0.05, 1.0, 0.96);
-      tdef.push({ matrix: dummy.matrix.clone(), color: tint });
-    }
-
-    // 5. Coastal Dune Scrub & Grass Tufts (32 instances around apron)
-    const scb: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    for (let i = 0; i < 32; i++) {
-      const angle = (i / 32) * Math.PI * 2 + ((i * 7) % 5);
-      const r = 4.2 + (i % 4) * 1.8 + Math.sin(i * 1.5) * 0.6;
-      const x = Math.cos(angle) * r;
-      const z = Math.sin(angle) * r - 2.5;
-
-      const scale = 0.70 + (i % 3) * 0.35;
-      dummy.position.set(x, -0.42, z);
-      dummy.scale.set(scale, scale * 0.8, scale);
       dummy.rotation.set(0, (i * 1.8) % (Math.PI * 2), 0);
       dummy.updateMatrix();
 
-      scb.push({ matrix: dummy.matrix.clone(), color: new THREE.Color(1, 1, 1) });
+      const tint = new THREE.Color(0.95 + (i % 2) * 0.05, 1.0, 0.94);
+      tdef.push({ matrix: dummy.matrix.clone(), color: tint });
+    }
+
+    // 5. Ground Sand-Binding Scrub & Coastal Grass (42 clumps)
+    const scb: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
+    for (let i = 0; i < 42; i++) {
+      const angle = (i / 42) * Math.PI * 2 + Math.sin(i * 3.1) * 0.3;
+      const radius = 5.2 + (i % 7) * 2.4 + Math.cos(i * 2.4) * 0.9;
+      const x = Math.cos(angle) * (radius * 1.3);
+      const z = -4.5 + Math.sin(angle) * radius;
+
+      const scale = 0.65 + (i % 5) * 0.15;
+      const groundY = getGroundElevation(x, z) - 0.04;
+      dummy.position.set(x, groundY, z);
+      dummy.scale.set(scale, scale * 0.85, scale);
+      dummy.rotation.set(0, (i * 2.4) % (Math.PI * 2), 0);
+      dummy.updateMatrix();
+
+      const tint = new THREE.Color(0.92, 0.98, 0.88);
+      scb.push({ matrix: dummy.matrix.clone(), color: tint });
     }
 
     return {
@@ -708,38 +754,71 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
 
   // Update instanced matrices
   useEffect(() => {
-    if (casuarinaRef.current) {
+    // Casuarina
+    if (casuarinaTrunkRef.current) {
       casuarinaData.forEach((d, i) => {
-        casuarinaRef.current!.setMatrixAt(i, d.matrix);
-        casuarinaRef.current!.setColorAt(i, d.color);
+        casuarinaTrunkRef.current!.setMatrixAt(i, d.matrix);
       });
-      casuarinaRef.current.instanceMatrix.needsUpdate = true;
-      if (casuarinaRef.current.instanceColor) casuarinaRef.current.instanceColor.needsUpdate = true;
+      casuarinaTrunkRef.current.instanceMatrix.needsUpdate = true;
     }
-    if (coconutRef.current) {
+    if (casuarinaFoliageRef.current) {
+      casuarinaData.forEach((d, i) => {
+        casuarinaFoliageRef.current!.setMatrixAt(i, d.matrix);
+        casuarinaFoliageRef.current!.setColorAt(i, d.color);
+      });
+      casuarinaFoliageRef.current.instanceMatrix.needsUpdate = true;
+      if (casuarinaFoliageRef.current.instanceColor) casuarinaFoliageRef.current.instanceColor.needsUpdate = true;
+    }
+
+    // Coconut
+    if (coconutTrunkRef.current) {
       coconutData.forEach((d, i) => {
-        coconutRef.current!.setMatrixAt(i, d.matrix);
-        coconutRef.current!.setColorAt(i, d.color);
+        coconutTrunkRef.current!.setMatrixAt(i, d.matrix);
       });
-      coconutRef.current.instanceMatrix.needsUpdate = true;
-      if (coconutRef.current.instanceColor) coconutRef.current.instanceColor.needsUpdate = true;
+      coconutTrunkRef.current.instanceMatrix.needsUpdate = true;
     }
-    if (palmyraRef.current) {
+    if (coconutFoliageRef.current) {
+      coconutData.forEach((d, i) => {
+        coconutFoliageRef.current!.setMatrixAt(i, d.matrix);
+        coconutFoliageRef.current!.setColorAt(i, d.color);
+      });
+      coconutFoliageRef.current.instanceMatrix.needsUpdate = true;
+      if (coconutFoliageRef.current.instanceColor) coconutFoliageRef.current.instanceColor.needsUpdate = true;
+    }
+
+    // Palmyra
+    if (palmyraTrunkRef.current) {
       palmyraData.forEach((d, i) => {
-        palmyraRef.current!.setMatrixAt(i, d.matrix);
-        palmyraRef.current!.setColorAt(i, d.color);
+        palmyraTrunkRef.current!.setMatrixAt(i, d.matrix);
       });
-      palmyraRef.current.instanceMatrix.needsUpdate = true;
-      if (palmyraRef.current.instanceColor) palmyraRef.current.instanceColor.needsUpdate = true;
+      palmyraTrunkRef.current.instanceMatrix.needsUpdate = true;
     }
-    if (tdefRef.current) {
+    if (palmyraFoliageRef.current) {
+      palmyraData.forEach((d, i) => {
+        palmyraFoliageRef.current!.setMatrixAt(i, d.matrix);
+        palmyraFoliageRef.current!.setColorAt(i, d.color);
+      });
+      palmyraFoliageRef.current.instanceMatrix.needsUpdate = true;
+      if (palmyraFoliageRef.current.instanceColor) palmyraFoliageRef.current.instanceColor.needsUpdate = true;
+    }
+
+    // TDEF
+    if (tdefTrunkRef.current) {
       tdefData.forEach((d, i) => {
-        tdefRef.current!.setMatrixAt(i, d.matrix);
-        tdefRef.current!.setColorAt(i, d.color);
+        tdefTrunkRef.current!.setMatrixAt(i, d.matrix);
       });
-      tdefRef.current.instanceMatrix.needsUpdate = true;
-      if (tdefRef.current.instanceColor) tdefRef.current.instanceColor.needsUpdate = true;
+      tdefTrunkRef.current.instanceMatrix.needsUpdate = true;
     }
+    if (tdefFoliageRef.current) {
+      tdefData.forEach((d, i) => {
+        tdefFoliageRef.current!.setMatrixAt(i, d.matrix);
+        tdefFoliageRef.current!.setColorAt(i, d.color);
+      });
+      tdefFoliageRef.current.instanceMatrix.needsUpdate = true;
+      if (tdefFoliageRef.current.instanceColor) tdefFoliageRef.current.instanceColor.needsUpdate = true;
+    }
+
+    // Scrub
     if (scrubRef.current) {
       scrubData.forEach((d, i) => {
         scrubRef.current!.setMatrixAt(i, d.matrix);
@@ -752,34 +831,58 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({
 
   return (
     <group position={[0, -padDrop, 0]}>
-      {/* 1. Casuarina Spire Windbreak */}
+      {/* 1. Casuarina Whispering Pine Spire Windbreak (Solid Trunk + Drooping Needles) */}
       <instancedMesh
-        ref={casuarinaRef}
-        args={[geoms.casuarina, materials.casuarina, casuarinaData.length]}
+        ref={casuarinaTrunkRef}
+        args={[geoms.casuarinaTrunk, materials.bark, casuarinaData.length]}
+        castShadow
+        receiveShadow
+      />
+      <instancedMesh
+        ref={casuarinaFoliageRef}
+        args={[geoms.casuarinaFoliage, materials.casuarina, casuarinaData.length]}
         castShadow
         receiveShadow
       />
 
-      {/* 2. South Indian Coconut Palms */}
+      {/* 2. South Indian Coconut Palms (Curved Solid Trunk + Arching Fronds) */}
       <instancedMesh
-        ref={coconutRef}
-        args={[geoms.coconut, materials.coconut, coconutData.length]}
+        ref={coconutTrunkRef}
+        args={[geoms.coconutTrunk, materials.bark, coconutData.length]}
+        castShadow
+        receiveShadow
+      />
+      <instancedMesh
+        ref={coconutFoliageRef}
+        args={[geoms.coconutFoliage, materials.coconut, coconutData.length]}
         castShadow
         receiveShadow
       />
 
-      {/* 3. Palmyra Fan Palms */}
+      {/* 3. Palmyra Fan Palms (Columnar Charcoal Trunk + Fan Fronds & Skirt) */}
       <instancedMesh
-        ref={palmyraRef}
-        args={[geoms.palmyra, materials.palmyra, palmyraData.length]}
+        ref={palmyraTrunkRef}
+        args={[geoms.palmyraTrunk, materials.bark, palmyraData.length]}
+        castShadow
+        receiveShadow
+      />
+      <instancedMesh
+        ref={palmyraFoliageRef}
+        args={[geoms.palmyraFoliage, materials.palmyra, palmyraData.length]}
         castShadow
         receiveShadow
       />
 
-      {/* 4. Tropical Dry Evergreen Shade Trees */}
+      {/* 4. Tropical Dry Evergreen Shade Trees (Gnarled Solid Trunk + Umbrella Canopy) */}
       <instancedMesh
-        ref={tdefRef}
-        args={[geoms.tdef, materials.tdef, tdefData.length]}
+        ref={tdefTrunkRef}
+        args={[geoms.tdefTrunk, materials.bark, tdefData.length]}
+        castShadow
+        receiveShadow
+      />
+      <instancedMesh
+        ref={tdefFoliageRef}
+        args={[geoms.tdefFoliage, materials.tdef, tdefData.length]}
         castShadow
         receiveShadow
       />

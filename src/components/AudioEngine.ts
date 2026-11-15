@@ -74,6 +74,22 @@ class CosmicAudio {
     return !this.isMuted;
   }
 
+  public unmute(): boolean {
+    this.init();
+    if (!this.ctx || !this.masterGain) return false;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    this.isMuted = false;
+    const t = this.ctx.currentTime;
+    this.masterGain.gain.cancelScheduledValues(t);
+    this.masterGain.gain.setValueAtTime(0.001, t);
+    this.masterGain.gain.linearRampToValueAtTime(1.0, t + 0.3);
+    this.startSynthesizer();
+    this.playTelemetryChirp(960, 0.09);
+    return true;
+  }
+
   private stopSynthesizer() {
     if (!this.isRunning) return;
     try {
