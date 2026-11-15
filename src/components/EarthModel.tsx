@@ -256,9 +256,9 @@ export const EarthModel: React.FC<EarthModelProps> = ({
       cloudMaterial.opacity = 0.0;
       atmosphereMaterial.uniforms.uOpacity.value = 0.0;
       if (satellitesGroup.current) satellitesGroup.current.visible = false;
-      if (scrollProgress < 0.285) {
+      if (scrollProgress < 0.320) {
         earthGroup.current.position.y = -28.0;
-      } else if (scrollProgress > 0.475) {
+      } else if (scrollProgress > 0.515) {
         earthGroup.current.position.y = -36.0;
       }
     }
@@ -270,6 +270,17 @@ export const EarthModel: React.FC<EarthModelProps> = ({
       <group scale={[scale, scale, scale]}>
         <mesh ref={earthRef} rotation={[0.2, -Math.PI * 0.65, 0]} material={surfaceMaterial}>
           <sphereGeometry args={[1, 64, 48]} />
+          {/* Bangalore ISRO Telemetry Ground Station Reticle */}
+          <group position={[0.209, 0.224, -0.952]}>
+            <mesh>
+              <ringGeometry args={[0.015, 0.022, 24]} />
+              <meshBasicMaterial color="#38bdf8" transparent opacity={0.9} side={THREE.DoubleSide} />
+            </mesh>
+            <mesh>
+              <circleGeometry args={[0.008, 16]} />
+              <meshBasicMaterial color="#38bdf8" transparent opacity={0.95} />
+            </mesh>
+          </group>
         </mesh>
 
         <mesh ref={cloudRef} rotation={[0.2, -Math.PI * 0.65, 0]} material={cloudMaterial}>

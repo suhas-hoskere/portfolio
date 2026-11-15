@@ -247,6 +247,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   const sparkPointsRef = useRef<THREE.Points>(null);
   const beaconLightRef = useRef<THREE.PointLight>(null);
   const flameTrenchLightRef = useRef<THREE.PointLight>(null);
+  const cryoVentPointsRef = useRef<THREE.Points>(null);
 
   const terrain = useMemo(() => getCachedTerrainTextures(), []);
   const smokeTexture = useMemo(() => getCachedSmokeTexture(), []);
@@ -335,7 +336,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         metalness: 0.85,
       }),
       smokeMat: new THREE.PointsMaterial({
-        size: 3.2,
+        size: 5.2,
         map: smokeTexture,
         transparent: true,
         opacity: 0.0,
@@ -355,6 +356,14 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         map: mistTexture,
         transparent: true,
         opacity: 0.24,
+        depthWrite: false,
+        blending: THREE.NormalBlending,
+      }),
+      cryoVentMat: new THREE.PointsMaterial({
+        size: 1.8,
+        map: mistTexture,
+        transparent: true,
+        opacity: 0.0,
         depthWrite: false,
         blending: THREE.NormalBlending,
       }),
@@ -386,6 +395,28 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     }
     geom.computeVertexNormals();
     return geom;
+  }, []);
+
+  // 3B. Cryogenic LOX Boil-off Vapor Bleed Data (Standby & Early Ignition)
+  const cryoCount = 48;
+  const { cryoGeom, cryoData } = useMemo(() => {
+    const geom = new THREE.BufferGeometry();
+    const pos = new Float32Array(cryoCount * 3);
+    const data = [];
+    for (let i = 0; i < cryoCount; i++) {
+      pos[i * 3] = 0.06;
+      pos[i * 3 + 1] = 2.15;
+      pos[i * 3 + 2] = 0.42;
+      data.push({
+        vx: -0.35 + (Math.random() - 0.5) * 0.15,
+        vy: 0.08 + Math.random() * 0.12,
+        vz: 0.18 + (Math.random() - 0.5) * 0.12,
+        age: Math.random() * 2.2,
+        life: 1.8 + Math.random() * 1.2,
+      });
+    }
+    geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    return { cryoGeom: geom, cryoData: data };
   }, []);
 
   // 4. Bilateral Trench Smoke Simulation Data
@@ -507,6 +538,36 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     }
 
     // 3. Bilateral Trench Smoke & Deluge Steam
+
+    // 3B. Cryogenic Boil-off Vapor Animation
+    if (cryoVentPointsRef.current) {
+      if (sp < 0.080) {
+        cryoVentPointsRef.current.visible = true;
+        const cryoFade = 1.0 - (sp / 0.080);
+        materials.cryoVentMat.opacity = cryoFade * 0.48;
+
+        const cPosAttr = cryoGeom.getAttribute('position') as THREE.BufferAttribute;
+        const cPosArray = cPosAttr.array as Float32Array;
+
+        for (let i = 0; i < cryoCount; i++) {
+          const p = cryoData[i];
+          p.age += delta;
+          if (p.age >= p.life) {
+            p.age = 0;
+            cPosArray[i * 3] = 0.06 + (Math.random() - 0.5) * 0.06;
+            cPosArray[i * 3 + 1] = 2.15 + (Math.random() - 0.5) * 0.08;
+            cPosArray[i * 3 + 2] = 0.42 + (Math.random() - 0.5) * 0.06;
+          } else {
+            cPosArray[i * 3] += p.vx * delta;
+            cPosArray[i * 3 + 1] += p.vy * delta;
+            cPosArray[i * 3 + 2] += p.vz * delta;
+          }
+        }
+        cPosAttr.needsUpdate = true;
+      } else {
+        cryoVentPointsRef.current.visible = false;
+      }
+    }
 
     // 4. Bilateral Trench Smoke & Deluge Steam ("third gives smoke")
     const isSmoking = sp >= 0.125 && sp < 0.260;
@@ -811,6 +872,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       </mesh>
 
       {/* 7. Lateral Trench Bilateral Billowing Smoke & Steam */}
+      <points ref={cryoVentPointsRef} geometry={cryoGeom} material={materials.cryoVentMat} />
       <points ref={smokePointsRef} geometry={smokeGeom} material={materials.smokeMat} />
 
       {/* 9. Flying Sparks from Flame Trench */}

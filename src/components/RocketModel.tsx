@@ -151,6 +151,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
   // Translunar Injection (TLI) Thruster Pulse
   const tliFlameRef = useRef<THREE.Mesh>(null);
+  const machConeRef = useRef<THREE.Mesh>(null);
+  const sepFlashLeftRef = useRef<THREE.Mesh>(null);
+  const sepFlashRightRef = useRef<THREE.Mesh>(null);
   const tliLightRef = useRef<THREE.PointLight>(null);
 
   // Idle Cryogenic Boil-Off Vapour Venting
@@ -368,6 +371,21 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
       }),
+      machConeMat: new THREE.MeshBasicMaterial({
+        color: '#e0f2fe',
+        transparent: true,
+        opacity: 0.0,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+      sepFlashMat: new THREE.MeshBasicMaterial({
+        color: '#fff7ed',
+        transparent: true,
+        opacity: 0.0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
     };
   }, [flameTexture, softPlumeTexture, softCoreTexture]);
 
@@ -506,6 +524,10 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         boosterLeft.current.visible = true;
         boosterRight.current.visible = true;
         const sep = (scrollProgress - 0.315) / 0.025;
+        const flashIntensity = Math.sin(sep * Math.PI) * 0.95;
+        materials.sepFlashMat.opacity = flashIntensity;
+        if (sepFlashLeftRef.current) sepFlashLeftRef.current.visible = sep < 0.8;
+        if (sepFlashRightRef.current) sepFlashRightRef.current.visible = sep < 0.8;
         boosterLeft.current.position.x = -0.76 - sep * 3.5;
         boosterLeft.current.position.y = -2.1 - sep * 3.0;
         boosterLeft.current.rotation.z = sep * 0.4;
@@ -519,6 +541,21 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         boosterLeft.current.rotation.set(0, 0, 0);
         boosterRight.current.position.set(0.76, -2.1, 0);
         boosterRight.current.rotation.set(0, 0, 0);
+      }
+    }
+
+    // Transonic Aerodynamic Vapor Condensation Cone (Prandtl-Glauert Singularity at Max-Q)
+    if (machConeRef.current) {
+      if (scrollProgress >= 0.270 && scrollProgress <= 0.315) {
+        machConeRef.current.visible = true;
+        const qFrac = (scrollProgress - 0.270) / (0.315 - 0.270);
+        const qBell = Math.sin(qFrac * Math.PI);
+        const shimmer = (1.0 + Math.sin(t * 55) * 0.12) * qBell;
+        materials.machConeMat.opacity = qBell * 0.42;
+        machConeRef.current.scale.set(1.0 + shimmer * 0.04, 1.0, 1.0 + shimmer * 0.04);
+      } else {
+        machConeRef.current.visible = false;
+        materials.machConeMat.opacity = 0;
       }
     }
 
@@ -895,6 +932,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           ))}
         </group>
 
+        {/* Aerodynamic Prandtl-Glauert Transonic Shock Condensation Cone (Max-Q) */}
+        <mesh ref={machConeRef} position={[0, 2.75, 0]} material={materials.machConeMat} visible={false}>
+          <cylinderGeometry args={[1.35, 0.65, 0.80, 32, 1, true]} />
+        </mesh>
+
         {/* Interstage Separation Ring with Circumferential Stiffener Flanges */}
         <mesh position={[0, 0.45, 0]} material={materials.hullDark}>
           <cylinderGeometry args={[0.445, 0.445, 0.25, 32]} />
@@ -953,6 +995,10 @@ export const RocketModel: React.FC<RocketModelProps> = ({
            ========================================================================= */}
         {/* Left S200 Booster (ISRO Livery) */}
         <group ref={boosterLeft} position={[-0.76, -2.1, 0]}>
+          {/* Separation Jettison Motor Pyrotechnic Flash */}
+          <mesh ref={sepFlashLeftRef} position={[0, 1.62, 0]} material={materials.sepFlashMat} visible={false}>
+            <sphereGeometry args={[0.34, 12, 12]} />
+          </mesh>
           {/* Canted Booster Aerodynamic Nose Cone (Outward Cant ~3 deg) */}
           <mesh position={[-0.04, 2.15, 0]} rotation={[0, 0, 0.05]} material={materials.hullWhite}>
             <coneGeometry args={[0.34, 1.15, 32]} />
@@ -1023,6 +1069,10 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
         {/* Right S200 Booster (INDIA Livery) */}
         <group ref={boosterRight} position={[0.76, -2.1, 0]}>
+          {/* Separation Jettison Motor Pyrotechnic Flash */}
+          <mesh ref={sepFlashRightRef} position={[0, 1.62, 0]} material={materials.sepFlashMat} visible={false}>
+            <sphereGeometry args={[0.34, 12, 12]} />
+          </mesh>
           {/* Canted Booster Aerodynamic Nose Cone (Outward Cant ~3 deg) */}
           <mesh position={[0.04, 2.15, 0]} rotation={[0, 0, -0.05]} material={materials.hullWhite}>
             <coneGeometry args={[0.34, 1.15, 32]} />

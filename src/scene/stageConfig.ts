@@ -219,7 +219,7 @@ export const STAGE_CONFIG: StageConfig = {
     },
     fireAndSmoke: {
       maxFlameParticles: 320,
-      maxSmokeParticles: 180,
+      maxSmokeParticles: 420,
       maxSparks: 60,
       lateralTrenchVelocity: 4.2,
       smokeDissipationRate: 0.28,
