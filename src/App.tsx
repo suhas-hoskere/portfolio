@@ -20,28 +20,9 @@ export const App: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Pre-flight Launch Initialization State (Plays 5-second countdown with T-3 dashboard reveal & T-0 ignition)
-  // Shows once per session; skips on reload within the same session
-  const [isPreloading, setIsPreloading] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return !sessionStorage.getItem('portfolio_intro_seen');
-      } catch {
-        return true;
-      }
-    }
-    return true;
-  });
-  const [showDashboard, setShowDashboard] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return !!sessionStorage.getItem('portfolio_intro_seen');
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  });
+  // Pre-flight Launch Initialization State (Plays 5-second entrance intro on every load/reload)
+  const [isPreloading, setIsPreloading] = useState(true);
+  const [showDashboard, setShowDashboard] = useState(false);
   const [isIgnited, setIsIgnited] = useState(false);
 
   // 10-Second Cinematic Liftoff State Machine
@@ -57,14 +38,10 @@ export const App: React.FC = () => {
     setShowDashboard(true);
   }, []);
 
-  const handleIgnition = useCallback(() => {
-    setIsIgnited(true);
-  }, []);
-
   const handlePreloaderComplete = useCallback(() => {
     setShowDashboard(true);
     setIsPreloading(false);
-    setIsIgnited(true);
+    // Cold pad on entry: no fire at starting itself. Fire only ignites when user scrolls or launches.
   }, []);
 
   // Discrete Stage State (Choreographed flight stage 0 to 5)
@@ -272,7 +249,6 @@ export const App: React.FC = () => {
         {isPreloading && (
           <LaunchPreloader
             onShowDashboard={handleShowDashboard}
-            onIgnition={handleIgnition}
             onComplete={handlePreloaderComplete}
           />
         )}

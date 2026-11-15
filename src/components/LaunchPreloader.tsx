@@ -50,13 +50,11 @@ export const INTRO_CONFIG = {
 
 interface LaunchPreloaderProps {
   onShowDashboard?: () => void;
-  onIgnition?: () => void;
   onComplete: () => void;
 }
 
 export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
   onShowDashboard,
-  onIgnition,
   onComplete,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -68,7 +66,6 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const onShowDashboardRef = useRef(onShowDashboard);
-  const onIgnitionRef = useRef(onIgnition);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -77,10 +74,6 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
   useEffect(() => {
     onShowDashboardRef.current = onShowDashboard;
   }, [onShowDashboard]);
-
-  useEffect(() => {
-    onIgnitionRef.current = onIgnition;
-  }, [onIgnition]);
 
   // Detect prefers-reduced-motion
   const prefersReduced = useRef(
@@ -227,21 +220,10 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
         onShowDashboardRef.current();
       }
 
-      // Trigger launchpad ignition at 4.5s
-      if (currentElapsed >= 4.5 && onIgnitionRef.current) {
-        onIgnitionRef.current();
-      }
-
-      // Completion: fade out finished at 5.0s
+      // Completion: fade out finished at 5.0s (reveals cold launchpad; no fire until scroll)
       if (currentElapsed >= totalDuration && assetsLoaded) {
         completedRef.current = true;
         setIsDone(true);
-
-        try {
-          sessionStorage.setItem(INTRO_CONFIG.sessionKey, 'true');
-        } catch {
-          // ignore storage failure in private mode
-        }
 
         if (onCompleteRef.current) {
           onCompleteRef.current();
