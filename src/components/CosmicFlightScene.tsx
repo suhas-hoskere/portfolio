@@ -201,12 +201,15 @@ const DynamicAtmosphericFog: React.FC<{
   scrollProgressRef: React.MutableRefObject<number>;
 }> = ({ scrollProgressRef }) => {
   const { scene } = useThree();
+  const lastSp = useRef(-1);
 
   useFrame(() => {
     const sp = scrollProgressRef.current;
+    if (Math.abs(sp - lastSp.current) < 0.0008) return;
+    lastSp.current = sp;
+
     if (sp < 0.22) {
       const u = sp / 0.22;
-      // Soft coastal dawn maritime haze at ground level, seamlessly dissolving the horizon
       const density = THREE.MathUtils.lerp(0.014, 0.0, u);
       if (!scene.fog) {
         scene.fog = new THREE.FogExp2('#1e2a38', density);
@@ -230,10 +233,13 @@ const DynamicSpaceLighting: React.FC<{
   const sunLightRef = useRef<THREE.DirectionalLight>(null);
   const bounceLightRef = useRef<THREE.DirectionalLight>(null);
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
+  const lastSp = useRef(-1);
 
   useFrame(() => {
     const sp = scrollProgressRef.current;
     if (!sunLightRef.current || !bounceLightRef.current || !ambientLightRef.current) return;
+    if (Math.abs(sp - lastSp.current) < 0.0008) return;
+    lastSp.current = sp;
 
     if (sp < 0.18) {
       // Stage 0: Ground Spaceport at Sriharikota (Warm golden morning dawn sunlight & coastal daylight)
@@ -622,7 +628,7 @@ const AdaptiveQualityController: React.FC = () => {
   return null;
 };
 
-export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
+export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = React.memo(({
   scrollProgressRef,
   scrollSpeedRef,
   activeStageIndex,
@@ -673,4 +679,4 @@ export const CosmicFlightScene: React.FC<CosmicFlightSceneProps> = ({
       </Canvas>
     </div>
   );
-};
+});

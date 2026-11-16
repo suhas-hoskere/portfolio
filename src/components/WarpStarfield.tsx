@@ -19,102 +19,35 @@ const skyFragmentShader = `
   uniform float uTime;
   uniform float uAltitude; // 0.0 (ground) -> 1.0 (deep space)
 
-  // Fast GPU hash & procedural noise for organic interstellar nebulae
-  float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    return fract(p.x * p.y);
-  }
-
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-  }
-
-  float fbm(vec2 p) {
-    float v = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 4; i++) {
-      v += a * noise(p);
-      p *= 2.0;
-      a *= 0.5;
-    }
-    return v;
-  }
-
   void main() {
     vec2 uv = vUv * 2.0 - 1.0;
-    float t = uTime * 0.015;
-
-    // =========================================================================
-    // 1. PHYSICAL ATMOSPHERIC DAYLIGHT & DAWN HORIZON (Ground / Low Ascent)
-    // =========================================================================
-    // Authentic Sriharikota / Bay of Bengal morning dawn Rayleigh sky gradient
-    // Screen horizon sits at vUv.y ≈ 0.44 (just above the launch apron and ocean line)
     float horizonY = vUv.y;
 
-    vec3 dawnAmber  = vec3(0.98, 0.45, 0.12); // Intense warm dawn horizon glow
-    vec3 dawnGolden = vec3(1.00, 0.76, 0.32); // Morning solar scattering
-    vec3 azureSky   = vec3(0.18, 0.54, 0.88); // Tropical coastal daytime azure
-    vec3 zenithSky  = vec3(0.04, 0.16, 0.42); // Deep upper atmospheric cobalt
+    // 1. PHYSICAL ATMOSPHERIC DAYLIGHT & DAWN HORIZON (Ground / Low Ascent)
+    vec3 dawnAmber  = vec3(0.98, 0.45, 0.12);
+    vec3 dawnGolden = vec3(1.00, 0.76, 0.32);
+    vec3 azureSky   = vec3(0.18, 0.54, 0.88);
+    vec3 zenithSky  = vec3(0.04, 0.16, 0.42);
 
-    // Ground atmospheric vertical Rayleigh gradient:
-    // Warm dawn glow radiates from horizonY ≈ 0.44 downward to the ocean and up into azure
     float dawnBand = exp(-pow((horizonY - 0.44) * 5.0, 2.0));
     vec3 groundSky = mix(azureSky, zenithSky, smoothstep(0.48, 0.92, horizonY));
     groundSky = mix(groundSky, dawnGolden, dawnBand * 0.85);
     groundSky = mix(groundSky, dawnAmber, smoothstep(0.44, 0.28, horizonY) * 0.70);
 
-    // Authentic Sriharikota coastal cumulus clouds (matching Chandrayaan-3 launch photo)
-    vec2 cloudUv = vec2(vUv.x * 2.2 + t * 0.25, vUv.y * 1.8);
-    float cloudNoise = fbm(cloudUv * 2.0);
-    float cloudDetail = fbm(cloudUv * 4.5 + vec2(t * 0.15, 0.0));
-    float cloudDensity = smoothstep(0.48, 0.78, cloudNoise + cloudDetail * 0.28);
-    vec3 cloudSunlit = vec3(0.98, 0.98, 1.0);
-    vec3 cloudShadow = vec3(0.42, 0.48, 0.58);
-    vec3 cloudColor = mix(cloudShadow, cloudSunlit, smoothstep(0.40, 0.75, vUv.y + cloudDetail * 0.2));
-    groundSky = mix(groundSky, cloudColor, cloudDensity * smoothstep(0.36, 0.65, horizonY) * 0.82);
-
-    // Subtle atmospheric maritime inversion haze layer near the water line
-    float haze = fbm(vec2(vUv.x * 2.5, horizonY * 2.0 + t * 0.1)) * 0.05;
-    groundSky += vec3(0.15, 0.10, 0.04) * haze;
-
-    // =========================================================================
     // 2. COSMIC DEEP SPACE ENVIRONMENT (Milky Way & Interstellar Nebulae)
-    // =========================================================================
-    float n1 = fbm(uv * 1.5 + vec2(t * 0.5, t * 0.2));
-    float n2 = fbm(uv * 2.5 - vec2(t * 0.3, t * 0.4) + n1 * 1.2);
-    float n3 = fbm(uv * 3.8 + vec2(t * 0.1, -t * 0.15));
-
-    // Deep cosmic vacuum palette with hydrogen-alpha and interstellar dust
     vec3 deepVoid      = vec3(0.008, 0.014, 0.035);
-    vec3 cosmicMagenta = vec3(0.16, 0.04, 0.18);
-    vec3 cosmicCyan    = vec3(0.02, 0.09, 0.20);
-    vec3 milkyWayDust  = vec3(0.12, 0.08, 0.04); // Warm galactic dust lane
+    vec3 cosmicMagenta = vec3(0.14, 0.04, 0.16);
+    vec3 cosmicCyan    = vec3(0.02, 0.08, 0.18);
+    vec3 milkyWayDust  = vec3(0.10, 0.07, 0.04);
 
-    vec3 cosmicColor = mix(deepVoid, cosmicCyan, smoothstep(0.25, 0.75, n1));
-    cosmicColor = mix(cosmicColor, cosmicMagenta, smoothstep(0.35, 0.85, n2) * 0.60);
-    cosmicColor += milkyWayDust * smoothstep(0.40, 0.80, n3) * 0.35;
+    float dustLane = clamp(0.5 + 0.5 * sin(uv.x * 2.2 + uv.y * 1.6 + uTime * 0.01), 0.0, 1.0);
+    vec3 cosmicColor = mix(deepVoid, cosmicCyan, dustLane * 0.45);
+    cosmicColor = mix(cosmicColor, cosmicMagenta, clamp(0.5 + 0.5 * cos(uv.x * 1.5 - uv.y * 1.8), 0.0, 1.0) * 0.35);
+    cosmicColor += milkyWayDust * pow(dustLane, 2.5) * 0.30;
 
-    // Subtle cosmic vignette falloff
-    float d = length(uv);
-    cosmicColor *= clamp(1.4 - d * 0.6, 0.0, 1.0);
-
-    // =========================================================================
-    // 3. CINEMATIC STRATOSPHERIC TRANSITION:
-    // =========================================================================
-    // As uAltitude climbs from 0.04 to 0.26:
-    // - Daylight fades: pale blue (#1e3852) -> deep navy (#07162c) -> near-black (#030712)
-    // - Horizon atmospheric curve sinks downward and condenses into Earth's glowing blue limb
-    vec3 skyColorGround = vec3(0.118, 0.220, 0.322); // #1e3852
-    vec3 skyColorMid    = vec3(0.027, 0.086, 0.173); // #07162c
-    vec3 skyColorSpace  = vec3(0.012, 0.027, 0.071); // #030712
+    // 3. CINEMATIC STRATOSPHERIC TRANSITION
+    vec3 skyColorMid   = vec3(0.027, 0.086, 0.173);
+    vec3 skyColorSpace = vec3(0.012, 0.027, 0.071);
 
     float midSkyFactor   = smoothstep(0.04, 0.16, uAltitude);
     float spaceSkyFactor = smoothstep(0.16, 0.26, uAltitude);
@@ -130,7 +63,6 @@ const skyFragmentShader = `
     vec3 limbColor = vec3(0.35, 0.75, 1.0) * atmosphericLimb;
 
     vec3 finalColor = mix(stratosphericSky, cosmicColor, spaceTransition) + limbColor;
-
     gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
