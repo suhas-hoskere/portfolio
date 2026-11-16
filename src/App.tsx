@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback, Suspense, lazy } from 'react';
 import Lenis from 'lenis';
-import { AnimatePresence } from 'framer-motion';
 import { CosmicFlightScene } from './components/CosmicFlightScene';
 import { FlightHUD } from './components/FlightHUD';
 import { FlightMissionOverlays } from './components/FlightMissionOverlays';
 import type { ProjectData } from './components/FlightMissionOverlays';
 import { CustomCursor } from './components/CustomCursor';
-import { LaunchPreloader } from './components/LaunchPreloader';
 import { cosmicAudio } from './components/AudioEngine';
 
 // Lazy-load modals so their heavy DOM and icon sets are never loaded until opened
@@ -25,20 +23,6 @@ export const App: React.FC = () => {
       history.scrollRestoration = 'manual';
     }
     window.scrollTo(0, 0);
-  }, []);
-
-  // Pre-flight Launch Initialization State (Plays 5-second entrance intro on every load/reload)
-  const [isPreloading, setIsPreloading] = useState(true);
-  const [showDashboard, setShowDashboard] = useState(false);
-  
-
-  const handleShowDashboard = useCallback(() => {
-    setShowDashboard(true);
-  }, []);
-
-  const handlePreloaderComplete = useCallback(() => {
-    setShowDashboard(true);
-    setIsPreloading(false);
   }, []);
 
   // Discrete Stage State (Choreographed flight stage 0 to 5)
@@ -217,16 +201,6 @@ export const App: React.FC = () => {
       {/* Subtle comet follower ring cursor */}
       <CustomCursor />
 
-      {/* Aerospace Mission Launch Countdown Preloader with Real-Time Telemetry Timer */}
-      <AnimatePresence>
-        {isPreloading && (
-          <LaunchPreloader
-            onShowDashboard={handleShowDashboard}
-            onComplete={handlePreloaderComplete}
-          />
-        )}
-      </AnimatePresence>
-
       {/* 3D Cosmic WebGL Scene (Framed cleanly on the right half of the screen) */}
       <CosmicFlightScene
         scrollProgressRef={scrollProgressRef}
@@ -236,10 +210,8 @@ export const App: React.FC = () => {
         blueprintMode={blueprintMode}
       />
 
-      {/* Dashboard Overlays: Reveal smoothly at T-3.00 seconds */}
-      <div className={`transition-opacity duration-1000 ${
-        showDashboard || !isPreloading ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-      }`}>
+      {/* Immediate Dashboard & Flight HUD Overlays (Instant Zero-Delay Paint) */}
+      <div className="opacity-100 pointer-events-auto">
         {/* Minimalist Flight HUD & Trajectory Pips */}
         <FlightHUD
           scrollProgress={uiScrollProgress}
