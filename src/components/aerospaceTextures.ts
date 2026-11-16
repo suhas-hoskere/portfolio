@@ -162,8 +162,8 @@ export function getCachedGoldMliTexture(): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.generateMipmaps = true;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
 
   cachedGoldMliTexture = texture;
   return cachedGoldMliTexture;
@@ -213,8 +213,8 @@ export function getCachedGoldMliBumpMap(): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.generateMipmaps = true;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
 
   cachedGoldMliBumpMap = texture;
   return cachedGoldMliBumpMap;
@@ -364,8 +364,8 @@ export function getCachedGenericCoreTexture(): THREE.CanvasTexture {
   });
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.generateMipmaps = true;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
   cachedGenericCoreTexture = texture;
   return cachedGenericCoreTexture;
 }
@@ -431,8 +431,8 @@ export function getCachedGenericBoosterTexture(): THREE.CanvasTexture {
   ctx.fillRect(0, 425, width, 100);
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.generateMipmaps = true;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
   cachedGenericBoosterTexture = texture;
   return cachedGenericBoosterTexture;
 }
@@ -473,8 +473,8 @@ export function getCachedGenericFairingTexture(): THREE.CanvasTexture {
   ctx.stroke();
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.generateMipmaps = true;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
   cachedGenericFairingTexture = texture;
   return cachedGenericFairingTexture;
 }

@@ -4,12 +4,10 @@ import * as THREE from 'three';
 import {
   getCachedSolarPanelTexture,
   getCachedGoldMliTexture,
-  getCachedGoldMliBumpMap,
   getCachedCarbonBackingTexture,
   getCachedGenericBoosterTexture,
   getCachedGenericCoreTexture,
   getCachedGenericFairingTexture,
-  getCachedRocketBumpMap,
 } from './aerospaceTextures';
 
 interface RocketModelProps {
@@ -125,6 +123,162 @@ function getCachedVapourTexture() {
   return cachedVapourTexture;
 }
 
+// Cached Global Rocket Materials (Instantiated once globally)
+let cachedRocketMaterials: any = null;
+function getCachedRocketMaterials(
+  flameTexture: any,
+  softPlumeTexture: any,
+  softCoreTexture: any
+) {
+  if (cachedRocketMaterials) return cachedRocketMaterials;
+  cachedRocketMaterials = {
+    hullWhite: new THREE.MeshLambertMaterial({
+      color: '#f8fafc',
+    }),
+    hullAccent: new THREE.MeshLambertMaterial({
+      color: '#334155',
+    }),
+    hullDark: new THREE.MeshLambertMaterial({
+      color: '#1e293b',
+    }),
+    engineMetal: new THREE.MeshLambertMaterial({
+      color: '#1e293b',
+    }),
+    towerSteel: new THREE.MeshLambertMaterial({
+      color: '#475569',
+    }),
+    flamePointsMat: new THREE.PointsMaterial({
+      size: 0.58,
+      map: flameTexture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      vertexColors: true,
+    }),
+    softPlumeMat: new THREE.SpriteMaterial({
+      map: softPlumeTexture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+    }),
+    softCoreMat: new THREE.SpriteMaterial({
+      map: softCoreTexture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+    }),
+    flameShock: new THREE.MeshBasicMaterial({
+      color: '#67e8f9',
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    }),
+    boosterPlume: new THREE.MeshBasicMaterial({
+      color: '#fb923c',
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+    }),
+    boosterPlumeWhite: new THREE.MeshBasicMaterial({
+      color: '#ffffff',
+      transparent: true,
+      opacity: 0.98,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    }),
+    boosterPlumeOrange: new THREE.MeshBasicMaterial({
+      color: '#ff6600',
+      transparent: true,
+      opacity: 0.88,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    }),
+    tliFlameMat: new THREE.MeshBasicMaterial({
+      color: '#818cf8',
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.AdditiveBlending,
+    }),
+    goldMli: new THREE.MeshStandardMaterial({
+      map: getCachedGoldMliTexture(),
+      roughness: 0.22,
+      metalness: 0.92,
+    }),
+    coreHullMat: new THREE.MeshLambertMaterial({
+      map: getCachedGenericCoreTexture(),
+    }),
+    boosterHullMat: new THREE.MeshLambertMaterial({
+      map: getCachedGenericBoosterTexture(),
+    }),
+    fairingHullMat: new THREE.MeshLambertMaterial({
+      map: getCachedGenericFairingTexture(),
+    }),
+    cryoVapourMat: new THREE.SpriteMaterial({
+      map: getCachedVapourTexture(),
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+    }),
+    solarPhotovoltaic: new THREE.MeshLambertMaterial({
+      map: getCachedSolarPanelTexture(),
+      side: THREE.DoubleSide,
+    }),
+    solarBacking: new THREE.MeshLambertMaterial({
+      map: getCachedCarbonBackingTexture(),
+    }),
+    solarFrame: new THREE.MeshLambertMaterial({
+      color: '#1e293b',
+    }),
+    solarHinge: new THREE.MeshLambertMaterial({
+      color: '#f59e0b',
+    }),
+    solarYoke: new THREE.MeshLambertMaterial({
+      color: '#475569',
+    }),
+    signalRipple: new THREE.MeshBasicMaterial({
+      color: '#38bdf8',
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    }),
+    machConeMat: new THREE.MeshBasicMaterial({
+      color: '#e0f2fe',
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    sepFlashMat: new THREE.MeshBasicMaterial({
+      color: '#fff7ed',
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    blueprintWireMat: new THREE.MeshBasicMaterial({
+      color: '#06b6d4',
+      wireframe: true,
+      transparent: true,
+      opacity: 0.75,
+    }),
+    blueprintGlowMat: new THREE.MeshBasicMaterial({
+      color: '#22d3ee',
+      wireframe: false,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+    }),
+  };
+  return cachedRocketMaterials;
+}
+
 export const RocketModel: React.FC<RocketModelProps> = ({
   scrollProgressRef,
   scrollSpeedRef,
@@ -180,10 +334,6 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     const data = [];
 
     for (let i = 0; i < particleCount; i++) {
-      // 0-44: Left S200 Booster (x = -0.76, y = -3.55)
-      // 45-89: Right S200 Booster (x = +0.76, y = -3.55)
-      // 90-114: Port Vikas Engine (x = -0.16, y = -4.35)
-      // 115-139: Starboard Vikas Engine (x = +0.16, y = -4.35)
       const isLeftBooster = i < 45;
       const isRightBooster = i >= 45 && i < 90;
       const isPortVikas = i >= 90 && i < 115;
@@ -219,190 +369,11 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     return { particleGeom: geom, particleData: data };
   }, [particleCount]);
 
-  // Aerospace materials
-  const materials = useMemo(() => {
-    return {
-      hullWhite: new THREE.MeshStandardMaterial({
-        color: '#f8fafc',
-        roughness: 0.22,
-        metalness: 0.12,
-      }),
-      hullAccent: new THREE.MeshStandardMaterial({
-        color: '#334155', // Industrial titanium dark accent
-        roughness: 0.35,
-        metalness: 0.45,
-      }),
-      hullDark: new THREE.MeshStandardMaterial({
-        color: '#1e293b',
-        roughness: 0.4,
-        metalness: 0.6,
-      }),
-      engineMetal: new THREE.MeshStandardMaterial({
-        color: '#1e293b',
-        roughness: 0.28,
-        metalness: 0.88,
-      }),
-      towerSteel: new THREE.MeshStandardMaterial({
-        color: '#475569',
-        roughness: 0.35,
-        metalness: 0.82,
-      }),
-      flamePointsMat: new THREE.PointsMaterial({
-        size: 0.58,
-        map: flameTexture,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        vertexColors: true,
-      }),
-      softPlumeMat: new THREE.SpriteMaterial({
-        map: softPlumeTexture,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        depthTest: false,
-      }),
-      softCoreMat: new THREE.SpriteMaterial({
-        map: softCoreTexture,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        depthTest: false,
-      }),
-      flameShock: new THREE.MeshBasicMaterial({
-        color: '#67e8f9', // Mach diamond supersonic shock cyan
-        transparent: true,
-        opacity: 0.9,
-        blending: THREE.AdditiveBlending,
-      }),
-      boosterPlume: new THREE.MeshBasicMaterial({
-        color: '#fb923c', // Incandescent solid booster exhaust
-        transparent: true,
-        opacity: 0.85,
-        blending: THREE.AdditiveBlending,
-      }),
-      boosterPlumeWhite: new THREE.MeshBasicMaterial({
-        color: '#ffffff', // Blinding white-hot supersonic core
-        transparent: true,
-        opacity: 0.98,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-      }),
-      boosterPlumeOrange: new THREE.MeshBasicMaterial({
-        color: '#ff6600', // Incandescent outer expansion shear plume
-        transparent: true,
-        opacity: 0.88,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-      }),
-      tliFlameMat: new THREE.MeshBasicMaterial({
-        color: '#818cf8', // Hypergolic translunar burn cyan-violet plasma
-        transparent: true,
-        opacity: 0.0,
-        blending: THREE.AdditiveBlending,
-      }),
-      goldMli: new THREE.MeshStandardMaterial({
-        map: getCachedGoldMliTexture(),
-        bumpMap: getCachedGoldMliBumpMap(),
-        bumpScale: 0.05,
-        roughness: 0.22,
-        metalness: 0.92,
-      }),
-      coreHullMat: new THREE.MeshStandardMaterial({
-        map: getCachedGenericCoreTexture(),
-        bumpMap: getCachedRocketBumpMap(),
-        bumpScale: 0.04,
-        roughness: 0.22,
-        metalness: 0.12,
-      }),
-      boosterHullMat: new THREE.MeshStandardMaterial({
-        map: getCachedGenericBoosterTexture(),
-        bumpMap: getCachedRocketBumpMap(),
-        bumpScale: 0.04,
-        roughness: 0.24,
-        metalness: 0.12,
-      }),
-      fairingHullMat: new THREE.MeshStandardMaterial({
-        map: getCachedGenericFairingTexture(),
-        bumpMap: getCachedRocketBumpMap(),
-        bumpScale: 0.03,
-        roughness: 0.22,
-        metalness: 0.10,
-      }),
-      cryoVapourMat: new THREE.SpriteMaterial({
-        map: getCachedVapourTexture(),
-        transparent: true,
-        opacity: 0.35,
-        blending: THREE.NormalBlending,
-        depthWrite: false,
-      }),
-      solarPhotovoltaic: new THREE.MeshStandardMaterial({
-        map: getCachedSolarPanelTexture(),
-        roughness: 0.2,
-        metalness: 0.35,
-        emissive: '#092147',
-        emissiveIntensity: 0.45,
-        side: THREE.DoubleSide,
-      }),
-      solarBacking: new THREE.MeshStandardMaterial({
-        map: getCachedCarbonBackingTexture(),
-        roughness: 0.45,
-        metalness: 0.5,
-      }),
-      solarFrame: new THREE.MeshStandardMaterial({
-        color: '#1e293b',
-        roughness: 0.35,
-        metalness: 0.8,
-      }),
-      solarHinge: new THREE.MeshStandardMaterial({
-        color: '#f59e0b',
-        roughness: 0.2,
-        metalness: 0.9,
-      }),
-      solarYoke: new THREE.MeshStandardMaterial({
-        color: '#475569',
-        roughness: 0.25,
-        metalness: 0.85,
-      }),
-      signalRipple: new THREE.MeshBasicMaterial({
-        color: '#38bdf8',
-        transparent: true,
-        opacity: 0.6,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-      }),
-      machConeMat: new THREE.MeshBasicMaterial({
-        color: '#e0f2fe',
-        transparent: true,
-        opacity: 0.0,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      }),
-      sepFlashMat: new THREE.MeshBasicMaterial({
-        color: '#fff7ed',
-        transparent: true,
-        opacity: 0.0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      }),
-      blueprintWireMat: new THREE.MeshBasicMaterial({
-        color: '#06b6d4',
-        wireframe: true,
-        transparent: true,
-        opacity: 0.75,
-      }),
-      blueprintGlowMat: new THREE.MeshBasicMaterial({
-        color: '#22d3ee',
-        wireframe: false,
-        transparent: true,
-        opacity: 0.15,
-        side: THREE.DoubleSide,
-      }),
-    };
-  }, [flameTexture, softPlumeTexture, softCoreTexture]);
+  // Ultra-Lightweight Lambert & Diffuse Aerospace Materials (Cached globally)
+  const materials = useMemo(
+    () => getCachedRocketMaterials(flameTexture, softPlumeTexture, softCoreTexture),
+    [flameTexture, softPlumeTexture, softCoreTexture]
+  );
 
   useFrame((state, delta) => {
     const scrollProgress = scrollProgressRef.current;
@@ -499,7 +470,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         colAttr.needsUpdate = true;
 
         if (flameLightRef.current) {
-          flameLightRef.current.intensity = (4.0 + Math.sin(t * 45) * 1.5) * fireRamp;
+          flameLightRef.current.intensity = (8.0 + Math.sin(t * 45) * 2.5) * fireRamp;
         }
 
         if (boosterFlameLeft.current && boosterFlameRight.current) {
@@ -1030,7 +1001,6 @@ export const RocketModel: React.FC<RocketModelProps> = ({
               <sprite position={[0, -1.65, 0]} scale={[3.0, 3.6, 1]} material={materials.softPlumeMat} renderOrder={28} />
             </group>
           ))}
-          <pointLight position={[0, -4.5, 0]} color="#ffaa33" intensity={16} distance={10} />
         </group>
 
         {/* =========================================================================
@@ -1105,8 +1075,6 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <sprite position={[0, -4.80, 0]} scale={[5.8, 6.6, 1]} material={materials.softPlumeMat} renderOrder={27} />
             <sprite position={[0, -6.50, 0]} scale={[6.8, 8.0, 1]} material={materials.softPlumeMat} renderOrder={26} />
             <sprite position={[0, -8.60, 0]} scale={[7.8, 9.6, 1]} material={materials.softPlumeMat} renderOrder={25} />
-            <pointLight position={[0, -1.2, 0]} color="#ffaa22" intensity={24} distance={16} />
-            <pointLight position={[0, -5.0, 0]} color="#ff6600" intensity={18} distance={14} />
           </group>
         </group>
 
@@ -1179,8 +1147,6 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <sprite position={[0, -4.80, 0]} scale={[5.8, 6.6, 1]} material={materials.softPlumeMat} renderOrder={27} />
             <sprite position={[0, -6.50, 0]} scale={[6.8, 8.0, 1]} material={materials.softPlumeMat} renderOrder={26} />
             <sprite position={[0, -8.60, 0]} scale={[7.8, 9.6, 1]} material={materials.softPlumeMat} renderOrder={25} />
-            <pointLight position={[0, -1.2, 0]} color="#ffaa22" intensity={24} distance={16} />
-            <pointLight position={[0, -5.0, 0]} color="#ff6600" intensity={18} distance={14} />
           </group>
         </group>
 
@@ -1193,7 +1159,7 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           position={[0, -4.6, 0]}
           color="#ff8822"
           intensity={0}
-          distance={8}
+          distance={14}
         />
 
         {/* Dynamic GPU flame particles & incandescent supersonic exhaust sparks */}

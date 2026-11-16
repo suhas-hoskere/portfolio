@@ -106,12 +106,14 @@ function getCachedTerrainTextures(): { diffuse: THREE.CanvasTexture; bump: THREE
   const diffuse = new THREE.CanvasTexture(dCanvas);
   diffuse.wrapS = THREE.RepeatWrapping;
   diffuse.wrapT = THREE.RepeatWrapping;
-  diffuse.generateMipmaps = true;
+  diffuse.generateMipmaps = false;
+  diffuse.minFilter = THREE.LinearFilter;
 
   const bump = new THREE.CanvasTexture(bCanvas);
   bump.wrapS = THREE.RepeatWrapping;
   bump.wrapT = THREE.RepeatWrapping;
-  bump.generateMipmaps = true;
+  bump.generateMipmaps = false;
+  bump.minFilter = THREE.LinearFilter;
 
   cachedTerrainTextures = { diffuse, bump };
   return cachedTerrainTextures;
@@ -223,6 +225,129 @@ function getCachedEmberTexture(): THREE.CanvasTexture {
   return cachedEmberTexture;
 }
 
+// Cached Launch Pad Materials & Geometries (Instantiated once globally)
+let cachedPadMaterials: any = null;
+function getCachedPadMaterials(terrain: any, smokeTexture: any, mistTexture: any, emberTexture: any, beaconGlowTexture: any) {
+  if (cachedPadMaterials) return cachedPadMaterials;
+  cachedPadMaterials = {
+    concreteApron: new THREE.MeshLambertMaterial({
+      map: terrain.diffuse,
+    }),
+    mlpDeckSteel: new THREE.MeshLambertMaterial({
+      color: '#94a3b8',
+    }),
+    mlpConcreteBase: new THREE.MeshLambertMaterial({
+      color: '#475569',
+    }),
+    galvanizedTruss: new THREE.MeshLambertMaterial({
+      color: '#94a3b8',
+    }),
+    towerSteel: new THREE.MeshLambertMaterial({
+      color: '#475569',
+    }),
+    trenchPit: new THREE.MeshLambertMaterial({
+      color: '#1e2430',
+    }),
+    flameDeflectorSteel: new THREE.MeshLambertMaterial({
+      color: '#334155',
+    }),
+    handrailYellow: new THREE.MeshLambertMaterial({
+      color: '#f59e0b',
+    }),
+    waterTowerMat: new THREE.MeshLambertMaterial({
+      color: '#cbd5e1',
+    }),
+    pipingRed: new THREE.MeshLambertMaterial({
+      color: '#dc2626',
+    }),
+    beaconRed: new THREE.MeshLambertMaterial({
+      color: '#ff1111',
+      emissive: '#ff0000',
+      emissiveIntensity: 0.2,
+    }),
+    beaconGlowMat: new THREE.SpriteMaterial({
+      map: beaconGlowTexture,
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+    }),
+    mastHousingMat: new THREE.MeshLambertMaterial({
+      color: '#1e293b',
+    }),
+    slenderMastMat: new THREE.MeshLambertMaterial({
+      color: '#94a3b8',
+    }),
+    smokeMat: new THREE.PointsMaterial({
+      size: 5.2,
+      map: smokeTexture,
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+      vertexColors: true,
+    }),
+    sparkMat: new THREE.PointsMaterial({
+      size: 0.34,
+      map: emberTexture,
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    groundMistMat: new THREE.MeshBasicMaterial({
+      map: mistTexture,
+      transparent: true,
+      opacity: 0.24,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+    }),
+    cryoVentMat: new THREE.PointsMaterial({
+      size: 1.8,
+      map: mistTexture,
+      transparent: true,
+      opacity: 0.0,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+    }),
+    seaHorizonMat: new THREE.MeshLambertMaterial({
+      color: '#253c4e',
+      transparent: true,
+      opacity: 0.88,
+    }),
+  };
+  return cachedPadMaterials;
+}
+
+let cachedGroundGeom: THREE.PlaneGeometry | null = null;
+function getCachedGroundGeom() {
+  if (cachedGroundGeom) return cachedGroundGeom;
+  const geom = new THREE.PlaneGeometry(120, 120, 24, 24);
+  const pos = geom.attributes.position;
+  const vertex = new THREE.Vector3();
+
+  for (let i = 0; i < pos.count; i++) {
+    vertex.fromBufferAttribute(pos, i);
+    const distFromPad = Math.hypot(vertex.x, vertex.y);
+
+    if (distFromPad > 4.5) {
+      const falloff = Math.min((distFromPad - 4.5) / 15.0, 1.0);
+      const elevation =
+        (Math.sin(vertex.x * 0.12) * Math.cos(vertex.y * 0.14) * 0.35 +
+          Math.sin(vertex.x * 0.28 + vertex.y * 0.22) * 0.18) *
+        falloff;
+      vertex.z = elevation;
+    } else {
+      vertex.z = 0;
+    }
+    pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
+  }
+  geom.computeVertexNormals();
+  cachedGroundGeom = geom;
+  return cachedGroundGeom;
+}
+
 export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   scrollProgressRef,
   isIgnited: _isIgnited = false,
@@ -243,147 +368,14 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   const emberTexture = useMemo(() => getCachedEmberTexture(), []);
   const beaconGlowTexture = useMemo(() => getCachedBeaconGlowTexture(), []);
 
-  // 1. Realistic PBR Materials
-  const materials = useMemo(() => {
-    return {
-      concreteApron: new THREE.MeshStandardMaterial({
-        map: terrain.diffuse,
-        bumpMap: terrain.bump,
-        bumpScale: 0.06,
-        roughness: 0.78,
-        metalness: 0.15,
-      }),
-      mlpDeckSteel: new THREE.MeshStandardMaterial({
-        color: '#94a3b8', // Clean industrial galvanized deck
-        roughness: 0.38,
-        metalness: 0.75,
-      }),
-      mlpConcreteBase: new THREE.MeshStandardMaterial({
-        color: '#475569', // Heavy industrial weathered launch pad concrete
-        roughness: 0.85,
-        metalness: 0.10,
-      }),
-      galvanizedTruss: new THREE.MeshStandardMaterial({
-        color: '#94a3b8',
-        roughness: 0.35,
-        metalness: 0.85,
-      }),
-      towerSteel: new THREE.MeshStandardMaterial({
-        color: '#475569',
-        roughness: 0.40,
-        metalness: 0.80,
-      }),
-      trenchPit: new THREE.MeshStandardMaterial({
-        color: '#1e2430',
-        roughness: 0.85,
-        metalness: 0.30,
-      }),
-      flameDeflectorSteel: new THREE.MeshStandardMaterial({
-        color: '#334155',
-        roughness: 0.35,
-        metalness: 0.88,
-      }),
-      handrailYellow: new THREE.MeshStandardMaterial({
-        color: '#f59e0b',
-        roughness: 0.35,
-        metalness: 0.45,
-      }),
-      waterTowerMat: new THREE.MeshStandardMaterial({
-        color: '#cbd5e1',
-        roughness: 0.45,
-        metalness: 0.60,
-      }),
-      pipingRed: new THREE.MeshStandardMaterial({
-        color: '#dc2626',
-        roughness: 0.40,
-        metalness: 0.50,
-      }),
-      beaconRed: new THREE.MeshStandardMaterial({
-        color: '#ff1111',
-        emissive: '#ff0000',
-        emissiveIntensity: 0.2,
-        roughness: 0.2,
-        metalness: 0.1,
-      }),
-      beaconGlowMat: new THREE.SpriteMaterial({
-        map: beaconGlowTexture,
-        transparent: true,
-        opacity: 0.0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        depthTest: false,
-      }),
-      mastHousingMat: new THREE.MeshStandardMaterial({
-        color: '#1e293b',
-        roughness: 0.45,
-        metalness: 0.85,
-      }),
-      slenderMastMat: new THREE.MeshStandardMaterial({
-        color: '#94a3b8',
-        roughness: 0.35,
-        metalness: 0.85,
-      }),
-      smokeMat: new THREE.PointsMaterial({
-        size: 5.2,
-        map: smokeTexture,
-        transparent: true,
-        opacity: 0.0,
-        blending: THREE.NormalBlending,
-        depthWrite: false,
-        vertexColors: true,
-      }),
-      sparkMat: new THREE.PointsMaterial({
-        size: 0.34,
-        map: emberTexture,
-        transparent: true,
-        opacity: 0.0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      }),
-      groundMistMat: new THREE.MeshBasicMaterial({
-        map: mistTexture,
-        transparent: true,
-        opacity: 0.24,
-        depthWrite: false,
-        blending: THREE.NormalBlending,
-      }),
-      cryoVentMat: new THREE.PointsMaterial({
-        size: 1.8,
-        map: mistTexture,
-        transparent: true,
-        opacity: 0.0,
-        depthWrite: false,
-        blending: THREE.NormalBlending,
-      }),
-    };
-  }, [terrain, smokeTexture, mistTexture, emberTexture, beaconGlowTexture]);
+  // 1. Ultra-Lightweight Lambert Materials (Cached globally)
+  const materials = useMemo(
+    () => getCachedPadMaterials(terrain, smokeTexture, mistTexture, emberTexture, beaconGlowTexture),
+    [terrain, smokeTexture, mistTexture, emberTexture, beaconGlowTexture]
+  );
 
-  // 2. Uneven Ground Mesh (Optimized lightweight vertex resolution)
-  const groundGeom = useMemo(() => {
-    const geom = new THREE.PlaneGeometry(120, 120, 32, 32);
-    const pos = geom.attributes.position;
-    const vertex = new THREE.Vector3();
-
-    for (let i = 0; i < pos.count; i++) {
-      vertex.fromBufferAttribute(pos, i);
-      const distFromPad = Math.hypot(vertex.x, vertex.y);
-
-      // Pad foundation remains flat within radius 4.5
-      if (distFromPad > 4.5) {
-        const falloff = Math.min((distFromPad - 4.5) / 15.0, 1.0);
-        const elevation =
-          (Math.sin(vertex.x * 0.12) * Math.cos(vertex.y * 0.14) * 0.35 +
-            Math.sin(vertex.x * 0.28 + vertex.y * 0.22) * 0.18) *
-          falloff;
-        vertex.z = elevation;
-      } else {
-        vertex.z = 0;
-      }
-      pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
-    }
-    geom.computeVertexNormals();
-    return geom;
-  }, []);
+  // 2. Uneven Ground Mesh (Cached globally)
+  const groundGeom = useMemo(() => getCachedGroundGeom(), []);
 
   // 3B. Cryogenic LOX Boil-off Vapor Bleed Data (Standby & Early Ignition)
   const cryoCount = 48;
@@ -846,16 +838,9 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       <mesh
         position={[42, -0.45, -14]}
         rotation={[-Math.PI / 2, 0, 0]}
-        receiveShadow
+        material={materials.seaHorizonMat}
       >
         <planeGeometry args={[65, 95]} />
-        <meshStandardMaterial
-          color="#253c4e"
-          roughness={0.28}
-          metalness={0.62}
-          transparent
-          opacity={0.88}
-        />
       </mesh>
 
       {/* 7. Lateral Trench Bilateral Billowing Smoke & Steam */}

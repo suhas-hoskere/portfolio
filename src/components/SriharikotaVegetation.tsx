@@ -525,8 +525,73 @@ interface SriharikotaVegetationProps {
   padDrop?: number;
 }
 
+// Cached Global Materials & Geometries (Instantiated once, never recomputed)
+let cachedVegetationMaterials: any = null;
+function getCachedVegetationMaterials() {
+  if (cachedVegetationMaterials) return cachedVegetationMaterials;
+  cachedVegetationMaterials = {
+    bark: new THREE.MeshLambertMaterial({
+      color: '#423225',
+      vertexColors: true,
+    }),
+    casuarina: new THREE.MeshLambertMaterial({
+      map: getCachedCasuarinaTexture(),
+      transparent: true,
+      alphaTest: 0.16,
+      side: THREE.DoubleSide,
+      vertexColors: true,
+    }),
+    coconut: new THREE.MeshLambertMaterial({
+      map: getCachedCoconutFrondTexture(),
+      transparent: true,
+      alphaTest: 0.16,
+      side: THREE.DoubleSide,
+      vertexColors: true,
+    }),
+    palmyra: new THREE.MeshLambertMaterial({
+      map: getCachedPalmyraTexture(),
+      transparent: true,
+      alphaTest: 0.16,
+      side: THREE.DoubleSide,
+      vertexColors: true,
+    }),
+    tdef: new THREE.MeshLambertMaterial({
+      map: getCachedTdefTexture(),
+      transparent: true,
+      alphaTest: 0.16,
+      side: THREE.DoubleSide,
+      vertexColors: true,
+    }),
+    scrub: new THREE.MeshLambertMaterial({
+      map: getCachedTdefTexture(),
+      transparent: true,
+      alphaTest: 0.15,
+      side: THREE.DoubleSide,
+    }),
+  };
+  return cachedVegetationMaterials;
+}
+
+let cachedVegetationGeometries: any = null;
+function getCachedVegetationGeometries() {
+  if (cachedVegetationGeometries) return cachedVegetationGeometries;
+  const coconutTrunkData = buildCoconutTrunkGeometry();
+  cachedVegetationGeometries = {
+    casuarinaTrunk: buildCasuarinaTrunkGeometry(),
+    casuarinaFoliage: buildCasuarinaFoliageGeometry(),
+    coconutTrunk: coconutTrunkData.trunkGeom,
+    coconutFoliage: buildCoconutFoliageGeometry(coconutTrunkData.topPos),
+    palmyraTrunk: buildPalmyraTrunkGeometry(),
+    palmyraFoliage: buildPalmyraFoliageGeometry(),
+    tdefTrunk: buildTdefTrunkGeometry(),
+    tdefFoliage: buildTdefFoliageGeometry(),
+    scrub: buildScrubGeometry(),
+  };
+  return cachedVegetationGeometries;
+}
+
 export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ padDrop = 0 }) => {
-  // Instanced mesh refs for Trunks (Solid standard bark)
+  // Instanced mesh refs for Trunks (Solid bark)
   const casuarinaTrunkRef = useRef<THREE.InstancedMesh>(null);
   const coconutTrunkRef = useRef<THREE.InstancedMesh>(null);
   const palmyraTrunkRef = useRef<THREE.InstancedMesh>(null);
@@ -539,77 +604,8 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ pa
   const tdefFoliageRef = useRef<THREE.InstancedMesh>(null);
   const scrubRef = useRef<THREE.InstancedMesh>(null);
 
-  // Materials: Solid bark for trunks, procedural alpha-cutouts for fronds/needles
-  const materials = useMemo(() => {
-    return {
-      bark: new THREE.MeshStandardMaterial({
-        color: '#423225',
-        roughness: 0.88,
-        metalness: 0.04,
-        vertexColors: true,
-      }),
-      casuarina: new THREE.MeshStandardMaterial({
-        map: getCachedCasuarinaTexture(),
-        transparent: true,
-        alphaTest: 0.16,
-        side: THREE.DoubleSide,
-        roughness: 0.78,
-        metalness: 0.05,
-        vertexColors: true,
-      }),
-      coconut: new THREE.MeshStandardMaterial({
-        map: getCachedCoconutFrondTexture(),
-        transparent: true,
-        alphaTest: 0.16,
-        side: THREE.DoubleSide,
-        roughness: 0.65,
-        metalness: 0.05,
-        vertexColors: true,
-      }),
-      palmyra: new THREE.MeshStandardMaterial({
-        map: getCachedPalmyraTexture(),
-        transparent: true,
-        alphaTest: 0.16,
-        side: THREE.DoubleSide,
-        roughness: 0.75,
-        metalness: 0.04,
-        vertexColors: true,
-      }),
-      tdef: new THREE.MeshStandardMaterial({
-        map: getCachedTdefTexture(),
-        transparent: true,
-        alphaTest: 0.16,
-        side: THREE.DoubleSide,
-        roughness: 0.82,
-        metalness: 0.04,
-        vertexColors: true,
-      }),
-      scrub: new THREE.MeshStandardMaterial({
-        map: getCachedTdefTexture(),
-        transparent: true,
-        alphaTest: 0.15,
-        side: THREE.DoubleSide,
-        roughness: 0.85,
-        metalness: 0.02,
-      }),
-    };
-  }, []);
-
-  // Geometries
-  const geoms = useMemo(() => {
-    const coconutTrunkData = buildCoconutTrunkGeometry();
-    return {
-      casuarinaTrunk: buildCasuarinaTrunkGeometry(),
-      casuarinaFoliage: buildCasuarinaFoliageGeometry(),
-      coconutTrunk: coconutTrunkData.trunkGeom,
-      coconutFoliage: buildCoconutFoliageGeometry(coconutTrunkData.topPos),
-      palmyraTrunk: buildPalmyraTrunkGeometry(),
-      palmyraFoliage: buildPalmyraFoliageGeometry(),
-      tdefTrunk: buildTdefTrunkGeometry(),
-      tdefFoliage: buildTdefFoliageGeometry(),
-      scrub: buildScrubGeometry(),
-    };
-  }, []);
+  const materials = useMemo(() => getCachedVegetationMaterials(), []);
+  const geoms = useMemo(() => getCachedVegetationGeometries(), []);
 
   // Instance distribution with exact terrain elevation anchoring
   const { casuarinaData, coconutData, palmyraData, tdefData, scrubData } = useMemo(() => {
