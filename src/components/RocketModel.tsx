@@ -172,21 +172,21 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   const softPlumeTexture = useMemo(() => getCachedSoftFlameSpriteTexture(), []);
   const softCoreTexture = useMemo(() => getCachedSoftCoreSpriteTexture(), []);
 
-  // 280 particles distributed across ALL FOUR ENGINE NOZZLES (Twin S200 Solid Boosters + Twin L110 Vikas Engines)
-  const particleCount = 280;
+  // 140 particles distributed across ALL FOUR ENGINE NOZZLES (Twin S200 Solid Boosters + Twin L110 Vikas Engines)
+  const particleCount = 140;
   const { particleGeom, particleData } = useMemo(() => {
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const data = [];
 
     for (let i = 0; i < particleCount; i++) {
-      // 0-89: Left S200 Booster (x = -0.76, y = -3.55)
-      // 90-179: Right S200 Booster (x = +0.76, y = -3.55)
-      // 180-229: Port Vikas Engine (x = -0.16, y = -4.35)
-      // 230-279: Starboard Vikas Engine (x = +0.16, y = -4.35)
-      const isLeftBooster = i < 90;
-      const isRightBooster = i >= 90 && i < 180;
-      const isPortVikas = i >= 180 && i < 230;
+      // 0-44: Left S200 Booster (x = -0.76, y = -3.55)
+      // 45-89: Right S200 Booster (x = +0.76, y = -3.55)
+      // 90-114: Port Vikas Engine (x = -0.16, y = -4.35)
+      // 115-139: Starboard Vikas Engine (x = +0.16, y = -4.35)
+      const isLeftBooster = i < 45;
+      const isRightBooster = i >= 45 && i < 90;
+      const isPortVikas = i >= 90 && i < 115;
       const originX = isLeftBooster ? -0.76 : isRightBooster ? 0.76 : isPortVikas ? -0.16 : 0.16;
       const originY = (isLeftBooster || isRightBooster) ? -3.55 : -4.35;
       const isBooster = isLeftBooster || isRightBooster;

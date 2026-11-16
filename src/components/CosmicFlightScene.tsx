@@ -560,23 +560,31 @@ const SceneEntities: React.FC<{
         scrollProgressRef={scrollProgressRef}
       />
 
-      {/* Atmospheric Cloud Deck & Transonic Mach Vapor Punch centered on rocket at x = 2.6 */}
-      <group position={[1.75, 0, 0]}>
-        <AtmosphericClouds
-          scrollProgressRef={scrollProgressRef}
-          scrollSpeedRef={scrollSpeedRef}
-        />
-      </group>
+      {/* Atmospheric Cloud Deck: Only active during Ground & Atmospheric Ascent (Stage 0 & 1) */}
+      {activeStageIndex <= 1 && (
+        <group position={[1.75, 0, 0]}>
+          <AtmosphericClouds
+            scrollProgressRef={scrollProgressRef}
+            scrollSpeedRef={scrollSpeedRef}
+          />
+        </group>
+      )}
 
-      {/* Ground Launch Base & Slender Rocket positioned cleanly on the right (x = 2.6) */}
-      <group position={[1.75, 0, 0]}>
-        <Stage00LaunchPad
-          scrollProgressRef={scrollProgressRef}
-          isIgnited={_isIgnited}
-          liftoffTime={_liftoffTime}
-          isLiftoffActive={_isLiftoffActive}
-        />
+      {/* Ground Launch Base: Only mounted during Ground Zero & Atmospheric Ascent (0 to 0.36),
+          unmounted cleanly to free all terrain & vegetation GPU buffers during LEO, Lunar, Mars, and Deep Space */}
+      {activeStageIndex <= 1 && (
+        <group position={[1.75, 0, 0]}>
+          <Stage00LaunchPad
+            scrollProgressRef={scrollProgressRef}
+            isIgnited={_isIgnited}
+            liftoffTime={_liftoffTime}
+            isLiftoffActive={_isLiftoffActive}
+          />
+        </group>
+      )}
 
+      {/* Rocket Launch Vehicle */}
+      <group position={[1.75, 0, 0]}>
         <RocketModel
           scrollProgressRef={scrollProgressRef}
           scrollSpeedRef={scrollSpeedRef}

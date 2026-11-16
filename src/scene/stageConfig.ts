@@ -171,9 +171,9 @@ export interface StageConfig {
 export const STAGE_CONFIG: StageConfig = {
   global: {
     dprMin: 1.0,
-    dprMax: 1.25,
+    dprMax: 1.15,
     toneMappingExposure: 1.15,
-    adaptiveQualityTargetMs: 20.0,
+    adaptiveQualityTargetMs: 18.0,
     enableStarStreaksOnTransit: true,
     starLayers: {
       distantCount: 1200,

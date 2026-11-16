@@ -20,7 +20,7 @@ let cachedTerrainTextures: { diffuse: THREE.CanvasTexture; bump: THREE.CanvasTex
 function getCachedTerrainTextures(): { diffuse: THREE.CanvasTexture; bump: THREE.CanvasTexture } {
   if (cachedTerrainTextures) return cachedTerrainTextures;
 
-  const size = 512;
+  const size = 384;
   const dCanvas = document.createElement('canvas');
   dCanvas.width = size;
   dCanvas.height = size;
@@ -358,9 +358,9 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     };
   }, [terrain, smokeTexture, mistTexture, emberTexture, beaconGlowTexture]);
 
-  // 2. Uneven Ground Mesh
+  // 2. Uneven Ground Mesh (Optimized lightweight vertex resolution)
   const groundGeom = useMemo(() => {
-    const geom = new THREE.PlaneGeometry(120, 120, 64, 64);
+    const geom = new THREE.PlaneGeometry(120, 120, 32, 32);
     const pos = geom.attributes.position;
     const vertex = new THREE.Vector3();
 
@@ -407,8 +407,8 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
     return { cryoGeom: geom, cryoData: data };
   }, []);
 
-  // 4. Bilateral Trench Smoke Simulation Data
-  const smokeCount = STAGE_CONFIG.stage00_launchPad.fireAndSmoke.maxSmokeParticles;
+  // 4. Bilateral Trench Smoke Simulation Data (Optimized 90 particle budget)
+  const smokeCount = 90;
   const { smokeGeom, smokeData } = useMemo(() => {
     const geom = new THREE.BufferGeometry();
     const pos = new Float32Array(smokeCount * 3);
@@ -825,7 +825,6 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
             </mesh>
             {/* Soft glow sprite clearly larger than mast tip */}
             <sprite position={[0, 6.465, 0]} scale={[0.48, 0.48, 1]} material={materials.beaconGlowMat} renderOrder={30} />
-            <pointLight position={[0, 6.465, 0]} color="#ff2222" intensity={2.8} distance={10} />
           </group>
         ))}
 
@@ -863,10 +862,7 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       <points ref={cryoVentPointsRef} geometry={cryoGeom} material={materials.cryoVentMat} />
       <points ref={smokePointsRef} geometry={smokeGeom} material={materials.smokeMat} />
 
-      {/* 9. Flying Sparks from Flame Trench */}
-      {/* Floating spark discs removed: pure rocket fire & soft trench smoke only */}
-
-      {/* 10. Flame Trench Lighting & Ignition Flash */}
+      {/* 9. Flame Trench Lighting & Ignition Flash */}
       <pointLight
         ref={flameTrenchLightRef}
         position={[0, -0.3, 0.4]}
@@ -876,10 +872,8 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         decay={2}
       />
 
-      {/* 11. Pad Floodlights Illuminating Vehicle Base & Lattice Gantry */}
-      <pointLight position={[1.2, 0.8, 1.2]} color="#fff0db" intensity={2.8} distance={8} decay={1.8} />
-      <pointLight position={[-1.2, 0.8, 1.2]} color="#fff0db" intensity={2.8} distance={8} decay={1.8} />
-      <pointLight position={[0.2, 0.5, 1.4]} color="#fffaed" intensity={2.4} distance={9} decay={1.6} />
+      {/* 10. Consolidated Single Key Pad Floodlight Illuminating Vehicle Base & Lattice Gantry */}
+      <pointLight position={[0, 1.2, 1.4]} color="#fff0db" intensity={3.5} distance={10} decay={1.8} />
     </group>
   );
 };

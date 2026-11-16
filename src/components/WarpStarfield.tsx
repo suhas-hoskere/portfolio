@@ -175,7 +175,7 @@ let cachedSunFlareTexture: THREE.CanvasTexture | null = null;
 function getCachedSunFlareTexture(): THREE.CanvasTexture {
   if (cachedSunFlareTexture) return cachedSunFlareTexture;
 
-  const size = 512;
+  const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -226,7 +226,8 @@ function getCachedSunFlareTexture(): THREE.CanvasTexture {
   ctx.fill();
 
   cachedSunFlareTexture = new THREE.CanvasTexture(canvas);
-  cachedSunFlareTexture.generateMipmaps = true;
+  cachedSunFlareTexture.generateMipmaps = false;
+  cachedSunFlareTexture.minFilter = THREE.LinearFilter;
   return cachedSunFlareTexture;
 }
 
@@ -238,6 +239,8 @@ export const WarpStarfield: React.FC<WarpStarfieldProps> = ({
   const skyMatRef = useRef<THREE.ShaderMaterial>(null);
   const dustMatRef = useRef<THREE.ShaderMaterial>(null);
   const sunSpriteRef = useRef<THREE.Sprite>(null);
+  const starPointsRef = useRef<THREE.Points>(null);
+  const dustPointsRef = useRef<THREE.Points>(null);
 
   const sunTexture = useMemo(() => getCachedSunFlareTexture(), []);
 
@@ -382,6 +385,13 @@ export const WarpStarfield: React.FC<WarpStarfieldProps> = ({
       dustMatRef.current.uniforms.uAltitude.value = progress;
     }
 
+    if (starPointsRef.current) {
+      starPointsRef.current.visible = progress >= 0.07;
+    }
+    if (dustPointsRef.current) {
+      dustPointsRef.current.visible = progress >= 0.25;
+    }
+
     // Solar flare fade as vehicle climbs: intense golden sunrise flare on pad, fading to crisp sun disc in vacuum
     if (sunSpriteRef.current) {
       const climbFactor = THREE.MathUtils.smoothstep(progress, 0.04, 0.26);
@@ -427,7 +437,7 @@ export const WarpStarfield: React.FC<WarpStarfieldProps> = ({
       </group>
 
       {/* 3. Astronomical 1,200-Star Field with Atmospheric Extinction */}
-      <points>
+      <points ref={starPointsRef} visible={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[positions, 3]} />
           <bufferAttribute attach="attributes-aColor" args={[colors, 3]} />
@@ -445,7 +455,7 @@ export const WarpStarfield: React.FC<WarpStarfieldProps> = ({
       </points>
 
       {/* 4. Volumetric 3D Zodiacal Stardust Field (Appears in Deep Space) */}
-      <points>
+      <points ref={dustPointsRef} visible={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[dustPositions, 3]} />
           <bufferAttribute attach="attributes-aSize" args={[dustSizes, 1]} />

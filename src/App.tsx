@@ -1,15 +1,21 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, Suspense, lazy } from 'react';
 import Lenis from 'lenis';
 import { AnimatePresence } from 'framer-motion';
 import { CosmicFlightScene } from './components/CosmicFlightScene';
 import { FlightHUD } from './components/FlightHUD';
 import { FlightMissionOverlays } from './components/FlightMissionOverlays';
 import type { ProjectData } from './components/FlightMissionOverlays';
-import { FlightMissionModal } from './components/FlightMissionModal';
-import { MissionTerminalModal } from './components/MissionTerminalModal';
 import { CustomCursor } from './components/CustomCursor';
 import { LaunchPreloader } from './components/LaunchPreloader';
 import { cosmicAudio } from './components/AudioEngine';
+
+// Lazy-load modals so their heavy DOM and icon sets are never loaded until opened
+const FlightMissionModal = lazy(() =>
+  import('./components/FlightMissionModal').then((m) => ({ default: m.FlightMissionModal }))
+);
+const MissionTerminalModal = lazy(() =>
+  import('./components/MissionTerminalModal').then((m) => ({ default: m.MissionTerminalModal }))
+);
 // STAGE_CONFIG removed
 
 export const App: React.FC = () => {
@@ -257,25 +263,28 @@ export const App: React.FC = () => {
         />
       </div>
 
-      {/* Mission Control Interactive CLI Terminal Modal */}
-      <MissionTerminalModal
-        isOpen={isTerminalOpen}
-        onClose={() => setIsTerminalOpen(false)}
-        scrollProgress={uiScrollProgress}
-        activeStageIndex={activeStageIndex}
-        cameraMode={cameraMode}
-        onSetCameraMode={setCameraMode}
-        blueprintMode={blueprintMode}
-        onToggleBlueprint={() => setBlueprintMode((prev) => !prev)}
-      />
+      {/* Lazy Modals: Zero DOM or memory overhead until activated by the user */}
+      <Suspense fallback={null}>
+        {isTerminalOpen && (
+          <MissionTerminalModal
+            isOpen={isTerminalOpen}
+            onClose={() => setIsTerminalOpen(false)}
+            scrollProgress={uiScrollProgress}
+            activeStageIndex={activeStageIndex}
+            cameraMode={cameraMode}
+            onSetCameraMode={setCameraMode}
+            blueprintMode={blueprintMode}
+            onToggleBlueprint={() => setBlueprintMode((prev) => !prev)}
+          />
+        )}
 
-
-
-      {/* Architectural Mission Details Modal */}
-      <FlightMissionModal
-        project={selectedProject}
-        onClose={() => setSelectedProject(null)}
-      />
+        {selectedProject && (
+          <FlightMissionModal
+            project={selectedProject}
+            onClose={() => setSelectedProject(null)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

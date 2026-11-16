@@ -19,16 +19,16 @@ export const INTRO_CONFIG = {
     countdown: ['T-3', 'T-2', 'T-1'],
   },
   timings: {
-    totalDuration: 2.2, // Snappy & lightweight preloader duration
-    reducedMotionDuration: 1.2, // For prefers-reduced-motion
+    totalDuration: 1.2, // Ultra-snappy & lightweight preloader duration
+    reducedMotionDuration: 0.6, // For prefers-reduced-motion
     nameFadeStart: 0.0,
-    nameFadeEnd: 0.4,
-    statusTypingStart: 0.4,
-    statusTypingEnd: 1.4,
-    countdownStart: 1.4,
-    countdownEnd: 1.8,
-    overlayFadeStart: 1.8,
-    overlayFadeEnd: 2.2,
+    nameFadeEnd: 0.25,
+    statusTypingStart: 0.25,
+    statusTypingEnd: 0.70,
+    countdownStart: 0.70,
+    countdownEnd: 0.95,
+    overlayFadeStart: 0.95,
+    overlayFadeEnd: 1.20,
   },
   colors: {
     bgNavy: '#030611',
@@ -53,7 +53,6 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
-  const [skipRequested, setSkipRequested] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
   const completedRef = useRef(false);
@@ -168,7 +167,10 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
 
   // 3. FRAME-ACCURATE TIMELINE CONTROLLER
   useEffect(() => {
-    const totalDuration = prefersReduced
+    const hasSeen = typeof window !== 'undefined' && sessionStorage.getItem(INTRO_CONFIG.sessionKey);
+    const totalDuration = hasSeen
+      ? 0.35 // Returning visitor: instant 350ms splash
+      : prefersReduced
       ? INTRO_CONFIG.timings.reducedMotionDuration
       : INTRO_CONFIG.timings.totalDuration;
 
@@ -185,16 +187,14 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
 
       currentElapsed += safeDelta;
 
-      // Handle Skip request: fast-forward past typing/countdown once assets are ready
-      if (skipRequested) {
+      // Fast-forward past typing/countdown if previously seen
+      if (hasSeen) {
         if (assetsLoaded) {
           currentElapsed = Math.max(currentElapsed, INTRO_CONFIG.timings.overlayFadeStart);
         } else {
-          // Hold just before fade out until assets finish loading
           currentElapsed = Math.min(currentElapsed, INTRO_CONFIG.timings.countdownStart);
         }
       } else {
-        // If elapsed reaches countdown end (4.5s) but assets are still loading, hold until ready
         if (currentElapsed >= INTRO_CONFIG.timings.countdownEnd && !assetsLoaded) {
           currentElapsed = INTRO_CONFIG.timings.countdownEnd;
         }
@@ -202,15 +202,18 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
 
       setElapsed(currentElapsed);
 
-      // Trigger hero dashboard reveal at 4.2s so it is ready under the fade-out
-      if (currentElapsed >= 4.2 && onShowDashboardRef.current) {
+      // Trigger hero dashboard reveal as overlay fade begins so it is ready beneath
+      if (currentElapsed >= INTRO_CONFIG.timings.overlayFadeStart && onShowDashboardRef.current) {
         onShowDashboardRef.current();
       }
 
-      // Completion: fade out finished at 5.0s (reveals cold launchpad; no fire until scroll)
+      // Completion: fade out finished (reveals cold launchpad)
       if (currentElapsed >= totalDuration && assetsLoaded) {
         completedRef.current = true;
         setIsDone(true);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(INTRO_CONFIG.sessionKey, '1');
+        }
 
         if (onCompleteRef.current) {
           onCompleteRef.current();
@@ -223,10 +226,20 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
 
     animFrame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animFrame);
-  }, [assetsLoaded, skipRequested, prefersReduced]);
+  }, [assetsLoaded, prefersReduced]);
 
   const handleSkip = useCallback(() => {
-    setSkipRequested(true);
+    completedRef.current = true;
+    setIsDone(true);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(INTRO_CONFIG.sessionKey, '1');
+    }
+    if (onShowDashboardRef.current) {
+      onShowDashboardRef.current();
+    }
+    if (onCompleteRef.current) {
+      onCompleteRef.current();
+    }
   }, []);
 
   if (isDone) return null;
@@ -279,8 +292,9 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
 
   return (
     <div
+      onClick={handleSkip}
       style={{ opacity: overlayOpacity }}
-      className="fixed inset-0 z-[200] bg-[#030611] text-[#f4f2ed] flex flex-col items-center justify-center p-6 select-none overflow-hidden transition-opacity duration-150 pointer-events-auto"
+      className="fixed inset-0 z-[200] bg-[#030611] text-[#f4f2ed] flex flex-col items-center justify-center p-6 select-none overflow-hidden transition-opacity duration-150 pointer-events-auto cursor-pointer"
     >
       {/* 2D Canvas Starfield */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
@@ -410,7 +424,10 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
 
       {/* Small Minimalist Skip Button (Bottom Right) */}
       <button
-        onClick={handleSkip}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSkip();
+        }}
         className="fixed bottom-6 right-6 z-20 font-mono text-[11px] tracking-[0.25em] uppercase text-white/50 hover:text-cyan-300 bg-white/5 hover:bg-white/10 border border-white/15 hover:border-cyan-400/40 px-3.5 py-1.5 rounded-md backdrop-blur-sm transition-all duration-200 cursor-pointer shadow-sm active:scale-95"
       >
         {strings.skipButton}
