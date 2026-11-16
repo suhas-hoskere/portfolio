@@ -9,7 +9,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 let cachedCasuarinaTexture: THREE.CanvasTexture | null = null;
 function getCachedCasuarinaTexture(): THREE.CanvasTexture {
   if (cachedCasuarinaTexture) return cachedCasuarinaTexture;
-  const size = 256;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -53,7 +53,7 @@ function getCachedCasuarinaTexture(): THREE.CanvasTexture {
 let cachedCoconutFrondTexture: THREE.CanvasTexture | null = null;
 function getCachedCoconutFrondTexture(): THREE.CanvasTexture {
   if (cachedCoconutFrondTexture) return cachedCoconutFrondTexture;
-  const size = 256;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -115,7 +115,7 @@ function getCachedCoconutFrondTexture(): THREE.CanvasTexture {
 let cachedPalmyraTexture: THREE.CanvasTexture | null = null;
 function getCachedPalmyraTexture(): THREE.CanvasTexture {
   if (cachedPalmyraTexture) return cachedPalmyraTexture;
-  const size = 256;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -168,7 +168,7 @@ function getCachedPalmyraTexture(): THREE.CanvasTexture {
 let cachedTdefTexture: THREE.CanvasTexture | null = null;
 function getCachedTdefTexture(): THREE.CanvasTexture {
   if (cachedTdefTexture) return cachedTdefTexture;
-  const size = 256;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -525,73 +525,8 @@ interface SriharikotaVegetationProps {
   padDrop?: number;
 }
 
-// Cached Global Materials & Geometries (Instantiated once, never recomputed)
-let cachedVegetationMaterials: any = null;
-function getCachedVegetationMaterials() {
-  if (cachedVegetationMaterials) return cachedVegetationMaterials;
-  cachedVegetationMaterials = {
-    bark: new THREE.MeshLambertMaterial({
-      color: '#423225',
-      vertexColors: true,
-    }),
-    casuarina: new THREE.MeshLambertMaterial({
-      map: getCachedCasuarinaTexture(),
-      transparent: true,
-      alphaTest: 0.16,
-      side: THREE.DoubleSide,
-      vertexColors: true,
-    }),
-    coconut: new THREE.MeshLambertMaterial({
-      map: getCachedCoconutFrondTexture(),
-      transparent: true,
-      alphaTest: 0.16,
-      side: THREE.DoubleSide,
-      vertexColors: true,
-    }),
-    palmyra: new THREE.MeshLambertMaterial({
-      map: getCachedPalmyraTexture(),
-      transparent: true,
-      alphaTest: 0.16,
-      side: THREE.DoubleSide,
-      vertexColors: true,
-    }),
-    tdef: new THREE.MeshLambertMaterial({
-      map: getCachedTdefTexture(),
-      transparent: true,
-      alphaTest: 0.16,
-      side: THREE.DoubleSide,
-      vertexColors: true,
-    }),
-    scrub: new THREE.MeshLambertMaterial({
-      map: getCachedTdefTexture(),
-      transparent: true,
-      alphaTest: 0.15,
-      side: THREE.DoubleSide,
-    }),
-  };
-  return cachedVegetationMaterials;
-}
-
-let cachedVegetationGeometries: any = null;
-function getCachedVegetationGeometries() {
-  if (cachedVegetationGeometries) return cachedVegetationGeometries;
-  const coconutTrunkData = buildCoconutTrunkGeometry();
-  cachedVegetationGeometries = {
-    casuarinaTrunk: buildCasuarinaTrunkGeometry(),
-    casuarinaFoliage: buildCasuarinaFoliageGeometry(),
-    coconutTrunk: coconutTrunkData.trunkGeom,
-    coconutFoliage: buildCoconutFoliageGeometry(coconutTrunkData.topPos),
-    palmyraTrunk: buildPalmyraTrunkGeometry(),
-    palmyraFoliage: buildPalmyraFoliageGeometry(),
-    tdefTrunk: buildTdefTrunkGeometry(),
-    tdefFoliage: buildTdefFoliageGeometry(),
-    scrub: buildScrubGeometry(),
-  };
-  return cachedVegetationGeometries;
-}
-
 export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ padDrop = 0 }) => {
-  // Instanced mesh refs for Trunks (Solid bark)
+  // Instanced mesh refs for Trunks (Solid standard bark)
   const casuarinaTrunkRef = useRef<THREE.InstancedMesh>(null);
   const coconutTrunkRef = useRef<THREE.InstancedMesh>(null);
   const palmyraTrunkRef = useRef<THREE.InstancedMesh>(null);
@@ -604,8 +539,77 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ pa
   const tdefFoliageRef = useRef<THREE.InstancedMesh>(null);
   const scrubRef = useRef<THREE.InstancedMesh>(null);
 
-  const materials = useMemo(() => getCachedVegetationMaterials(), []);
-  const geoms = useMemo(() => getCachedVegetationGeometries(), []);
+  // Materials: Solid bark for trunks, procedural alpha-cutouts for fronds/needles
+  const materials = useMemo(() => {
+    return {
+      bark: new THREE.MeshStandardMaterial({
+        color: '#423225',
+        roughness: 0.88,
+        metalness: 0.04,
+        vertexColors: true,
+      }),
+      casuarina: new THREE.MeshStandardMaterial({
+        map: getCachedCasuarinaTexture(),
+        transparent: true,
+        alphaTest: 0.16,
+        side: THREE.DoubleSide,
+        roughness: 0.78,
+        metalness: 0.05,
+        vertexColors: true,
+      }),
+      coconut: new THREE.MeshStandardMaterial({
+        map: getCachedCoconutFrondTexture(),
+        transparent: true,
+        alphaTest: 0.16,
+        side: THREE.DoubleSide,
+        roughness: 0.65,
+        metalness: 0.05,
+        vertexColors: true,
+      }),
+      palmyra: new THREE.MeshStandardMaterial({
+        map: getCachedPalmyraTexture(),
+        transparent: true,
+        alphaTest: 0.16,
+        side: THREE.DoubleSide,
+        roughness: 0.75,
+        metalness: 0.04,
+        vertexColors: true,
+      }),
+      tdef: new THREE.MeshStandardMaterial({
+        map: getCachedTdefTexture(),
+        transparent: true,
+        alphaTest: 0.16,
+        side: THREE.DoubleSide,
+        roughness: 0.82,
+        metalness: 0.04,
+        vertexColors: true,
+      }),
+      scrub: new THREE.MeshStandardMaterial({
+        map: getCachedTdefTexture(),
+        transparent: true,
+        alphaTest: 0.15,
+        side: THREE.DoubleSide,
+        roughness: 0.85,
+        metalness: 0.02,
+      }),
+    };
+  }, []);
+
+  // Geometries
+  const geoms = useMemo(() => {
+    const coconutTrunkData = buildCoconutTrunkGeometry();
+    return {
+      casuarinaTrunk: buildCasuarinaTrunkGeometry(),
+      casuarinaFoliage: buildCasuarinaFoliageGeometry(),
+      coconutTrunk: coconutTrunkData.trunkGeom,
+      coconutFoliage: buildCoconutFoliageGeometry(coconutTrunkData.topPos),
+      palmyraTrunk: buildPalmyraTrunkGeometry(),
+      palmyraFoliage: buildPalmyraFoliageGeometry(),
+      tdefTrunk: buildTdefTrunkGeometry(),
+      tdefFoliage: buildTdefFoliageGeometry(),
+      scrub: buildScrubGeometry(),
+    };
+  }, []);
 
   // Instance distribution with exact terrain elevation anchoring
   const { casuarinaData, coconutData, palmyraData, tdefData, scrubData } = useMemo(() => {
@@ -613,7 +617,7 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ pa
 
     // 1. Casuarina (36 trees: West grove, East windbreak, and Horizon belt)
     const cas: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 36; i++) {
       let x = 0, z = 0;
       if (i < 14) {
         // West/Southwest flank grove (visible behind left cards)
@@ -643,7 +647,7 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ pa
 
     // 2. Coconut Palms (20 trees: leaning with sea breeze on East and West margins)
     const coc: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 20; i++) {
       let x = 0, z = 0;
       if (i < 12) {
         // East coast stand (leaning towards Bay of Bengal)
@@ -669,7 +673,7 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ pa
 
     // 3. Palmyra Fan Palms (18 iconic trees)
     const pal: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 18; i++) {
       let x = 0, z = 0;
       if (i < 8) {
         x = -6.2 - (i % 4) * 2.4 + Math.sin(i * 2.2) * 0.6;
@@ -696,7 +700,7 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ pa
 
     // 4. Tropical Dry Evergreen Broadleaf Canopy (14 trees)
     const tdef: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 14; i++) {
       let x = 0, z = 0;
       if (i < 6) {
         x = -5.8 - (i % 3) * 2.6 - Math.sin(i * 1.9) * 0.8;
@@ -722,7 +726,7 @@ export const SriharikotaVegetation: React.FC<SriharikotaVegetationProps> = ({ pa
 
     // 5. Ground Sand-Binding Scrub & Coastal Grass (42 clumps)
     const scb: { matrix: THREE.Matrix4; color: THREE.Color }[] = [];
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 42; i++) {
       const angle = (i / 42) * Math.PI * 2 + Math.sin(i * 3.1) * 0.3;
       const radius = 5.2 + (i % 7) * 2.4 + Math.cos(i * 2.4) * 0.9;
       const x = Math.cos(angle) * (radius * 1.3);
