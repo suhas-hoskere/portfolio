@@ -20,7 +20,7 @@ let cachedTerrainTextures: { diffuse: THREE.CanvasTexture; bump: THREE.CanvasTex
 function getCachedTerrainTextures(): { diffuse: THREE.CanvasTexture; bump: THREE.CanvasTexture } {
   if (cachedTerrainTextures) return cachedTerrainTextures;
 
-  const size = 1024;
+  const size = 512;
   const dCanvas = document.createElement('canvas');
   dCanvas.width = size;
   dCanvas.height = size;
@@ -97,23 +97,11 @@ function getCachedTerrainTextures(): { diffuse: THREE.CanvasTexture; bump: THREE
   dctx.fillRect(cx - 160, cy - 45, 320, 90);
   dctx.restore();
 
-  // 3. High-frequency micro-gravel surface noise
-  const imgData = dctx.getImageData(0, 0, size, size);
-  const bumpData = bctx.getImageData(0, 0, size, size);
-  const dPixels = imgData.data;
-  const bPixels = bumpData.data;
-
-  for (let i = 0; i < dPixels.length; i += 4) {
-    const noise = (Math.random() - 0.5) * 14;
-    dPixels[i] = Math.min(255, Math.max(0, dPixels[i] + noise));
-    dPixels[i + 1] = Math.min(255, Math.max(0, dPixels[i + 1] + noise));
-    dPixels[i + 2] = Math.min(255, Math.max(0, dPixels[i + 2] + noise));
-    bPixels[i] = Math.min(255, Math.max(0, 128 + noise * 3));
-    bPixels[i + 1] = bPixels[i];
-    bPixels[i + 2] = bPixels[i];
+  // 3. Lightweight micro-gravel texture stippling (Fast & zero RAM spike)
+  dctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+  for (let s = 0; s < 300; s++) {
+    dctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
   }
-  dctx.putImageData(imgData, 0, 0);
-  bctx.putImageData(bumpData, 0, 0);
 
   const diffuse = new THREE.CanvasTexture(dCanvas);
   diffuse.wrapS = THREE.RepeatWrapping;

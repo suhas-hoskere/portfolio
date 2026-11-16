@@ -171,14 +171,14 @@ export interface StageConfig {
 export const STAGE_CONFIG: StageConfig = {
   global: {
     dprMin: 1.0,
-    dprMax: 1.75,
+    dprMax: 1.25,
     toneMappingExposure: 1.15,
     adaptiveQualityTargetMs: 20.0,
     enableStarStreaksOnTransit: true,
     starLayers: {
-      distantCount: 2200,
-      midCount: 1400,
-      nearDustCount: 280,
+      distantCount: 1200,
+      midCount: 600,
+      nearDustCount: 120,
       twinkleSpeed: 1.8,
     },
   },
@@ -218,9 +218,9 @@ export const STAGE_CONFIG: StageConfig = {
       climb: 0.0038,
     },
     fireAndSmoke: {
-      maxFlameParticles: 320,
-      maxSmokeParticles: 420,
-      maxSparks: 60,
+      maxFlameParticles: 160,
+      maxSmokeParticles: 180,
+      maxSparks: 30,
       lateralTrenchVelocity: 4.2,
       smokeDissipationRate: 0.28,
     },

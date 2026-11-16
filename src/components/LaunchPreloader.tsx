@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
-import {
-  getCachedSolarPanelTexture,
-  getCachedGoldMliTexture,
-  getCachedIsroBoosterTexture,
-  getCachedIndiaBoosterTexture,
-  getCachedChandrayaanFairingTexture,
-} from './aerospaceTextures';
 
 // ============================================================================
 // INTRO CONFIGURATION: All strings, timings, colors, and session keys
@@ -26,16 +19,16 @@ export const INTRO_CONFIG = {
     countdown: ['T-3', 'T-2', 'T-1'],
   },
   timings: {
-    totalDuration: 5.0, // Standard duration (seconds)
-    reducedMotionDuration: 2.0, // For prefers-reduced-motion
+    totalDuration: 2.2, // Snappy & lightweight preloader duration
+    reducedMotionDuration: 1.2, // For prefers-reduced-motion
     nameFadeStart: 0.0,
-    nameFadeEnd: 0.8,
-    statusTypingStart: 0.8,
-    statusTypingEnd: 3.8,
-    countdownStart: 3.8,
-    countdownEnd: 4.5,
-    overlayFadeStart: 4.5,
-    overlayFadeEnd: 5.0,
+    nameFadeEnd: 0.4,
+    statusTypingStart: 0.4,
+    statusTypingEnd: 1.4,
+    countdownStart: 1.4,
+    countdownEnd: 1.8,
+    overlayFadeStart: 1.8,
+    overlayFadeEnd: 2.2,
   },
   colors: {
     bgNavy: '#030611',
@@ -86,16 +79,10 @@ export const LaunchPreloader: React.FC<LaunchPreloaderProps> = ({
     let mounted = true;
 
     const preloadFirstSceneAssets = async () => {
-      try {
-        // Kick off procedural texture generation in parallel while intro runs
-        getCachedSolarPanelTexture();
-        getCachedGoldMliTexture();
-        getCachedIsroBoosterTexture();
-        getCachedIndiaBoosterTexture();
-        getCachedChandrayaanFairingTexture();
-      } catch (err) {
-        console.warn('Pre-cache warning:', err);
-      }
+      // Mark ready promptly so preloader never blocks the user
+      setTimeout(() => {
+        if (mounted) setAssetsLoaded(true);
+      }, 100);
 
       // Hook into Three.js DefaultLoadingManager
       let isQueueActive = false;

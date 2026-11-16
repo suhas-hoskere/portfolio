@@ -115,8 +115,8 @@ let cachedEarthTextures: EarthTextures | null = null;
 export function getPhotorealisticEarthTextures(): EarthTextures {
   if (cachedEarthTextures) return cachedEarthTextures;
 
-  const width = 1024;
-  const height = 512;
+  const width = 512;
+  const height = 256;
 
   // 1. Day Surface Canvas (Oceans, Bathymetry, Fractal Continents, Biomes, Himalayas)
   const dayCanvas = document.createElement('canvas');
@@ -487,8 +487,8 @@ let cachedMoonTextures: MoonTextures | null = null;
 export function getPhotorealisticMoonTextures(): MoonTextures {
   if (cachedMoonTextures) return cachedMoonTextures;
 
-  const width = 1024;
-  const height = 512;
+  const width = 512;
+  const height = 256;
 
   const diffuseCanvas = document.createElement('canvas');
   diffuseCanvas.width = width;
@@ -722,8 +722,8 @@ let cachedMarsTextures: MarsTextures | null = null;
 export function getPhotorealisticMarsTextures(): MarsTextures {
   if (cachedMarsTextures) return cachedMarsTextures;
 
-  const width = 1024;
-  const height = 512;
+  const width = 512;
+  const height = 256;
 
   const diffuseCanvas = document.createElement('canvas');
   diffuseCanvas.width = width;

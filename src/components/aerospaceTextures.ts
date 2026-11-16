@@ -16,8 +16,8 @@ let cachedCarbonBackingTexture: THREE.CanvasTexture | null = null;
 export function getCachedSolarPanelTexture(): THREE.CanvasTexture {
   if (cachedSolarPanelTexture) return cachedSolarPanelTexture;
 
-  const width = 1024;
-  const height = 512;
+  const width = 512;
+  const height = 256;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -362,7 +362,7 @@ export function getCachedRocketBumpMap(): THREE.CanvasTexture {
   if (cachedRocketBumpMap) return cachedRocketBumpMap;
 
   const width = 512;
-  const height = 1024;
+  const height = 512;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -564,8 +564,8 @@ export function getCachedGenericBoosterTexture(): THREE.CanvasTexture {
 export function getCachedGenericFairingTexture(): THREE.CanvasTexture {
   if (cachedGenericFairingTexture) return cachedGenericFairingTexture;
 
-  const width = 1024;
-  const height = 1024;
+  const width = 512;
+  const height = 512;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -837,8 +837,8 @@ export function getCachedChandrayaanFairingTexture(): THREE.CanvasTexture {
 
 function _unusedOldFairing() {
 
-  const width = 1024;
-  const height = 1024;
+  const width = 512;
+  const height = 512;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
