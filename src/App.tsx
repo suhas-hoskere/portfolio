@@ -4,6 +4,7 @@ import { FlightHUD } from './components/FlightHUD';
 import { FlightMissionOverlays } from './components/FlightMissionOverlays';
 import type { ProjectData } from './components/FlightMissionOverlays';
 import { CustomCursor } from './components/CustomCursor';
+import { MonochromeLiftoffLoader } from './components/MonochromeLiftoffLoader';
 import { cosmicAudio } from './components/AudioEngine';
 
 // Lazy-load modals so their heavy DOM and icon sets are never loaded until opened
@@ -25,10 +26,28 @@ export const App: React.FC = () => {
   }, []);
 
   // Discrete Stage State (Choreographed flight stage 0 to 5)
+  const [showLoader, setShowLoader] = useState(true);
   const [activeStageIndex, setActiveStageIndex] = useState(0);
   const [uiScrollProgress, setUiScrollProgress] = useState(0);
   const [audioActive, setAudioActive] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
+
+  const handleLoaderComplete = useCallback(() => {
+    setShowLoader(false);
+  }, []);
+
+  // Prevent accidental wheel scrolling while the liftoff loader plays
+  useEffect(() => {
+    if (showLoader) {
+      document.body.style.overflow = 'hidden';
+      window.scrollTo(0, 0);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showLoader]);
 
   // Camera Perspective, Holographic Blueprint & CLI Terminal State
   const [cameraMode, setCameraMode] = useState<'CINEMATIC' | 'BOOSTER' | 'CHASE'>('CINEMATIC');
@@ -207,6 +226,9 @@ export const App: React.FC = () => {
       ref={trackRef}
       className="relative min-h-[850vh] bg-[#050505] text-white overflow-x-hidden selection:bg-white selection:text-black"
     >
+      {/* Pure Monochrome Liftoff Loading Screen (unmounts cleanly after launch) */}
+      {showLoader && <MonochromeLiftoffLoader onComplete={handleLoaderComplete} />}
+
       {/* On-demand comet follower ring cursor */}
       <CustomCursor />
 
