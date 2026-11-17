@@ -48,7 +48,7 @@ function drawMonoMiniSat(
  * - 3 minimalist white satellites along dashed Keplerian ellipses (scroll-driven, zero lag!)
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
-  const { ctx, w, h, sp, mouseX, mouseY, vehicleAnchorX, unit } = frame;
+  const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
 
   if (sp < 0.315 || sp > 0.518) return;
 
@@ -68,8 +68,8 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   }
   centerY -= mouseY * 6;
 
-  // Scroll-driven orbital phase so satellites glide smoothly as you scroll (0 idle CPU!)
-  const orbitAdvance = (sp - 0.32) * 5.2;
+  // Live orbital motion + scroll offset so Keplerian satellites continuously glide around Earth
+  const orbitAdvance = (sp - 0.32) * 3.2 + (reducedMotion ? 0 : t * 0.24);
 
   const satPos = (sat: OrbitalSatSpec, angle: number) => {
     const lx = Math.cos(angle) * earthR * sat.rxScale;
@@ -178,19 +178,20 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   ctx.arc(centerX, centerY, earthR + 10, Math.PI * 1.08, Math.PI * 1.92);
   ctx.stroke();
 
-  // 3. BANGALORE ISRO GROUND STATION RETICLE (12.97° N, 77.59° E)
+  // 3. BANGALORE ISRO GROUND STATION RETICLE (12.97° N, 77.59° E) + LIVE PULSING RADAR PING
   const blrX = centerX + earthR * 0.04;
   const blrY = centerY - earthR * 0.56;
   if (blrY < h + 40) {
+    const pingWave = reducedMotion ? 0.35 : (t * 0.78) % 1.0;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.arc(blrX, blrY, unit * 0.085, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - pingWave) * 0.78})`;
     ctx.beginPath();
-    ctx.arc(blrX, blrY, unit * 0.17, 0, Math.PI * 2);
+    ctx.arc(blrX, blrY, unit * (0.085 + pingWave * 0.28), 0, Math.PI * 2);
     ctx.stroke();
 
     const tick = unit * 0.14;

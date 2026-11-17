@@ -3,53 +3,105 @@ import {
   clamp,
   easeOutCubic,
   smoothstep,
+  mulberry32,
 } from './types';
 
-/** Draws a crisp flat monochrome supersonic exhaust plume + geometric Mach diamonds (zero radial gradients) */
-function drawMonoPlume(
+interface MonoExhaustStreak {
+  nozzle: 0 | 1 | 2 | 3;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  life: number;
+  len: number;
+}
+
+let exhaustStreaks: MonoExhaustStreak[] | null = null;
+
+function getExhaustStreaks(): MonoExhaustStreak[] {
+  if (exhaustStreaks) return exhaustStreaks;
+  const rand = mulberry32(4242);
+  exhaustStreaks = [];
+  for (let i = 0; i < 32; i++) {
+    const nozzle = (i < 10 ? 0 : i < 20 ? 1 : i < 26 ? 2 : 3) as 0 | 1 | 2 | 3;
+    exhaustStreaks.push({
+      nozzle,
+      x: 0,
+      y: 0,
+      vx: (rand() - 0.5) * 0.42,
+      vy: 4.8 + rand() * 4.5,
+      age: rand() * 0.35,
+      life: 0.20 + rand() * 0.22,
+      len: 8 + rand() * 14,
+    });
+  }
+  return exhaustStreaks;
+}
+
+/** Draws a live roaring, flickering monochrome supersonic exhaust plume + pulsing Mach diamonds */
+function drawLiveMonoPlume(
   ctx: CanvasRenderingContext2D,
   nx: number,
   ny: number,
   width: number,
   length: number,
   fireRamp: number,
-  withMachDiamonds: boolean
+  t: number,
+  withMachDiamonds: boolean,
+  reducedMotion: boolean
 ): void {
   if (fireRamp <= 0.02) return;
-  const w = width * fireRamp;
-  const len = length * fireRamp;
 
-  // Outer translucent silver-white exhaust envelope
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.22 * fireRamp})`;
-  ctx.strokeStyle = `rgba(255, 255, 255, ${0.48 * fireRamp})`;
+  const turbLen = reducedMotion
+    ? 1
+    : 0.90 + Math.sin(t * 62 + nx * 0.2) * 0.11 + Math.cos(t * 108) * 0.06;
+  const turbW = reducedMotion ? 1 : 0.94 + Math.sin(t * 48 + nx) * 0.07;
+  const w = width * fireRamp * turbW;
+  const len = length * fireRamp * turbLen;
+
+  // Outer translucent expanding supersonic envelope
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.20 * fireRamp})`;
+  ctx.strokeStyle = `rgba(255, 255, 255, ${0.52 * fireRamp})`;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(nx - w * 0.55, ny);
-  ctx.quadraticCurveTo(nx - w * 1.15, ny + len * 0.52, nx, ny + len);
-  ctx.quadraticCurveTo(nx + w * 1.15, ny + len * 0.52, nx + w * 0.55, ny);
+  ctx.quadraticCurveTo(nx - w * 1.25, ny + len * 0.52, nx, ny + len);
+  ctx.quadraticCurveTo(nx + w * 1.25, ny + len * 0.52, nx + w * 0.55, ny);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
 
-  // Pure white inner supersonic core
-  const coreLen = len * 0.56;
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.92 * fireRamp})`;
+  // Mid glowing white plume
+  const midLen = len * 0.72;
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.55 * fireRamp})`;
   ctx.beginPath();
-  ctx.moveTo(nx - w * 0.34, ny);
-  ctx.quadraticCurveTo(nx - w * 0.45, ny + coreLen * 0.65, nx, ny + coreLen);
-  ctx.quadraticCurveTo(nx + w * 0.45, ny + coreLen * 0.65, nx + w * 0.34, ny);
+  ctx.moveTo(nx - w * 0.42, ny);
+  ctx.quadraticCurveTo(nx - w * 0.72, ny + midLen * 0.58, nx, ny + midLen);
+  ctx.quadraticCurveTo(nx + w * 0.72, ny + midLen * 0.58, nx + w * 0.42, ny);
   ctx.closePath();
   ctx.fill();
 
-  // Sharp monochrome Mach diamond shock lozenges inside Vikas core plume
+  // Blinding pure-white supersonic core
+  const coreLen = len * 0.48;
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.96 * fireRamp})`;
+  ctx.beginPath();
+  ctx.moveTo(nx - w * 0.30, ny);
+  ctx.quadraticCurveTo(nx - w * 0.42, ny + coreLen * 0.65, nx, ny + coreLen);
+  ctx.quadraticCurveTo(nx + w * 0.42, ny + coreLen * 0.65, nx + w * 0.30, ny);
+  ctx.closePath();
+  ctx.fill();
+
+  // Pulsing monochrome Mach diamond shock lozenges inside Vikas core plume
   if (withMachDiamonds && fireRamp > 0.25) {
+    const pulse = reducedMotion ? 1 : 0.85 + Math.sin(t * 78) * 0.15;
     ctx.strokeStyle = '#09090b';
     ctx.fillStyle = '#ffffff';
     ctx.lineWidth = 1;
     for (let d = 0; d < 3; d++) {
-      const dy = ny + len * (0.16 + d * 0.14);
-      const dw = w * (0.32 - d * 0.06);
-      const dh = len * (0.058 - d * 0.01);
+      const dy = ny + len * (0.15 + d * 0.14);
+      const dw = w * (0.32 - d * 0.06) * pulse;
+      const dh = len * (0.058 - d * 0.01) * pulse;
       ctx.beginPath();
       ctx.moveTo(nx, dy - dh);
       ctx.lineTo(nx + dw, dy);
@@ -62,7 +114,6 @@ function drawMonoPlume(
   }
 }
 
-/** Draws a single monochrome Black & White S200 Solid Rocket Booster */
 function drawMonoS200Booster(
   ctx: CanvasRenderingContext2D,
   side: -1 | 1,
@@ -70,27 +121,29 @@ function drawMonoS200Booster(
   isBurning: boolean,
   fireRamp: number,
   sepProgress: number,
-  blueprintMode: boolean
+  t: number,
+  blueprintMode: boolean,
+  reducedMotion: boolean
 ): void {
   const bw = u * 0.22;
   const bodyH = u * 1.46;
   const noseH = u * 0.45;
   const topY = -bodyH;
 
-  // Booster exhaust flame while attached
   if (isBurning && sepProgress === 0) {
-    drawMonoPlume(ctx, 0, u * 0.20, bw * 1.4, u * 2.1, fireRamp, false);
+    drawLiveMonoPlume(ctx, 0, u * 0.20, bw * 1.45, u * 2.25, fireRamp, t, false, reducedMotion);
   }
 
-  // Post-separation monochrome residual burnout trail circles
+  // Animated post-separation residual burnout smoke rings drifting behind tumbling boosters
   if (sepProgress > 0 && sepProgress < 1) {
-    const trailAlpha = (1 - sepProgress) * 0.45;
+    const trailAlpha = (1 - sepProgress) * 0.55;
     ctx.strokeStyle = `rgba(255, 255, 255, ${trailAlpha})`;
-    ctx.fillStyle = `rgba(255, 255, 255, ${trailAlpha * 0.25})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${trailAlpha * 0.22})`;
     ctx.lineWidth = 1;
-    for (let s = 0; s < 3; s++) {
-      const sy = u * (0.28 + s * 0.36 + sepProgress * 0.42);
-      const sr = u * (0.12 + s * 0.08 + sepProgress * 0.12);
+    for (let s = 0; s < 4; s++) {
+      const drift = reducedMotion ? 0 : ((t * 1.4 + s * 0.25) % 1) * 0.35;
+      const sy = u * (0.26 + (s * 0.32 + drift) + sepProgress * 0.45);
+      const sr = u * (0.10 + s * 0.07 + drift * 0.18);
       ctx.beginPath();
       ctx.arc(0, sy, sr, 0, Math.PI * 2);
       ctx.fill();
@@ -98,7 +151,6 @@ function drawMonoS200Booster(
     }
   }
 
-  // Attachment struts while attached
   if (sepProgress < 0.15) {
     const innerEdge = -side * bw;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
@@ -122,14 +174,12 @@ function drawMonoS200Booster(
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-
     ctx.strokeRect(-bw, topY, bw * 2, bodyH);
     ctx.save();
     ctx.setLineDash([4, 3]);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
     ctx.strokeRect(-bw * 0.62, topY + u * 0.1, bw * 1.24, bodyH - u * 0.2);
     ctx.restore();
-
     ctx.beginPath();
     ctx.moveTo(-bw * 0.52, 0);
     ctx.lineTo(-bw * 0.76, u * 0.20);
@@ -140,7 +190,7 @@ function drawMonoS200Booster(
     return;
   }
 
-  // Outward-canted aerodynamic nose cone (pure white + crisp shadow side)
+  // Nose cone (white + silver shadow + ink stroke)
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
   ctx.moveTo(-bw, topY);
@@ -149,7 +199,6 @@ function drawMonoS200Booster(
   ctx.closePath();
   ctx.fill();
 
-  // Left half shadow shading for crisp 2.5D monochrome depth
   ctx.fillStyle = '#d4d4d8';
   ctx.beginPath();
   ctx.moveTo(-bw, topY);
@@ -167,18 +216,16 @@ function drawMonoS200Booster(
   ctx.closePath();
   ctx.stroke();
 
-  // Main S200 White Casing + Left Half Silver Shadow + Black Roll Bands
+  // Main S200 White Casing + Black Roll Bands
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(-bw, topY, bw * 2, bodyH);
   ctx.fillStyle = '#d4d4d8';
   ctx.fillRect(-bw, topY, bw * 0.92, bodyH);
 
-  // Iconic Apollo-style Black Roll-Pattern Bands
   ctx.fillStyle = '#09090b';
   ctx.fillRect(-bw, topY + u * 0.04, bw * 2, u * 0.08);
   ctx.fillRect(-bw, topY + bodyH * 0.52, bw * 2, u * 0.06);
 
-  // Crisp 1.2px ink outline & weld seams
   ctx.strokeStyle = '#09090b';
   ctx.lineWidth = 1.2;
   ctx.strokeRect(-bw, topY, bw * 2, bodyH);
@@ -216,31 +263,37 @@ function drawMonoS200Booster(
   ctx.fill();
   ctx.stroke();
 
-  // Pyrotechnic separation flash ring at nose collar
   if (sepProgress > 0 && sepProgress < 0.75) {
     const flash = Math.sin((sepProgress / 0.75) * Math.PI);
     ctx.strokeStyle = `rgba(255, 255, 255, ${flash})`;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.arc(0, topY + u * 0.06, u * (0.14 + flash * 0.18), 0, Math.PI * 2);
+    ctx.arc(0, topY + u * 0.06, u * (0.14 + flash * 0.22), 0, Math.PI * 2);
     ctx.stroke();
   }
 }
 
 /**
- * Pure monochrome Black & White 2.5D LVM3 Launch Vehicle (Stages 00–01).
- * Iconic stark white & obsidian roll-pattern livery, zero radial gradients, zero heavy loops.
+ * Pure monochrome Black & White LIVE 2.5D LVM3 Launch Vehicle:
+ * Roaring turbulent flames, pulsing Mach diamonds, live nozzle spark streaks,
+ * acoustic hull vibration, and high-speed climbing airflow streamlines!
  */
 export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const {
     ctx,
+    w,
+    h,
     sp,
+    scrollSpeed,
+    t,
+    dt,
     mouseX,
     vehicleAnchorX,
     groundY,
     unit,
     cameraMode,
     blueprintMode,
+    reducedMotion,
   } = frame;
 
   if (sp >= 0.365) return;
@@ -254,11 +307,43 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
   else if (cameraMode === 'CHASE') baseY -= unit * 0.26;
 
-  // Smooth eastward gravity pitch turn during ascent (0.22 -> 0.35)
+  // Dynamic upward ascent shift during liftoff & climb so vehicle physically rises!
+  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.280, sp) * unit * 0.55 : 0;
+  baseY -= climbLift;
+
   const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.345, sp) * 0.14 : 0;
 
   const isBurning = sp >= 0.035 && sp < 0.355;
   const fireRamp = isBurning ? clamp((sp - 0.035) / 0.025, 0, 1) : 0;
+
+  // Live acoustic engine rumble on rocket hull
+  let vibeX = 0;
+  let vibeY = 0;
+  if (isBurning && !reducedMotion) {
+    const amp = (sp < 0.22 ? 1.35 : 0.85) * fireRamp;
+    vibeX = (Math.sin(t * 82) * 0.7 + Math.cos(t * 134) * 0.3) * amp;
+    vibeY = (Math.cos(t * 90) * 0.7 + Math.sin(t * 142) * 0.3) * amp;
+  }
+
+  // High-speed atmospheric climb streamlines rushing downward past rocket (Step 04 -> Stage 01)
+  if (sp >= 0.175 && sp < 0.350 && !reducedMotion) {
+    const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.310, 0.350, sp));
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.22 * speedIntensity})`;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 12; i++) {
+      const sx = basePadX + ((i - 5.5) * u * 0.62);
+      if (sx < 0 || sx > w) continue;
+      const cycle = (t * (2.6 + (i % 3) * 0.8) + i * 0.37) % 1;
+      const sy = cycle * h;
+      const len = 28 + (i % 4) * 18;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx, sy + len);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   const isDeploying = sp >= 0.340;
   const deployFrac = isDeploying ? clamp((sp - 0.340) / 0.025, 0, 1) : 0;
@@ -266,7 +351,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const coreDropRot = deployFrac * 0.18;
 
   ctx.save();
-  ctx.translate(basePadX, baseY);
+  ctx.translate(basePadX + vibeX, baseY + vibeY);
   ctx.rotate(pitchRad);
 
   const coreR = u * 0.26;
@@ -281,17 +366,54 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const c25TopY = interTopY - c25H;
 
   // =========================================================================
-  // 1. LOWER ROCKET BODY (L110 + INTERSTAGE + C25 + TWIN S200 BOOSTERS)
+  // 1. LOWER ROCKET BODY + ROARING EXHAUST + LIVE SPARK STREAKS
   // =========================================================================
   ctx.save();
   ctx.translate(0, coreDropY);
   ctx.rotate(coreDropRot);
 
-  // Twin Core Vikas Plumes + Mach Diamonds
+  // Twin Core Vikas Roaring Plumes + Pulsing Mach Diamonds
   if (isBurning) {
+    const thrustStretch = 1.0 + Math.min(scrollSpeed * 0.22, 0.42);
     const vikasSpread = coreR * 0.46;
-    drawMonoPlume(ctx, -vikasSpread, u * 0.18, coreR * 0.74, u * 1.78, fireRamp, true);
-    drawMonoPlume(ctx, vikasSpread, u * 0.18, coreR * 0.74, u * 1.78, fireRamp, true);
+    drawLiveMonoPlume(ctx, -vikasSpread, u * 0.18, coreR * 0.78, u * 1.92 * thrustStretch, fireRamp, t, true, reducedMotion);
+    drawLiveMonoPlume(ctx, vikasSpread, u * 0.18, coreR * 0.78, u * 1.92 * thrustStretch, fireRamp, t, true, reducedMotion);
+  }
+
+  // Live supersonic monochrome spark streaks streaming down from all 4 engine nozzles
+  if (isBurning && !reducedMotion) {
+    const streaks = getExhaustStreaks();
+    const boostersActive = sp < 0.315;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.3;
+    for (let i = 0; i < streaks.length; i++) {
+      const p = streaks[i];
+      if (!boostersActive && p.nozzle < 2) continue;
+      p.age += dt * (1.25 + Math.min(scrollSpeed * 0.35, 0.8));
+      if (p.age >= p.life) {
+        p.age = 0;
+        const ox =
+          p.nozzle === 0
+            ? -coreR * 1.95
+            : p.nozzle === 1
+              ? coreR * 1.95
+              : p.nozzle === 2
+                ? -coreR * 0.46
+                : coreR * 0.46;
+        p.x = ox + (((i * 29) % 10) - 5) * 0.015 * u;
+        p.y = u * 0.22;
+      } else {
+        p.x += p.vx * u * dt;
+        p.y += p.vy * u * dt * fireRamp;
+      }
+      const ratio = clamp(p.age / p.life, 0, 1);
+      ctx.globalAlpha = (1 - ratio) * 0.88 * fireRamp;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx * 2, p.y + p.len);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   if (blueprintMode) {
@@ -319,13 +441,11 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.fillText('C25', coreR + u * 0.10, c25TopY + c25H * 0.55);
     ctx.fillText('L110', coreR + u * 0.10, l110TopY + l110H * 0.55);
   } else {
-    // L110 Main Core Tank (pure white + crisp left silver shading + ink stroke)
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(-coreR, l110TopY, coreR * 2, l110H);
     ctx.fillStyle = '#d4d4d8';
     ctx.fillRect(-coreR, l110TopY, coreR * 0.92, l110H);
 
-    // Classic Black Roll-Pattern Checkered Stripes on L110
     ctx.fillStyle = '#09090b';
     ctx.fillRect(-coreR, l110TopY + l110H * 0.68, coreR, l110H * 0.22);
     ctx.fillRect(0, l110TopY + l110H * 0.46, coreR, l110H * 0.22);
@@ -334,7 +454,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.lineWidth = 1.25;
     ctx.strokeRect(-coreR, l110TopY, coreR * 2, l110H);
 
-    // Interstage Adapter Collar (solid black with white flange band)
     ctx.fillStyle = '#09090b';
     ctx.fillRect(-coreR * 1.02, interTopY, coreR * 2.04, interstageH);
     ctx.strokeStyle = '#ffffff';
@@ -343,7 +462,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(-coreR * 1.04, interTopY + interstageH * 0.45, coreR * 2.08, 2);
 
-    // C25 Cryogenic Upper Stage (white + silver shadow + black telemetry stripe)
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(-coreR, c25TopY, coreR * 2, c25H);
     ctx.fillStyle = '#e4e4e7';
@@ -354,7 +472,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.lineWidth = 1.25;
     ctx.strokeRect(-coreR, c25TopY, coreR * 2, c25H);
 
-    // Aft Skirt & Twin Vikas Engine Bells
     ctx.fillStyle = '#18181b';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
@@ -382,7 +499,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     }
   }
 
-  // Twin S200 Solid Boosters (detach cleanly at sp 0.315 -> 0.340)
+  // Twin S200 Solid Boosters
   if (sp < 0.342) {
     const sepProg = sp >= 0.315 ? easeOutCubic((sp - 0.315) / 0.025) : 0;
     const baseBoosterX = coreR + u * 0.26;
@@ -390,20 +507,21 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.save();
       ctx.translate(side * (baseBoosterX + sepProg * u * 2.1), sepProg * u * 1.9);
       ctx.rotate(side * sepProg * 0.44);
-      drawMonoS200Booster(ctx, side, u, isBurning, fireRamp, sepProg, blueprintMode);
+      drawMonoS200Booster(ctx, side, u, isBurning, fireRamp, sepProg, t, blueprintMode, reducedMotion);
       ctx.restore();
     }
   }
 
-  // Crisp Monochrome Prandtl-Glauert Max-Q Shock Cone (sp 0.270 -> 0.315)
+  // Breathing, Shimmering Prandtl-Glauert Max-Q Shock Cone (sp 0.270 -> 0.315)
   if (sp >= 0.270 && sp <= 0.315) {
     const qBell = Math.sin(((sp - 0.270) / 0.045) * Math.PI);
+    const shimmer = reducedMotion ? 1 : 1 + Math.sin(t * 54) * 0.05;
     const coneY = c25TopY - fairingCylH * 0.2;
-    const coneW = u * 1.25;
-    const coneH = u * 0.56;
+    const coneW = u * 1.28 * shimmer;
+    const coneH = u * 0.58;
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.18 * qBell})`;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.72 * qBell})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.20 * qBell})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.78 * qBell})`;
     ctx.lineWidth = 1.25;
     ctx.beginPath();
     ctx.moveTo(-coreR * 1.05, coneY - u * 0.12);
@@ -418,7 +536,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   ctx.restore(); // End lower body
 
   // =========================================================================
-  // 2. MONOCHROME PAYLOAD FAIRING (INTACT < 0.340, SPLITTING HALVES 0.340+)
+  // 2. MONOCHROME PAYLOAD FAIRING
   // =========================================================================
   const fairingBaseY = c25TopY;
 
@@ -450,7 +568,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.closePath();
       ctx.fill();
 
-      // Left half silver shadow for clean 2.5D curvature
       ctx.fillStyle = '#d4d4d8';
       ctx.beginPath();
       ctx.moveTo(-coreR, fairingBaseY);
@@ -460,7 +577,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.closePath();
       ctx.fill();
 
-      // Black nosecone collar + hairline seam
       ctx.fillStyle = '#09090b';
       ctx.fillRect(-coreR, fairingBaseY - u * 0.045, coreR * 2, u * 0.048);
       ctx.fillRect(-coreR, fairingBaseY - fairingCylH * 0.34, coreR * 2, u * 0.025);

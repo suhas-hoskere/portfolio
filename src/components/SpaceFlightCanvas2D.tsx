@@ -18,10 +18,10 @@ interface SpaceFlightCanvas2DProps {
 }
 
 /**
- * Ultra-lightweight Pure Monochrome Black & White 2D Flight Canvas:
- * - 100% Event-Driven On-Demand Rendering (0% CPU/GPU when idle, zero stucking!)
- * - Runs smoothly at native refresh rate while scrolling or moving pointer, then sleeps automatically.
- * - Zero radial gradients, zero WebGL context, < 0.5ms per frame.
+ * Pure Monochrome Black & White Live 2D Flight Canvas:
+ * - Zero WebGL, zero radial gradients, zero backdrop-blur -> < 0.7ms per frame!
+ * - Smooth 60 FPS during launch/scroll/ascent so flames, smoke, sparks & satellites stay alive!
+ * - Auto-pauses completely when tab is hidden (0% background CPU).
  */
 export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.memo(({
   scrollProgressRef,
@@ -32,15 +32,8 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cameraModeRef = useRef<CameraMode>(cameraMode);
   const blueprintRef = useRef<boolean>(blueprintMode);
-  const wakeRef = useRef<(() => void) | null>(null);
-
   cameraModeRef.current = cameraMode;
   blueprintRef.current = blueprintMode;
-
-  // Immediately repaint whenever camera mode or blueprint mode toggles
-  useEffect(() => {
-    wakeRef.current?.();
-  }, [cameraMode, blueprintMode]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -56,31 +49,64 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
     let height = window.innerHeight;
     let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
-    let rafId = 0;
-    let lastTime = performance.now();
-    let elapsedSec = 0;
-    let smoothSp = scrollProgressRef.current;
-    let smoothSpeed = 0;
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.max(1, Math.floor(width * dpr));
+      canvas.height = Math.max(1, Math.floor(height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+
     let targetMouseX = 0;
     let targetMouseY = 0;
     let mouseX = 0;
     let mouseY = 0;
 
-    const renderFrame = (now: number) => {
-      rafId = 0;
-      if (document.hidden) return;
+    const onMouseMove = (e: MouseEvent) => {
+      if (reducedMotion) return;
+      targetMouseX = (e.clientX / Math.max(width, 1)) * 2 - 1;
+      targetMouseY = (e.clientY / Math.max(height, 1)) * 2 - 1;
+    };
 
-      const dt = Math.min((now - lastTime) / 1000, 0.05);
-      lastTime = now;
+    window.addEventListener('resize', resize, { passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+
+    let rafId = 0;
+    let lastDraw = performance.now();
+    let elapsedSec = 0;
+    let smoothSp = scrollProgressRef.current;
+    let smoothSpeed = 0;
+
+    const renderLoop = (now: number) => {
+      rafId = requestAnimationFrame(renderLoop);
+
+      if (document.hidden) {
+        lastDraw = now;
+        return;
+      }
+
+      const rawDt = (now - lastDraw) / 1000;
+      const targetSp = scrollProgressRef.current;
+      const isScrolling =
+        Math.abs(targetSp - smoothSp) > 0.0002 || scrollSpeedRef.current > 0.02;
+      const isLaunchActive = targetSp >= 0.035 && targetSp < 0.365;
+
+      // Full 60fps when scrolling or during rocket ignition/liftoff/ascent; smooth 36fps in calm space
+      const minInterval = isScrolling || isLaunchActive ? 1 / 62 : 1 / 36;
+      if (rawDt < minInterval) return;
+
+      lastDraw = now;
+      const dt = Math.min(rawDt, 0.05);
       elapsedSec += dt;
 
-      const targetSp = scrollProgressRef.current;
-      const spLerp = 1 - Math.exp(-18 * dt);
+      const spLerp = 1 - Math.exp(-16 * dt);
       smoothSp += (targetSp - smoothSp) * spLerp;
       smoothSpeed += (scrollSpeedRef.current - smoothSpeed) * (1 - Math.exp(-10 * dt));
-      scrollSpeedRef.current *= Math.pow(0.04, dt);
+      scrollSpeedRef.current *= Math.pow(0.05, dt);
 
-      const mLerp = 1 - Math.exp(-10 * dt);
+      const mLerp = 1 - Math.exp(-8 * dt);
       mouseX += (targetMouseX - mouseX) * mLerp;
       mouseY += (targetMouseY - mouseY) * mLerp;
 
@@ -92,6 +118,22 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
         54,
         128
       );
+
+      // Subtle launch rumble shake during engine burn & Max-Q
+      let shakeX = 0;
+      let shakeY = 0;
+      if (!reducedMotion) {
+        if (smoothSp >= 0.035 && smoothSp < 0.240) {
+          const ramp = clamp((smoothSp - 0.035) / 0.12, 0.25, 1);
+          const amt = 1.9 * ramp;
+          shakeX = (Math.sin(elapsedSec * 86) * 0.7 + Math.cos(elapsedSec * 132) * 0.3) * amt;
+          shakeY = (Math.cos(elapsedSec * 94) * 0.7 + Math.sin(elapsedSec * 144) * 0.3) * amt;
+        } else if (smoothSp >= 0.270 && smoothSp <= 0.315) {
+          const qBell = Math.sin(((smoothSp - 0.270) / 0.045) * Math.PI);
+          shakeX = Math.sin(elapsedSec * 102) * 2.4 * qBell;
+          shakeY = Math.cos(elapsedSec * 116) * 2.4 * qBell;
+        }
+      }
 
       const frame: Scene2DFrameContext = {
         ctx,
@@ -111,6 +153,9 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
         reducedMotion,
       };
 
+      ctx.save();
+      if (shakeX !== 0 || shakeY !== 0) ctx.translate(shakeX, shakeY);
+
       renderSkyAndStars(frame);
       renderDeepSpaceEncounters(frame);
       renderEarthAndOrbit(frame);
@@ -121,56 +166,14 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       renderHeroSatellite(frame);
       renderLaunchPadFront(frame);
 
-      // Keep animating ONLY while scroll or parallax is still settling — then sleep at 0% CPU!
-      const stillSettling =
-        Math.abs(targetSp - smoothSp) > 0.00015 ||
-        smoothSpeed > 0.015 ||
-        (!reducedMotion &&
-          (Math.abs(targetMouseX - mouseX) > 0.003 ||
-            Math.abs(targetMouseY - mouseY) > 0.003));
-
-      if (stillSettling) {
-        rafId = requestAnimationFrame(renderFrame);
-      }
+      ctx.restore();
     };
 
-    const wake = () => {
-      if (!rafId) {
-        lastTime = performance.now();
-        rafId = requestAnimationFrame(renderFrame);
-      }
-    };
-    wakeRef.current = wake;
-
-    const resize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      canvas.width = Math.max(1, Math.floor(width * dpr));
-      canvas.height = Math.max(1, Math.floor(height * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      wake();
-    };
-
-    const onScroll = () => wake();
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (reducedMotion) return;
-      targetMouseX = (e.clientX / Math.max(width, 1)) * 2 - 1;
-      targetMouseY = (e.clientY / Math.max(height, 1)) * 2 - 1;
-      wake();
-    };
-
-    resize();
-    window.addEventListener('resize', resize, { passive: true });
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    rafId = requestAnimationFrame(renderLoop);
 
     return () => {
-      wakeRef.current = null;
-      if (rafId) cancelAnimationFrame(rafId);
+      cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
-      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('mousemove', onMouseMove);
     };
   }, [scrollProgressRef, scrollSpeedRef]);

@@ -53,12 +53,14 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     ctx,
     h,
     sp,
+    t,
     mouseX,
     mouseY,
     vehicleAnchorX,
     unit,
     cameraMode,
     blueprintMode,
+    reducedMotion,
   } = frame;
 
   if (sp < 0.340) return;
@@ -75,14 +77,15 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   else if (cameraMode === 'CHASE') satScale *= 1.10;
 
   const s = unit * satScale;
+  const bobY = reducedMotion ? 0 : Math.sin(t * 1.35) * s * 0.04;
   const cx = vehicleAnchorX - mouseX * 10 - (sp >= 0.86 ? smoothstep(0.86, 0.96, sp) * unit * 0.20 : 0);
-  const cy = lerp(h * 0.44, h * 0.48, deployEase) - mouseY * 7;
+  const cy = lerp(h * 0.44, h * 0.48, deployEase) + bobY - mouseY * 7;
 
-  let bankRad = 0;
+  let bankRad = reducedMotion ? 0 : Math.sin(t * 0.55) * 0.025;
   if (sp >= 0.50 && sp <= 0.70) {
-    bankRad = -Math.sin(((sp - 0.50) / 0.20) * Math.PI) * 0.16;
+    bankRad -= Math.sin(((sp - 0.50) / 0.20) * Math.PI) * 0.16;
   } else if (sp >= 0.72 && sp <= 0.86) {
-    bankRad = -Math.sin(((sp - 0.72) / 0.14) * Math.PI) * 0.19;
+    bankRad -= Math.sin(((sp - 0.72) / 0.14) * Math.PI) * 0.19;
   }
 
   ctx.save();
@@ -92,15 +95,16 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const busW = s * 0.60;
   const busH = s * 0.74;
 
-  // 1. TRANSLUNAR INJECTION (TLI) MONOCHROME THRUST CONE (0.470 -> 0.515)
+  // 1. TRANSLUNAR INJECTION (TLI) FLICKERING MONOCHROME THRUST CONE (0.470 -> 0.515)
   if (sp >= 0.470 && sp <= 0.515) {
     const tliBell = Math.sin(((sp - 0.470) / 0.045) * Math.PI);
+    const flicker = reducedMotion ? 1 : 0.88 + Math.sin(t * 54) * 0.14;
     const flameY = busH * 0.5 + s * 0.16;
-    const flameLen = s * 1.1 * tliBell;
+    const flameLen = s * 1.15 * tliBell * flicker;
     const flameW = s * 0.22 * tliBell;
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.28 * tliBell})`;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.85 * tliBell})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.30 * tliBell})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.88 * tliBell})`;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(-flameW * 0.55, flameY);
@@ -111,15 +115,15 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     ctx.stroke();
   }
 
-  // 2. STAGE 05 TERMINAL UPLINK CRISP MONOCHROME RF SIGNAL ARCS & CARRIER BEAM
+  // 2. STAGE 05 TERMINAL UPLINK CONTINUOUSLY EXPANDING RF SIGNAL ARCS & CARRIER BEAM
   if (sp >= 0.875) {
     const txAlpha = smoothstep(0.875, 0.915, sp);
     const dishTipY = -busH * 0.5 - s * 0.42;
 
-    // Subtle carrier beam lines
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.18 * txAlpha})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.20 * txAlpha})`;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
+    ctx.lineDashOffset = reducedMotion ? 0 : t * 24;
     ctx.beginPath();
     ctx.moveTo(-s * 0.04, dishTipY);
     ctx.lineTo(-s * 0.72, dishTipY - s * 1.6);
@@ -128,13 +132,13 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 3 Crisp Concentric Monochrome RF Wavefront Arcs
+    // 3 Continuously radiating monochrome RF wavefront arcs
     for (let rIdx = 0; rIdx < 3; rIdx++) {
-      const f = (rIdx + 1) / 3;
-      const rx = s * (0.28 + f * 0.95);
-      const ry = s * (0.10 + f * 0.32);
-      const ryPos = dishTipY - f * s * 0.72;
-      ctx.strokeStyle = `rgba(255, 255, 255, ${(1.05 - f * 0.65) * txAlpha})`;
+      const f = reducedMotion ? (rIdx + 1) / 3 : (t * 0.65 + rIdx / 3) % 1.0;
+      const rx = s * (0.24 + f * 1.05);
+      const ry = s * (0.08 + f * 0.34);
+      const ryPos = dishTipY - f * s * 0.88;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${Math.sin(f * Math.PI) * 0.88 * txAlpha})`;
       ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.ellipse(0, ryPos, rx, ry, 0, Math.PI * 1.10, Math.PI * 1.90);
