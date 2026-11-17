@@ -1,5 +1,4 @@
 import { type Scene2DFrameContext, smoothstep, mulberry32 } from './types';
-import { drawIndiaSilhouette, INDIA_LANDMARKS } from './indiaMapPath';
 
 type TreeSpecies = 'casuarina' | 'coconut' | 'palmyra';
 
@@ -274,63 +273,6 @@ export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
   const trees = getTreePlacements();
 
   ctx.save();
-
-  // 0. EDITORIAL MONOCHROME INDIA MAP BACKDROP BEHIND LAUNCHPAD (Shows rocket launching from India!)
-  const mapFade = 1 - smoothstep(0.16, 0.25, sp);
-  if (mapFade > 0.02) {
-    const mapScale = unit * 1.95;
-    const mapCx = vehicleAnchorX + unit * 0.10 - mouseX * 4;
-    const mapCy = groundY + dropPx - unit * 2.15;
-
-    ctx.save();
-    ctx.globalAlpha = mapFade;
-    drawIndiaSilhouette(
-      ctx,
-      mapCx,
-      mapCy,
-      mapScale,
-      'rgba(255, 255, 255, 0.045)',
-      'rgba(255, 255, 255, 0.26)',
-      1.2
-    );
-
-    // Pinpoint Sriharikota launch origin on India's east coast + hairline drop to launchpad
-    const sharX = mapCx + INDIA_LANDMARKS.sriharikota[0] * mapScale;
-    const sharY = mapCy + INDIA_LANDMARKS.sriharikota[1] * mapScale;
-    const blrX = mapCx + INDIA_LANDMARKS.bangalore[0] * mapScale;
-    const blrY = mapCy + INDIA_LANDMARKS.bangalore[1] * mapScale;
-
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(sharX, sharY);
-    ctx.lineTo(vehicleAnchorX - mouseX * 10, apronY - unit * 0.16);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // SHAR Launch Origin Pin
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(sharX, sharY, 2.8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
-    ctx.beginPath();
-    ctx.arc(sharX, sharY, 7, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Bangalore marker dot
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
-    ctx.beginPath();
-    ctx.arc(blrX, blrY, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Crisp monochrome cartographic labels
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
-    ctx.font = `600 ${Math.max(8, Math.round(unit * 0.075))}px "JetBrains Mono", monospace`;
-    ctx.fillText('INDIA // SHAR-02', sharX + 11, sharY + 3);
-    ctx.restore();
-  }
 
   // 1. Clean ground fill below horizon
   ctx.fillStyle = '#09090b';

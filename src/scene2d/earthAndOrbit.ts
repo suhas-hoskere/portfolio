@@ -3,7 +3,6 @@ import {
   lerp,
   smoothstep,
 } from './types';
-import { drawIndiaSilhouette, INDIA_LANDMARKS } from './indiaMapPath';
 
 interface OrbitalSatSpec {
   rxScale: number;
@@ -42,16 +41,16 @@ function drawMonoMiniSat(
 }
 
 /**
- * Pure monochrome Black & White 2.5D Earth Outer Atmosphere (sp 0.345 -> 1.00):
- * - Rises cleanly during orbital insertion and stays permanently beneath the orbiting satellite
- * - High-precision authentic vector silhouette of INDIA centered cleanly in the visible upper arc
- * - Sriharikota (SHAR) launch-origin pin with curved dashed ascent arc rising into orbit
- * - Pulsing Bangalore ISRO Ground Station reticle (BLR // 12.97°N 77.59°E)
- * - 3 live orbiting Keplerian satellites on dashed monochrome ellipses
+ * Pure monochrome Black & White 2.5D Orbital Earth (Stage 02: sp 0.315 -> 0.518):
+ * - Obsidian planet sphere with fine silver latitude/longitude wireframe graticule
+ * - Crisp white Indian Subcontinent & Sri Lanka geographic contour
+ * - Clean white Bangalore ISRO Ground Station reticle (12.97° N, 77.59° E)
+ * - 3 minimalist white satellites along dashed Keplerian ellipses (scroll-driven, zero lag!)
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
 
+  // Earth's curved outer atmosphere rises during orbital insertion (0.35+) and stays through 100%!
   if (sp < 0.345) return;
 
   const fadeIn = smoothstep(0.345, 0.435, sp);
@@ -59,12 +58,13 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   if (opacity < 0.01) return;
 
   const earthR = Math.max(w, h) * 0.56;
-  const centerX = lerp(w * 0.58, vehicleAnchorX + unit * 0.35, 0.55) - mouseX * 10;
+  const centerX = lerp(w * 0.58, vehicleAnchorX + unit * 0.4, 0.55) - mouseX * 10;
 
-  // Positions Earth's upper curved horizon cleanly in the lower 42% of the viewport so ALL of India is clearly visible!
-  const settleY = h + earthR * 0.54 + smoothstep(0.84, 1.0, sp) * earthR * 0.06;
+  // Rises majestically into Earth's outer atmosphere and settles cleanly beneath the orbiting satellite
+  const settleY = h + earthR * 0.56 + smoothstep(0.84, 1.0, sp) * earthR * 0.08;
   const centerY = lerp(h + earthR * 1.15, settleY, fadeIn) - mouseY * 6;
 
+  // Live orbital motion + scroll offset so Keplerian satellites continuously glide around Earth
   const orbitAdvance = (sp - 0.35) * 3.0 + (reducedMotion ? 0 : t * 0.22);
 
   const satPos = (sat: OrbitalSatSpec, angle: number) => {
@@ -97,19 +97,20 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   }
   ctx.setLineDash([]);
 
-  // 2. Crisp Obsidian Earth Disc + Graticule + High-Precision INDIA Map
+  // 2. Crisp Obsidian Earth Disc + Thin White Atmospheric Rim Arc
   ctx.fillStyle = '#09090b';
   ctx.beginPath();
   ctx.arc(centerX, centerY, earthR, 0, Math.PI * 2);
   ctx.fill();
 
+  // Clip interior to draw subtle orbital graticule & crisp India contour
   ctx.save();
   ctx.beginPath();
   ctx.arc(centerX, centerY, earthR, 0, Math.PI * 2);
   ctx.clip();
 
   // Latitude & Longitude wireframe graticule
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1;
   for (let lat = -3; lat <= 3; lat++) {
     const ly = centerY + (lat / 4) * earthR;
@@ -125,113 +126,93 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     ctx.stroke();
   }
 
-  // Prominent, geographically accurate INDIA silhouette centered right on the visible upper arc!
-  const indiaCx = centerX + earthR * 0.02;
-  const indiaCy = centerY - earthR * 0.72;
-  const indiaScale = earthR * 0.22;
+  // Crisp monochrome Indian Subcontinent contour
+  const indiaPts: [number, number][] = [
+    [-0.16, -0.82],
+    [0.02, -0.88],
+    [0.20, -0.78],
+    [0.28, -0.66],
+    [0.16, -0.54],
+    [0.08, -0.44],
+    [0.01, -0.43],
+    [-0.06, -0.54],
+    [-0.14, -0.68],
+    [-0.22, -0.74],
+  ];
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.58)';
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  indiaPts.forEach(([nx, ny], idx) => {
+    const x = centerX + nx * earthR;
+    const y = centerY + ny * earthR;
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 
-  drawIndiaSilhouette(
-    ctx,
-    indiaCx,
-    indiaCy,
-    indiaScale,
-    'rgba(255, 255, 255, 0.16)',
-    'rgba(255, 255, 255, 0.85)',
-    1.45
-  );
-
-  // Clean editorial cartographic "INDIA" watermark centered on the subcontinent
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-  ctx.font = `700 ${Math.max(10, Math.round(indiaScale * 0.16))}px "Space Grotesk", sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillText('I N D I A', indiaCx - indiaScale * 0.08, indiaCy - indiaScale * 0.04);
-  ctx.textAlign = 'left';
+  // Sri Lanka contour
+  ctx.beginPath();
+  ctx.ellipse(centerX + earthR * 0.13, centerY - earthR * 0.40, earthR * 0.022, earthR * 0.032, 0.15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
 
   ctx.restore(); // End globe clip
 
-  // Outer crisp white atmospheric rim line + upper outer-atmosphere edge ring
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+  // Outer crisp white atmospheric rim line + subtle secondary halo arc
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.lineWidth = 1.8;
   ctx.beginPath();
   ctx.arc(centerX, centerY, earthR, Math.PI * 1.05, Math.PI * 1.95);
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, earthR + 11, Math.PI * 1.08, Math.PI * 1.92);
+  ctx.arc(centerX, centerY, earthR + 10, Math.PI * 1.08, Math.PI * 1.92);
   ctx.stroke();
 
-  // 3. SRIHARIKOTA (SHAR) LAUNCH ORIGIN PIN + CURVED TRAJECTORY ARC RISING INTO ORBIT
-  const sharX = indiaCx + INDIA_LANDMARKS.sriharikota[0] * indiaScale;
-  const sharY = indiaCy + INDIA_LANDMARKS.sriharikota[1] * indiaScale;
-  const blrX = indiaCx + INDIA_LANDMARKS.bangalore[0] * indiaScale;
-  const blrY = indiaCy + INDIA_LANDMARKS.bangalore[1] * indiaScale;
-
-  // Curved dashed ascent trajectory rising right off Sriharikota on India's coast toward the orbiting satellite!
-  const satTargetX = vehicleAnchorX - mouseX * 10;
-  const satTargetY = h * 0.44 - mouseY * 7;
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.42)';
-  ctx.lineWidth = 1.15;
-  ctx.setLineDash([5, 5]);
-  ctx.lineDashOffset = reducedMotion ? 0 : -t * 18;
-  ctx.beginPath();
-  ctx.moveTo(sharX, sharY);
-  ctx.quadraticCurveTo(
-    (sharX + satTargetX) * 0.5 + unit * 0.45,
-    (sharY + satTargetY) * 0.5 - unit * 0.35,
-    satTargetX,
-    satTargetY + unit * 0.42
-  );
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-
-  // Sriharikota SHAR Launch Site Pin
-  if (sharY < h + 20) {
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(sharX, sharY, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(sharX, sharY, 6.5, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.font = `600 ${Math.max(8, Math.round(unit * 0.075))}px "JetBrains Mono", monospace`;
-    ctx.fillText('SHAR // LAUNCH', sharX + 10, sharY + 3);
-  }
-
-  // 4. BANGALORE ISRO GROUND STATION RETICLE (12.97° N, 77.59° E)
-  if (blrY < h + 20) {
+  // 3. BANGALORE ISRO GROUND STATION RETICLE (12.97° N, 77.59° E) + LIVE PULSING RADAR PING
+  const blrX = centerX + earthR * 0.04;
+  const blrY = centerY - earthR * 0.56;
+  if (blrY < h + 40) {
     const pingWave = reducedMotion ? 0.35 : (t * 0.78) % 1.0;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.arc(blrX, blrY, unit * 0.065, 0, Math.PI * 2);
+    ctx.arc(blrX, blrY, unit * 0.085, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - pingWave) * 0.78})`;
     ctx.beginPath();
-    ctx.arc(blrX, blrY, unit * (0.065 + pingWave * 0.22), 0, Math.PI * 2);
+    ctx.arc(blrX, blrY, unit * (0.085 + pingWave * 0.28), 0, Math.PI * 2);
+    ctx.stroke();
+
+    const tick = unit * 0.14;
+    ctx.strokeStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(blrX - tick, blrY);
+    ctx.lineTo(blrX - unit * 0.045, blrY);
+    ctx.moveTo(blrX + unit * 0.045, blrY);
+    ctx.lineTo(blrX + tick, blrY);
+    ctx.moveTo(blrX, blrY - tick);
+    ctx.lineTo(blrX, blrY - unit * 0.045);
+    ctx.moveTo(blrX, blrY + unit * 0.045);
+    ctx.lineTo(blrX, blrY + tick);
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(blrX, blrY, 2.2, 0, Math.PI * 2);
+    ctx.arc(blrX, blrY, 2.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
-    ctx.font = `600 ${Math.max(8, Math.round(unit * 0.075))}px "JetBrains Mono", monospace`;
-    ctx.textAlign = 'right';
-    ctx.fillText('BLR // 12.97°N', blrX - 10, blrY + 3);
-    ctx.textAlign = 'left';
+    ctx.font = `600 ${Math.max(9, Math.round(unit * 0.082))}px "JetBrains Mono", monospace`;
+    ctx.fillText('BLR // 12.97°N 77.59°E', blrX + unit * 0.16, blrY + 3);
   }
 
-  // 5. Front orbital trace arcs & monochrome Keplerian satellites
+  // 4. Front orbital trace arcs & monochrome Keplerian satellites
   for (let i = 0; i < CONSTELLATION.length; i++) {
     const sat = CONSTELLATION[i];
     ctx.save();
