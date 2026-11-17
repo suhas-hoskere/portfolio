@@ -260,11 +260,11 @@ export function getLaunchPadDropPx(sp: number, h: number): number {
  * Zero radial gradients, zero heavy animation loops.
  */
 export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
-  const { ctx, w, h, sp, mouseX, vehicleAnchorX, groundY, unit } = frame;
+  const { ctx, w, h, sp, t, mouseX, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
   if (sp > 0.275) return;
 
   const dropPx = getLaunchPadDropPx(sp, h);
-  const horizonY = groundY + dropPx - unit * 0.26;
+  const horizonY = groundY + dropPx - unit * 0.28;
   const apronY = groundY + dropPx;
 
   if (horizonY > h + unit * 3) return;
@@ -274,64 +274,106 @@ export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
 
   ctx.save();
 
-  // 1. Clean ground fill below horizon
-  ctx.fillStyle = '#09090b';
-  ctx.fillRect(0, horizonY, w, h - horizonY + 20);
+  // 1. Distant Sriharikota Coastal Treeline Ridge Silhouette (soft atmospheric depth behind pad)
+  ctx.fillStyle = '#0d0d10';
+  ctx.beginPath();
+  ctx.moveTo(0, horizonY + unit * 0.04);
+  ctx.quadraticCurveTo(w * 0.16, horizonY - unit * 0.14, w * 0.34, horizonY - unit * 0.03);
+  ctx.quadraticCurveTo(w * 0.56, horizonY - unit * 0.10, w * 0.74, horizonY - unit * 0.01);
+  ctx.quadraticCurveTo(w * 0.88, horizonY + unit * 0.04, w, horizonY + unit * 0.02);
+  ctx.lineTo(w, h + 20);
+  ctx.lineTo(0, h + 20);
+  ctx.closePath();
+  ctx.fill();
 
-  // Crisp 1px horizon datum line + Bay of Bengal subtle wave ticks on east flank
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.26)';
+  // Ground plane fill below horizon
+  ctx.fillStyle = '#09090b';
+  ctx.fillRect(0, horizonY + unit * 0.02, w, h - horizonY + 20);
+
+  // Crisp 1px coastal horizon datum line + Bay of Bengal gentle animated water ripples on east flank
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, horizonY);
-  ctx.lineTo(w, horizonY);
+  ctx.moveTo(0, horizonY + unit * 0.02);
+  ctx.lineTo(w, horizonY + unit * 0.02);
   ctx.stroke();
 
-  const seaX = w * 0.84 - mouseX * 6;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-  for (let r = 0; r < 5; r++) {
-    const ry = horizonY + 8 + r * 7;
-    const rw = 24 + r * 12;
+  const seaX = w * 0.85 - mouseX * 6;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.24)';
+  for (let r = 0; r < 6; r++) {
+    const ry = horizonY + unit * 0.06 + r * 6.5;
+    const pulse = reducedMotion ? 1 : 0.88 + 0.12 * Math.sin(t * 2.1 + r * 1.4);
+    const rw = (22 + r * 13) * pulse;
     ctx.beginPath();
     ctx.moveTo(seaX - rw * 0.5, ry);
     ctx.lineTo(seaX + rw * 0.5, ry);
     ctx.stroke();
   }
 
-  // 2. Monochrome Sriharikota Casuarina, Coconut & Palmyra ink silhouettes
+  // 2. Monochrome Sriharikota Casuarina, Coconut & Palmyra Flora Groves (with subtle breeze sway)
   for (let i = 0; i < trees.length; i++) {
     const tr = trees[i];
     const img = sprites[tr.species];
-    const drawH = tr.scale * unit * 1.12;
+    const drawH = tr.scale * unit * 1.14;
     const drawW = drawH * (img.width / img.height);
     const parallax = tr.layer === 0 ? 6 : 12;
     const tx = vehicleAnchorX + tr.offsetX * unit - mouseX * parallax;
-    const ty = tr.layer === 0 ? horizonY + unit * 0.08 : apronY + unit * 0.06;
+    const ty = tr.layer === 0 ? horizonY + unit * 0.08 : apronY + unit * 0.08;
+    const sway = reducedMotion ? 0 : Math.sin(t * 1.1 + i * 1.7) * 0.018;
 
-    ctx.globalAlpha = tr.layer === 0 ? 0.65 : 0.92;
+    ctx.globalAlpha = tr.layer === 0 ? 0.62 : 0.92;
     ctx.save();
     ctx.translate(tx, ty);
+    ctx.rotate(sway);
     if (tr.flipX) ctx.scale(-1, 1);
     ctx.drawImage(img, -drawW * 0.5, -drawH, drawW, drawH);
     ctx.restore();
   }
   ctx.globalAlpha = 1;
 
-  // 3. Minimalist Concrete Launch Apron Datum
+  // 3. Paved Concrete Launch Apron, Radial Expansion Joints & Bilateral Blast-Trench Exit Walls
   const apronCx = vehicleAnchorX - mouseX * 10;
-  const apronRx = unit * 2.6;
-  const apronRy = unit * 0.34;
+  const apronRx = unit * 3.05;
+  const apronRy = unit * 0.40;
 
-  ctx.fillStyle = '#141417';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-  ctx.lineWidth = 1;
+  // Outer concrete blast berm apron
+  ctx.fillStyle = '#141418';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.24)';
+  ctx.lineWidth = 1.1;
   ctx.beginPath();
-  ctx.ellipse(apronCx, apronY + unit * 0.06, apronRx, apronRy, 0, 0, Math.PI * 2);
+  ctx.ellipse(apronCx, apronY + unit * 0.07, apronRx, apronRy, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
+  // Concentric & radial concrete expansion slab joints
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+  ctx.lineWidth = 0.9;
   ctx.beginPath();
-  ctx.ellipse(apronCx, apronY + unit * 0.06, apronRx * 0.62, apronRy * 0.62, 0, 0, Math.PI * 2);
+  ctx.ellipse(apronCx, apronY + unit * 0.07, apronRx * 0.65, apronRy * 0.65, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  for (let a = 0; a < 8; a++) {
+    const ang = (a / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(apronCx + Math.cos(ang) * apronRx * 0.32, apronY + unit * 0.07 + Math.sin(ang) * apronRy * 0.32);
+    ctx.lineTo(apronCx + Math.cos(ang) * apronRx, apronY + unit * 0.07 + Math.sin(ang) * apronRy);
+    ctx.stroke();
+  }
+
+  // Bilateral angled concrete flame-trench exhaust exit channels (East & West)
+  ctx.fillStyle = '#070709';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+  ctx.lineWidth = 1;
+  ctx.fillRect(apronCx - apronRx * 0.96, apronY + unit * 0.01, apronRx * 1.92, unit * 0.13);
+  ctx.strokeRect(apronCx - apronRx * 0.96, apronY + unit * 0.01, apronRx * 1.92, unit * 0.13);
+
+  // Access Crawlerway track leading in from the left horizon toward the pad
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+  ctx.beginPath();
+  ctx.moveTo(0, apronY + unit * 0.18);
+  ctx.lineTo(apronCx - apronRx * 0.78, apronY + unit * 0.12);
+  ctx.moveTo(0, apronY + unit * 0.26);
+  ctx.lineTo(apronCx - apronRx * 0.78, apronY + unit * 0.18);
   ctx.stroke();
 
   ctx.restore();

@@ -306,15 +306,17 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
               s.vy -= 18 * dt;
             }
             const lf = s.age / s.life;
-            const alpha = Math.sin(lf * Math.PI) * 0.55 * ignitionRamp;
-            const rad = s.r + lf * 13;
-            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.35})`;
-            ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.8})`;
-            ctx.lineWidth = 1;
+            const alpha = Math.sin(lf * Math.PI) * 0.62 * ignitionRamp;
+            const rad = s.r + lf * 16;
+            // Soft volumetric 2-lobe smoke puff (no hard soap-bubble outline)
+            ctx.fillStyle = `rgba(212,212,218,${alpha * 0.35})`;
             ctx.beginPath();
             ctx.arc(s.x, s.y, rad, 0, Math.PI * 2);
             ctx.fill();
-            ctx.stroke();
+            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.45})`;
+            ctx.beginPath();
+            ctx.arc(s.x + rad * 0.16, s.y - rad * 0.18, rad * 0.62, 0, Math.PI * 2);
+            ctx.fill();
           }
 
           ctx.fillStyle = '#ffffff';
