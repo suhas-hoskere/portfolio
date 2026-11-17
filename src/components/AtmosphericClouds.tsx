@@ -42,6 +42,14 @@ interface AtmosphericCloudsProps {
   scrollSpeedRef: React.MutableRefObject<number>;
 }
 
+let cachedCloudPlaneGeom: THREE.PlaneGeometry | null = null;
+function getCachedCloudPlaneGeom() {
+  if (!cachedCloudPlaneGeom) {
+    cachedCloudPlaneGeom = new THREE.PlaneGeometry(1, 1);
+  }
+  return cachedCloudPlaneGeom;
+}
+
 export const AtmosphericClouds: React.FC<AtmosphericCloudsProps> = ({
   scrollProgressRef,
 }) => {
@@ -52,43 +60,76 @@ export const AtmosphericClouds: React.FC<AtmosphericCloudsProps> = ({
   const cloudSeaRef = useRef<THREE.Group>(null);
 
   const cloudTexture = useMemo(() => getCachedCloudPuffTexture(), []);
+  const planeGeom = useMemo(() => getCachedCloudPlaneGeom(), []);
 
-  useFrame(() => {
+  // 4 shared lightweight cloud layer materials (replaces 16 duplicate inline materials)
+  const cloudMats = useMemo(() => {
+    const makeMat = (opacity: number, color: string) =>
+      new THREE.MeshBasicMaterial({
+        map: cloudTexture,
+        color,
+        transparent: true,
+        opacity,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+    return {
+      low: makeMat(0.42, '#fff5e6'),   // Warm sunrise-tinted coastal cumulus
+      mid: makeMat(0.58, '#eef6ff'),   // Dense troposphere cloud punch deck
+      high: makeMat(0.44, '#cfe6ff'),  // High stratosphere cirrus wisps
+      sea: makeMat(0.0, '#bae6fd'),    // Stratospheric cloud sea horizon below
+    };
+  }, [cloudTexture]);
+
+  useFrame((state) => {
     const scrollProgress = scrollProgressRef.current;
     if (!masterGroup.current) return;
 
-    // Atmospheric phase is active from ground up to stratosphere exit (0.35)
-    if (scrollProgress > 0.35) {
+    // Atmospheric phase is active from ground up to stratosphere exit (0.355)
+    if (scrollProgress > 0.355) {
       masterGroup.current.visible = false;
       return;
     }
     masterGroup.current.visible = true;
 
-    const climbProg = Math.max(0, (scrollProgress - 0.170) / (0.35 - 0.170));
+    const t = state.clock.getElapsedTime();
+    const climbProg = Math.max(0, (scrollProgress - 0.170) / (0.355 - 0.170));
+    const atmoFadeOut = 1.0 - THREE.MathUtils.smoothstep(scrollProgress, 0.305, 0.355);
 
-    // 1. Low cloud deck
+    // 1. Low coastal cumulus deck (drifts gently in morning breeze)
     if (lowCloudDeckRef.current) {
       lowCloudDeckRef.current.position.y = 5.0 - climbProg * 18.0;
+      lowCloudDeckRef.current.position.x = Math.sin(t * 0.08) * 0.65;
+      cloudMats.low.opacity = 0.42 * atmoFadeOut;
     }
 
-    // 2. Dense mid-level cloud punch deck
+    // 2. Dense mid-level cloud punch deck (peaks density during Stage 01 punch sp 0.25 - 0.30)
     if (midCloudDeckRef.current) {
       midCloudDeckRef.current.position.y = 10.0 - climbProg * 26.0;
+      midCloudDeckRef.current.position.x = -Math.sin(t * 0.06) * 0.5;
+      const punchBoost = scrollProgress >= 0.24 && scrollProgress <= 0.31
+        ? Math.sin(((scrollProgress - 0.24) / 0.07) * Math.PI) * 0.28
+        : 0;
+      cloudMats.mid.opacity = (0.52 + punchBoost) * atmoFadeOut;
     }
 
     // 3. High cirrus deck
     if (highCloudDeckRef.current) {
       highCloudDeckRef.current.position.y = 16.0 - climbProg * 32.0;
+      cloudMats.high.opacity = 0.45 * atmoFadeOut;
     }
 
-    // 4. Sea of clouds below from the stratosphere
+    // 4. Sea of clouds below from the stratosphere (fades in smoothly then recedes into space)
     if (cloudSeaRef.current) {
-      if (scrollProgress >= 0.240) {
+      if (scrollProgress >= 0.235) {
         cloudSeaRef.current.visible = true;
-        const seaProgress = Math.min((scrollProgress - 0.240) / 0.12, 1.0);
-        cloudSeaRef.current.position.y = -2.8 - seaProgress * 4.5;
+        const seaProgress = Math.min((scrollProgress - 0.235) / 0.12, 1.0);
+        cloudSeaRef.current.position.y = -2.8 - seaProgress * 4.8;
+        const seaIn = THREE.MathUtils.smoothstep(scrollProgress, 0.235, 0.275);
+        cloudMats.sea.opacity = 0.62 * seaIn * atmoFadeOut;
       } else {
         cloudSeaRef.current.visible = false;
+        cloudMats.sea.opacity = 0;
       }
     }
   });
@@ -100,18 +141,11 @@ export const AtmosphericClouds: React.FC<AtmosphericCloudsProps> = ({
         {[-2.5, 0.5, 2.5, -1.5, 1.8].map((x, i) => (
           <mesh
             key={`cloud-low-${i}`}
+            geometry={planeGeom}
+            material={cloudMats.low}
             position={[x, Math.sin(i * 1.5) * 0.6, -1.5 - (i % 2) * 1.2]}
             scale={[4.5, 2.6, 1]}
-          >
-            <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial
-              map={cloudTexture}
-              transparent
-              opacity={0.45}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
+          />
         ))}
       </group>
 
@@ -120,18 +154,11 @@ export const AtmosphericClouds: React.FC<AtmosphericCloudsProps> = ({
         {[-3.0, -1.0, 1.0, 3.0, -0.2].map((x, i) => (
           <mesh
             key={`cloud-mid-${i}`}
+            geometry={planeGeom}
+            material={cloudMats.mid}
             position={[x, Math.cos(i * 2) * 0.6, -1.0 - (i % 2) * 1.5]}
-            scale={[5.5, 3.2, 1]}
-          >
-            <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial
-              map={cloudTexture}
-              transparent
-              opacity={0.55}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
+            scale={[5.8, 3.4, 1]}
+          />
         ))}
       </group>
 
@@ -140,18 +167,11 @@ export const AtmosphericClouds: React.FC<AtmosphericCloudsProps> = ({
         {[-2.0, 0, 2.0].map((x, i) => (
           <mesh
             key={`cloud-high-${i}`}
+            geometry={planeGeom}
+            material={cloudMats.high}
             position={[x, Math.sin(i * 2) * 0.5, -2.0 - i * 0.8]}
-            scale={[6.0, 3.5, 1]}
-          >
-            <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial
-              map={cloudTexture}
-              transparent
-              opacity={0.45}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
+            scale={[6.2, 3.6, 1]}
+          />
         ))}
       </group>
 
@@ -160,19 +180,12 @@ export const AtmosphericClouds: React.FC<AtmosphericCloudsProps> = ({
         {[-3.0, 0, 3.0].map((x, i) => (
           <mesh
             key={`cloud-sea-${i}`}
+            geometry={planeGeom}
+            material={cloudMats.sea}
             position={[x, 0, -1.0]}
             rotation={[-Math.PI * 0.35, 0, 0]}
-            scale={[7.0, 4.0, 1]}
-          >
-            <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial
-              map={cloudTexture}
-              transparent
-              opacity={0.6}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
+            scale={[7.4, 4.2, 1]}
+          />
         ))}
       </group>
     </group>

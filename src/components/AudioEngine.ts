@@ -309,6 +309,102 @@ class CosmicAudio {
     }
   }
 
+  // Step 02: Pneumatic Umbilical Disconnect & Clamp Release Acoustic Cue
+  public playClampRelease() {
+    if (this.isMuted) return;
+    try {
+      this.init();
+      if (!this.ctx || !this.masterGain) return;
+      const t = this.ctx.currentTime;
+
+      // High-pressure pneumatic QD decoupling purge
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(260, t);
+      osc.frequency.exponentialRampToValueAtTime(58, t + 0.12);
+
+      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(t);
+      osc.stop(t + 0.15);
+
+      // Mechanical latch click
+      this.playTelemetryChirp(1640, 0.035);
+    } catch {
+      // Fallback
+    }
+  }
+
+  // Step 03: Acoustic Suppression High-Flow Water Deluge Flood & Steam Rush
+  public playDelugeSound() {
+    if (this.isMuted) return;
+    try {
+      this.init();
+      if (!this.ctx || !this.masterGain) return;
+      const t = this.ctx.currentTime;
+
+      if (this.noiseBuffer) {
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.noiseBuffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(380, t);
+        filter.frequency.exponentialRampToValueAtTime(850, t + 0.4);
+        filter.frequency.exponentialRampToValueAtTime(280, t + 1.1);
+        filter.Q.setValueAtTime(1.8, t);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.linearRampToValueAtTime(0.055, t + 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        src.start(t);
+        src.stop(t + 1.25);
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  // Hypergolic Reaction Control (RCS) or TLI Thruster Acoustic Pulse
+  public playThrusterPulse() {
+    if (this.isMuted) return;
+    try {
+      this.init();
+      if (!this.ctx || !this.masterGain) return;
+      const t = this.ctx.currentTime;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(95, t);
+      osc.frequency.exponentialRampToValueAtTime(42, t + 0.18);
+
+      gain.gain.setValueAtTime(0.05, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.20);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(t);
+      osc.stop(t + 0.22);
+
+      this.playTelemetryChirp(1150, 0.04);
+    } catch {
+      // Fallback
+    }
+  }
+
   // Micro-interaction UI chirp for buttons, tabs, and modals
   public playTelemetryChirp(freq = 880, duration = 0.08) {
     if (this.isMuted) return;

@@ -79,12 +79,20 @@ export const App: React.FC = () => {
       lastStageRef.current = stage;
     }
 
-    // VHF Radio Voice Callouts at key aerospace telemetry thresholds
+    // VHF Radio Voice Callouts & Acoustic Triggers at granular aerospace telemetry thresholds
     if (progress < 0.02) {
       playedCallouts.current.clear();
     } else if (progress >= 0.035 && progress < 0.080 && !playedCallouts.current.has('ignition')) {
       playedCallouts.current.add('ignition');
       cosmicAudio.playRadioCallout('Engine ignition confirmed. Full thrust nominal.');
+    } else if (progress >= 0.080 && progress < 0.125 && !playedCallouts.current.has('umbilical')) {
+      playedCallouts.current.add('umbilical');
+      cosmicAudio.playClampRelease();
+      cosmicAudio.playRadioCallout('Umbilical lines decoupled. Service arms clear.');
+    } else if (progress >= 0.125 && progress < 0.170 && !playedCallouts.current.has('deluge')) {
+      playedCallouts.current.add('deluge');
+      cosmicAudio.playDelugeSound();
+      cosmicAudio.playRadioCallout('Water deluge active. Acoustic dampening nominal.');
     } else if (progress >= 0.170 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
       playedCallouts.current.add('liftoff');
       cosmicAudio.playRadioCallout('Vehicle has cleared the tower. Trajectory is nominal.');
@@ -94,6 +102,12 @@ export const App: React.FC = () => {
     } else if (progress >= 0.360 && progress < 0.420 && !playedCallouts.current.has('orbit')) {
       playedCallouts.current.add('orbit');
       cosmicAudio.playRadioCallout('Booster separation complete. Low Earth orbit insertion nominal.');
+    } else if (progress >= 0.470 && progress < 0.515 && !playedCallouts.current.has('tli')) {
+      playedCallouts.current.add('tli');
+      cosmicAudio.playThrusterPulse();
+    } else if (progress >= 0.880 && !playedCallouts.current.has('uplink')) {
+      playedCallouts.current.add('uplink');
+      cosmicAudio.playRadioCallout('Terminal uplink established. Carrier signal locked.');
     }
 
     setActiveStageIndex(stage);

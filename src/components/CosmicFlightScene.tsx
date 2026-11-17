@@ -327,6 +327,29 @@ const DynamicSpaceLighting: React.FC<{
   );
 };
 
+// Soft radial solar corona sprite texture for Stage 05 distant pinpoint Sun
+let cachedCoronaGlowTexture: THREE.CanvasTexture | null = null;
+function getCachedCoronaGlowTexture(): THREE.CanvasTexture {
+  if (cachedCoronaGlowTexture) return cachedCoronaGlowTexture;
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const c = size / 2;
+  const grad = ctx.createRadialGradient(c, c, 0, c, c, c);
+  grad.addColorStop(0.0, 'rgba(255, 253, 235, 1.0)');
+  grad.addColorStop(0.2, 'rgba(255, 240, 194, 0.75)');
+  grad.addColorStop(0.55, 'rgba(255, 215, 140, 0.20)');
+  grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  cachedCoronaGlowTexture = new THREE.CanvasTexture(canvas);
+  cachedCoronaGlowTexture.generateMipmaps = false;
+  cachedCoronaGlowTexture.minFilter = THREE.LinearFilter;
+  return cachedCoronaGlowTexture;
+}
+
 // Continuous Celestial Encounters (Realistic Keplerian Approach & Flyby Trajectories)
 // Sequence strictly follows:
 // 1. Earth & orbital constellation depart (0.475)
@@ -345,6 +368,7 @@ const CelestialEncounters: React.FC<{
   const distantEarthOpacityRef = useRef(0);
 
   const earthTextures = useMemo(() => getPhotorealisticEarthTextures(), []);
+  const coronaTexture = useMemo(() => getCachedCoronaGlowTexture(), []);
 
   useFrame((state, delta) => {
     const sp = scrollProgressRef.current;
@@ -500,35 +524,47 @@ const CelestialEncounters: React.FC<{
       <group ref={distantDeepSpaceBeaconRef} position={STAGE_CONFIG.stage05_uplink.distantSunPosition} visible={false}>
         {/* Pinpoint distant Sun */}
         <mesh position={[0, 0, 0]}>
-          <sphereGeometry args={[0.55, 16, 16]} />
+          <sphereGeometry args={[0.48, 16, 16]} />
           <meshBasicMaterial color="#fffbeb" />
         </mesh>
-        {/* Faint distant corona */}
-        <mesh position={[0, 0, 0]}>
-          <planeGeometry args={[12, 12]} />
-          <meshBasicMaterial
-            color="#fff0c2"
+        {/* Soft radial distant solar corona (zero hard polygon edges) */}
+        <sprite position={[0, 0, 0]} scale={[14, 14, 1]}>
+          <spriteMaterial
+            map={coronaTexture}
+            color="#fff4d2"
             transparent
-            opacity={0.35}
+            opacity={0.75}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </sprite>
+        {/* Subtle Voyager sunbeam ray passing through the Pale Blue Dot */}
+        <mesh position={[2.5, -0.6, 1.5]} rotation={[0, 0, 0.28]}>
+          <planeGeometry args={[1.1, 18]} />
+          <meshBasicMaterial
+            map={coronaTexture}
+            color="#fde68a"
+            transparent
+            opacity={0.14}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
-        {/* Tiny Pale Blue Dot (Earth) sitting 2.5 units to the right in the black void */}
+        {/* Tiny Pale Blue Dot (Earth) suspended in a sunbeam 2.5 units away in the black void */}
         <mesh position={[2.5, -0.6, 1.5]}>
           <sphereGeometry args={[STAGE_CONFIG.stage05_uplink.distantEarthScale, 16, 16]} />
           <meshBasicMaterial color="#38bdf8" />
         </mesh>
-        <mesh position={[2.5, -0.6, 1.5]}>
-          <sphereGeometry args={[STAGE_CONFIG.stage05_uplink.distantEarthScale * 2.2, 16, 16]} />
-          <meshBasicMaterial
-            color="#0ea5e9"
+        <sprite position={[2.5, -0.6, 1.5]} scale={[STAGE_CONFIG.stage05_uplink.distantEarthScale * 5.2, STAGE_CONFIG.stage05_uplink.distantEarthScale * 5.2, 1]}>
+          <spriteMaterial
+            map={coronaTexture}
+            color="#38bdf8"
             transparent
-            opacity={0.3}
+            opacity={0.55}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />
-        </mesh>
+        </sprite>
       </group>
     </>
   );

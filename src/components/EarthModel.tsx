@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { OrbitalSatellite } from './OrbitalSatellite';
+import { OrbitalSatellite, getGreatCircleOrbitalPosition } from './OrbitalSatellite';
 import { getPhotorealisticEarthTextures } from './photorealisticPlanetTextures';
 
 // Physically Based Rayleigh Atmospheric Scattering Shader (FrontSide thin shell)
@@ -70,6 +70,7 @@ export const EarthModel: React.FC<EarthModelProps> = ({
   const cloudRef = useRef<THREE.Mesh>(null);
   const atmosphereRef = useRef<THREE.Mesh>(null);
   const satellitesGroup = useRef<THREE.Group>(null);
+  const bangalorePingRef = useRef<THREE.Mesh>(null);
 
   const { dayTexture, nightTexture, specularTexture, cloudTexture } = useMemo(
     () => getPhotorealisticEarthTextures(),
@@ -203,7 +204,60 @@ export const EarthModel: React.FC<EarthModelProps> = ({
     });
   }, []);
 
-  useFrame((_, delta) => {
+  // Bangalore ISRO Telemetry Ground Station Reticle tangent orientation & animated radar ping material
+  const { bangaloreQuat, bangalorePingMat, bangaloreCoreMat } = useMemo(() => {
+    const normal = new THREE.Vector3(0.209, 0.224, -0.952).normalize();
+    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    return {
+      bangaloreQuat: quat,
+      bangalorePingMat: new THREE.MeshBasicMaterial({
+        color: '#38bdf8',
+        transparent: true,
+        opacity: 0.0,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+      bangaloreCoreMat: new THREE.MeshBasicMaterial({
+        color: '#7dd3fc',
+        transparent: true,
+        opacity: 0.0,
+        side: THREE.DoubleSide,
+      }),
+    };
+  }, []);
+
+  // Exact Keplerian Orbital Trace Loops encircling Earth for Cartosat, NavIC & Comm Relay
+  const orbitalTraceLines = useMemo(() => {
+    const segments = 96;
+    return orbitalConstellation.map((sat) => {
+      const positions = new Float32Array((segments + 1) * 3);
+      for (let i = 0; i <= segments; i++) {
+        const theta = (i / segments) * Math.PI * 2;
+        const pt = getGreatCircleOrbitalPosition(
+          sat.orbitRadius,
+          sat.tiltForward,
+          sat.tiltDiagonal,
+          sat.rotY,
+          theta
+        );
+        positions[i * 3] = pt.x;
+        positions[i * 3 + 1] = pt.y;
+        positions[i * 3 + 2] = pt.z;
+      }
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const mat = new THREE.LineBasicMaterial({
+        color: sat.beaconColor,
+        transparent: true,
+        opacity: 0.0,
+        depthWrite: false,
+      });
+      return { id: sat.id, line: new THREE.Line(geom, mat), mat };
+    });
+  }, [orbitalConstellation]);
+
+  useFrame((state, delta) => {
     const scrollProgress = scrollProgressRef.current;
     if (!earthGroup.current) return;
 
@@ -225,6 +279,20 @@ export const EarthModel: React.FC<EarthModelProps> = ({
       surfaceMaterial.opacity = opacity;
       cloudMaterial.opacity = opacity * 0.45;
       atmosphereMaterial.uniforms.uOpacity.value = opacity;
+
+      // Update Bangalore ISRO Telemetry Ground Station pulsing radar ping
+      bangaloreCoreMat.opacity = opacity * 0.95;
+      if (bangalorePingRef.current) {
+        const pingWave = (state.clock.getElapsedTime() * 0.85) % 1.0;
+        const pingScale = 1.0 + pingWave * 3.2;
+        bangalorePingRef.current.scale.set(pingScale, pingScale, 1);
+        bangalorePingMat.opacity = (1.0 - pingWave) * opacity * 0.85;
+      }
+
+      // Sync Keplerian orbital trace opacity with Earth visibility
+      for (let i = 0; i < orbitalTraceLines.length; i++) {
+        orbitalTraceLines[i].mat.opacity = opacity * 0.22;
+      }
 
       // Satellites exist WITH Earth from the very first frame Earth rises into view!
       if (satellitesGroup.current) {
@@ -255,6 +323,11 @@ export const EarthModel: React.FC<EarthModelProps> = ({
       surfaceMaterial.opacity = 0.0;
       cloudMaterial.opacity = 0.0;
       atmosphereMaterial.uniforms.uOpacity.value = 0.0;
+      bangaloreCoreMat.opacity = 0.0;
+      bangalorePingMat.opacity = 0.0;
+      for (let i = 0; i < orbitalTraceLines.length; i++) {
+        orbitalTraceLines[i].mat.opacity = 0.0;
+      }
       if (satellitesGroup.current) satellitesGroup.current.visible = false;
       if (scrollProgress < 0.320) {
         earthGroup.current.position.y = -28.0;
@@ -270,15 +343,17 @@ export const EarthModel: React.FC<EarthModelProps> = ({
       <group scale={[scale, scale, scale]}>
         <mesh ref={earthRef} rotation={[0.2, -Math.PI * 0.65, 0]} material={surfaceMaterial}>
           <sphereGeometry args={[1, 64, 48]} />
-          {/* Bangalore ISRO Telemetry Ground Station Reticle */}
-          <group position={[0.209, 0.224, -0.952]}>
-            <mesh>
-              <ringGeometry args={[0.015, 0.022, 24]} />
-              <meshBasicMaterial color="#38bdf8" transparent opacity={0.9} side={THREE.DoubleSide} />
+          {/* Bangalore ISRO Telemetry Ground Station Reticle (12.97° N, 77.59° E) */}
+          <group position={[0.211, 0.226, -0.960]} quaternion={bangaloreQuat}>
+            <mesh material={bangaloreCoreMat}>
+              <ringGeometry args={[0.013, 0.019, 24]} />
             </mesh>
-            <mesh>
-              <circleGeometry args={[0.008, 16]} />
-              <meshBasicMaterial color="#38bdf8" transparent opacity={0.95} />
+            <mesh material={bangaloreCoreMat}>
+              <circleGeometry args={[0.007, 16]} />
+            </mesh>
+            {/* Expanding Radar Telemetry Ping Ring */}
+            <mesh ref={bangalorePingRef} material={bangalorePingMat}>
+              <ringGeometry args={[0.016, 0.022, 24]} />
             </mesh>
           </group>
         </mesh>
@@ -293,8 +368,11 @@ export const EarthModel: React.FC<EarthModelProps> = ({
         </mesh>
       </group>
 
-      {/* 2. Low Earth Orbit Satellite Constellation — Keplerian Orbits Encircling Earth */}
+      {/* 2. Low Earth Orbit Satellite Constellation — Keplerian Orbits & Traces Encircling Earth */}
       <group ref={satellitesGroup} visible={false}>
+        {orbitalTraceLines.map((trace) => (
+          <primitive key={`orbit-trace-${trace.id}`} object={trace.line} />
+        ))}
         {orbitalConstellation.map((s) => (
           <OrbitalSatellite
             key={s.id}

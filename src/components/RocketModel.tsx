@@ -240,12 +240,53 @@ function getCachedRocketMaterials(
     solarYoke: new THREE.MeshLambertMaterial({
       color: '#475569',
     }),
-    signalRipple: new THREE.MeshBasicMaterial({
+    signalRipple1: new THREE.MeshBasicMaterial({
       color: '#38bdf8',
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.0,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    signalRipple2: new THREE.MeshBasicMaterial({
+      color: '#67e8f9',
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    signalRipple3: new THREE.MeshBasicMaterial({
+      color: '#0ea5e9',
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    carrierBeamMat: new THREE.MeshBasicMaterial({
+      color: '#38bdf8',
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    rcsJetMat: new THREE.MeshBasicMaterial({
+      color: '#e0f2fe',
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+    boosterBurnoutTrailMat: new THREE.SpriteMaterial({
+      map: getCachedVapourTexture(),
+      color: '#f1f5f9',
+      transparent: true,
+      opacity: 0.0,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
     }),
     machConeMat: new THREE.MeshBasicMaterial({
       color: '#e0f2fe',
@@ -302,14 +343,22 @@ export const RocketModel: React.FC<RocketModelProps> = ({
   const satelliteGroup = useRef<THREE.Group>(null);
   const solarLeft = useRef<THREE.Group>(null);
   const solarRight = useRef<THREE.Group>(null);
+  const solarLeftOuter = useRef<THREE.Group>(null);
+  const solarRightOuter = useRef<THREE.Group>(null);
   const signalRing1 = useRef<THREE.Mesh>(null);
   const signalRing2 = useRef<THREE.Mesh>(null);
+  const signalRing3 = useRef<THREE.Mesh>(null);
+  const carrierBeamRef = useRef<THREE.Mesh>(null);
+  const rcsJetLeftRef = useRef<THREE.Mesh>(null);
+  const rcsJetRightRef = useRef<THREE.Mesh>(null);
 
-  // Translunar Injection (TLI) Thruster Pulse
+  // Translunar Injection (TLI) Thruster Pulse & Separation VFX
   const tliFlameRef = useRef<THREE.Mesh>(null);
-  const machConeRef = useRef<THREE.Mesh>(null);
+  const machConeRef = useRef<THREE.Group>(null);
   const sepFlashLeftRef = useRef<THREE.Mesh>(null);
   const sepFlashRightRef = useRef<THREE.Mesh>(null);
+  const boosterTrailLeftRef = useRef<THREE.Group>(null);
+  const boosterTrailRightRef = useRef<THREE.Group>(null);
   const tliLightRef = useRef<THREE.PointLight>(null);
 
   // Idle Cryogenic Boil-Off Vapour Venting
@@ -491,6 +540,8 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           coreFlamesRef.current.visible = true;
           const vFlicker = (1.0 + thrustBoost * 0.18) * (1.0 + Math.sin(t * 54) * 0.08) * fireRamp;
           coreFlamesRef.current.scale.set(fireRamp, vFlicker, fireRamp);
+          // Supersonic Mach diamond shock cell harmonic shimmer
+          materials.flameShock.opacity = (0.72 + Math.sin(t * 78) * 0.18) * fireRamp;
         }
       } else {
         flamePointsRef.current.visible = false;
@@ -501,11 +552,14 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       }
     }
 
-    // 3. SOLID ROCKET BOOSTERS: Separate cleanly at 0.315 and drop away
+    // 3. SOLID ROCKET BOOSTERS: Separate cleanly at 0.315 with burnout smoke trails and drop away
     if (boosterLeft.current && boosterRight.current) {
       if (scrollProgress >= 0.340) {
         boosterLeft.current.visible = false;
         boosterRight.current.visible = false;
+        if (boosterTrailLeftRef.current) boosterTrailLeftRef.current.visible = false;
+        if (boosterTrailRightRef.current) boosterTrailRightRef.current.visible = false;
+        materials.boosterBurnoutTrailMat.opacity = 0;
       } else if (scrollProgress >= 0.315) {
         boosterLeft.current.visible = true;
         boosterRight.current.visible = true;
@@ -514,6 +568,17 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         materials.sepFlashMat.opacity = flashIntensity;
         if (sepFlashLeftRef.current) sepFlashLeftRef.current.visible = sep < 0.8;
         if (sepFlashRightRef.current) sepFlashRightRef.current.visible = sep < 0.8;
+
+        // Trailing solid motor burnout smoke wisps behind separating boosters
+        if (boosterTrailLeftRef.current && boosterTrailRightRef.current) {
+          boosterTrailLeftRef.current.visible = true;
+          boosterTrailRightRef.current.visible = true;
+          materials.boosterBurnoutTrailMat.opacity = (1.0 - sep) * 0.65;
+          const trailScale = 1.0 + sep * 1.4;
+          boosterTrailLeftRef.current.scale.set(trailScale, trailScale * 1.35, 1);
+          boosterTrailRightRef.current.scale.set(trailScale, trailScale * 1.35, 1);
+        }
+
         boosterLeft.current.position.x = -0.76 - sep * 3.5;
         boosterLeft.current.position.y = -2.1 - sep * 3.0;
         boosterLeft.current.rotation.z = sep * 0.4;
@@ -523,6 +588,9 @@ export const RocketModel: React.FC<RocketModelProps> = ({
       } else {
         boosterLeft.current.visible = true;
         boosterRight.current.visible = true;
+        if (boosterTrailLeftRef.current) boosterTrailLeftRef.current.visible = false;
+        if (boosterTrailRightRef.current) boosterTrailRightRef.current.visible = false;
+        materials.boosterBurnoutTrailMat.opacity = 0;
         boosterLeft.current.position.set(-0.76, -2.1, 0);
         boosterLeft.current.rotation.set(0, 0, 0);
         boosterRight.current.position.set(0.76, -2.1, 0);
@@ -636,11 +704,43 @@ export const RocketModel: React.FC<RocketModelProps> = ({
 
         // Solar panels unfold in multi-stage mechanical sequence with elastic space structure damping
         if (solarLeft.current && solarRight.current) {
-          const unfoldProgress = Math.min(Math.max((deployRatio - 0.25) / 0.75, 0), 1.0);
-          const angle = (1 - unfoldProgress) * (-Math.PI / 2);
+          const innerUnfold = Math.min(Math.max((deployRatio - 0.18) / 0.55, 0), 1.0);
+          const outerUnfold = Math.min(Math.max((deployRatio - 0.42) / 0.58, 0), 1.0);
+          // Smooth mechanical hinge cubic ease-out
+          const innerEase = 1.0 - Math.pow(1.0 - innerUnfold, 2.5);
+          const outerEase = 1.0 - Math.pow(1.0 - outerUnfold, 2.5);
+
+          const innerAngle = (1 - innerEase) * (-Math.PI / 2);
+          const outerAngle = (1 - outerEase) * (Math.PI * 0.92);
           const wingFlex = Math.sin(t * 3.2) * 0.012 * Math.min(scrollSpeed * 0.5, 1.0);
-          solarLeft.current.rotation.y = angle + wingFlex;
-          solarRight.current.rotation.y = -angle - wingFlex;
+
+          solarLeft.current.rotation.y = innerAngle + wingFlex;
+          solarRight.current.rotation.y = -innerAngle - wingFlex;
+
+          if (solarLeftOuter.current && solarRightOuter.current) {
+            solarLeftOuter.current.rotation.y = outerAngle + wingFlex * 0.6;
+            solarRightOuter.current.rotation.y = -outerAngle - wingFlex * 0.6;
+          }
+        }
+
+        // Cold-Gas RCS Attitude Stabilization Micro-Thruster Puffs during orbital cruise & uplink
+        if (rcsJetLeftRef.current && rcsJetRightRef.current) {
+          const rcsCycle = t % 3.2;
+          const isLeftFiring = rcsCycle > 0.2 && rcsCycle < 0.48;
+          const isRightFiring = rcsCycle > 1.8 && rcsCycle < 2.08;
+          rcsJetLeftRef.current.visible = isLeftFiring && deployRatio > 0.85;
+          rcsJetRightRef.current.visible = isRightFiring && deployRatio > 0.85;
+          if (isLeftFiring) {
+            const p = Math.sin(((rcsCycle - 0.2) / 0.28) * Math.PI);
+            materials.rcsJetMat.opacity = p * 0.72;
+            rcsJetLeftRef.current.scale.set(1, 0.6 + p * 0.7, 1);
+          } else if (isRightFiring) {
+            const p = Math.sin(((rcsCycle - 1.8) / 0.28) * Math.PI);
+            materials.rcsJetMat.opacity = p * 0.72;
+            rcsJetRightRef.current.scale.set(1, 0.6 + p * 0.7, 1);
+          } else {
+            materials.rcsJetMat.opacity = 0;
+          }
         }
       } else {
         // Tucked inside rocket payload fairing before deployment
@@ -671,20 +771,39 @@ export const RocketModel: React.FC<RocketModelProps> = ({
     }
 
     // 7. TERMINAL UPLINK SIGNAL TRANSMISSION (scroll >= 0.88):
+    // 3 independent harmonic wavefront rings + parabolic dish RF carrier beam
     const isTransmitting = scrollProgress >= 0.88;
-    if (signalRing1.current && signalRing2.current) {
+    if (signalRing1.current && signalRing2.current && signalRing3.current) {
       if (isTransmitting) {
         signalRing1.current.visible = true;
         signalRing2.current.visible = true;
-        const wave1 = (t * 1.5) % 1.0;
-        const wave2 = (t * 1.5 + 0.5) % 1.0;
-        signalRing1.current.scale.setScalar(0.5 + wave1 * 3.5);
-        (signalRing1.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.8 - wave1 * 0.8);
-        signalRing2.current.scale.setScalar(0.5 + wave2 * 3.5);
-        (signalRing2.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.8 - wave2 * 0.8);
+        signalRing3.current.visible = true;
+
+        const wave1 = (t * 0.95) % 1.0;
+        const wave2 = (t * 0.95 + 0.333) % 1.0;
+        const wave3 = (t * 0.95 + 0.666) % 1.0;
+
+        signalRing1.current.scale.setScalar(0.5 + wave1 * 3.8);
+        signalRing1.current.position.y = 1.28 + wave1 * 0.55;
+        materials.signalRipple1.opacity = Math.sin(wave1 * Math.PI) * 0.85;
+
+        signalRing2.current.scale.setScalar(0.5 + wave2 * 3.8);
+        signalRing2.current.position.y = 1.28 + wave2 * 0.55;
+        materials.signalRipple2.opacity = Math.sin(wave2 * Math.PI) * 0.85;
+
+        signalRing3.current.scale.setScalar(0.5 + wave3 * 3.8);
+        signalRing3.current.position.y = 1.28 + wave3 * 0.55;
+        materials.signalRipple3.opacity = Math.sin(wave3 * Math.PI) * 0.85;
+
+        if (carrierBeamRef.current) {
+          carrierBeamRef.current.visible = true;
+          materials.carrierBeamMat.opacity = 0.14 + Math.sin(t * 6.0) * 0.05;
+        }
       } else {
         signalRing1.current.visible = false;
         signalRing2.current.visible = false;
+        signalRing3.current.visible = false;
+        if (carrierBeamRef.current) carrierBeamRef.current.visible = false;
       }
     }
 
@@ -755,12 +874,26 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           <cylinderGeometry args={[0.03, 0.03, 0.35, 8]} />
         </mesh>
 
-        {/* Concentric Signal Telemetry Ripples (Pulsing at terminal uplink) */}
-        <mesh ref={signalRing1} position={[0, 1.3, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
-          <ringGeometry args={[0.4, 0.46, 32]} />
+        {/* Concentric Signal Telemetry Ripples & RF Carrier Beam (Pulsing at Stage 05 Terminal Uplink) */}
+        <mesh ref={signalRing1} position={[0, 1.3, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple1} visible={false}>
+          <ringGeometry args={[0.38, 0.44, 32]} />
         </mesh>
-        <mesh ref={signalRing2} position={[0, 1.3, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple} visible={false}>
-          <ringGeometry args={[0.4, 0.46, 32]} />
+        <mesh ref={signalRing2} position={[0, 1.3, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple2} visible={false}>
+          <ringGeometry args={[0.38, 0.44, 32]} />
+        </mesh>
+        <mesh ref={signalRing3} position={[0, 1.3, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={materials.signalRipple3} visible={false}>
+          <ringGeometry args={[0.38, 0.44, 32]} />
+        </mesh>
+        <mesh ref={carrierBeamRef} position={[0, 2.35, 0.72]} rotation={[0.36, 0, 0]} material={materials.carrierBeamMat} visible={false}>
+          <coneGeometry args={[0.72, 2.4, 20, 1, true]} />
+        </mesh>
+
+        {/* Cold-Gas RCS Attitude Control Thruster Nozzles & Puffs */}
+        <mesh ref={rcsJetLeftRef} position={[-0.62, 0.55, 0.42]} rotation={[0, 0, Math.PI / 2]} material={materials.rcsJetMat} visible={false}>
+          <coneGeometry args={[0.08, 0.34, 10, 1, true]} />
+        </mesh>
+        <mesh ref={rcsJetRightRef} position={[0.62, -0.55, 0.42]} rotation={[0, 0, -Math.PI / 2]} material={materials.rcsJetMat} visible={false}>
+          <coneGeometry args={[0.08, 0.34, 10, 1, true]} />
         </mesh>
 
         {/* Satellite Main Engine Nozzle Bell (Central aft propulsion) */}
@@ -811,19 +944,21 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <boxGeometry args={[0.04, 0.08, 0.03]} />
           </mesh>
 
-          {/* Segment 2: Outer Solar Panel */}
-          <mesh position={[-1.96, 0, 0]} material={materials.solarFrame}>
-            <boxGeometry args={[1.12, 0.96, 0.02]} />
-          </mesh>
-          <mesh position={[-1.96, 0, 0.015]} material={materials.solarPhotovoltaic}>
-            <planeGeometry args={[1.08, 0.92]} />
-          </mesh>
-          <mesh position={[-1.96, 0, -0.015]} rotation={[0, Math.PI, 0]} material={materials.solarPhotovoltaic}>
-            <planeGeometry args={[1.08, 0.92]} />
-          </mesh>
-          <mesh position={[-2.54, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={materials.solarHinge}>
-            <cylinderGeometry args={[0.015, 0.015, 0.06, 8]} />
-          </mesh>
+          {/* Segment 2: Articulated Outer Solar Panel (Accordion-unfolds from hinge) */}
+          <group ref={solarLeftOuter} position={[-1.39, 0, 0]}>
+            <mesh position={[-0.57, 0, 0]} material={materials.solarFrame}>
+              <boxGeometry args={[1.12, 0.96, 0.02]} />
+            </mesh>
+            <mesh position={[-0.57, 0, 0.015]} material={materials.solarPhotovoltaic}>
+              <planeGeometry args={[1.08, 0.92]} />
+            </mesh>
+            <mesh position={[-0.57, 0, -0.015]} rotation={[0, Math.PI, 0]} material={materials.solarPhotovoltaic}>
+              <planeGeometry args={[1.08, 0.92]} />
+            </mesh>
+            <mesh position={[-1.15, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={materials.solarHinge}>
+              <cylinderGeometry args={[0.015, 0.015, 0.06, 8]} />
+            </mesh>
+          </group>
         </group>
 
         {/* Right Solar Panel Array Wing (Multi-segment articulated array) */}
@@ -861,19 +996,21 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <boxGeometry args={[0.04, 0.08, 0.03]} />
           </mesh>
 
-          {/* Segment 2: Outer Solar Panel */}
-          <mesh position={[1.96, 0, 0]} material={materials.solarFrame}>
-            <boxGeometry args={[1.12, 0.96, 0.02]} />
-          </mesh>
-          <mesh position={[1.96, 0, 0.015]} material={materials.solarPhotovoltaic}>
-            <planeGeometry args={[1.08, 0.92]} />
-          </mesh>
-          <mesh position={[1.96, 0, -0.015]} rotation={[0, Math.PI, 0]} material={materials.solarPhotovoltaic}>
-            <planeGeometry args={[1.08, 0.92]} />
-          </mesh>
-          <mesh position={[2.54, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={materials.solarHinge}>
-            <cylinderGeometry args={[0.015, 0.015, 0.06, 8]} />
-          </mesh>
+          {/* Segment 2: Articulated Outer Solar Panel (Accordion-unfolds from hinge) */}
+          <group ref={solarRightOuter} position={[1.39, 0, 0]}>
+            <mesh position={[0.57, 0, 0]} material={materials.solarFrame}>
+              <boxGeometry args={[1.12, 0.96, 0.02]} />
+            </mesh>
+            <mesh position={[0.57, 0, 0.015]} material={materials.solarPhotovoltaic}>
+              <planeGeometry args={[1.08, 0.92]} />
+            </mesh>
+            <mesh position={[0.57, 0, -0.015]} rotation={[0, Math.PI, 0]} material={materials.solarPhotovoltaic}>
+              <planeGeometry args={[1.08, 0.92]} />
+            </mesh>
+            <mesh position={[1.15, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={materials.solarHinge}>
+              <cylinderGeometry args={[0.015, 0.015, 0.06, 8]} />
+            </mesh>
+          </group>
         </group>
 
         {/* Corner-mounted Scientific Magnetometer Boom */}
@@ -947,9 +1084,14 @@ export const RocketModel: React.FC<RocketModelProps> = ({
         </group>
 
         {/* Aerodynamic Prandtl-Glauert Transonic Shock Condensation Cone (Max-Q) */}
-        <mesh ref={machConeRef} position={[0, 2.75, 0]} material={materials.machConeMat} visible={false}>
-          <cylinderGeometry args={[1.35, 0.65, 0.80, 32, 1, true]} />
-        </mesh>
+        <group ref={machConeRef} position={[0, 2.75, 0]} visible={false}>
+          <mesh material={materials.machConeMat}>
+            <cylinderGeometry args={[1.38, 0.56, 0.85, 32, 1, true]} />
+          </mesh>
+          <mesh position={[0, -0.35, 0]} material={materials.machConeMat}>
+            <cylinderGeometry args={[1.85, 1.38, 0.42, 32, 1, true]} />
+          </mesh>
+        </group>
 
         {/* Interstage Separation Ring with Circumferential Stiffener Flanges */}
         <mesh position={[0, 0.45, 0]} material={materials.hullDark}>
@@ -987,15 +1129,26 @@ export const RocketModel: React.FC<RocketModelProps> = ({
           >
             <coneGeometry args={[0.13, 0.32, 24, 1, true]} />
           </mesh>
-        ))}\n
+        ))}
 
-        {/* Twin Core Vikas Supersonic Exhaust Flames (Ignited at T-0 along with Boosters) */}
+        {/* Twin Core Vikas Supersonic Exhaust Flames with Mach Diamond Shock Cells */}
         <group ref={coreFlamesRef} visible={false}>
           {[-0.16, 0.16].map((vx, vIdx) => (
             <group key={`core-flame-${vIdx}`} position={[vx, -4.25, 0]}>
               {/* Blinding White-Hot Core Sprites (Additive, Camera-Facing, Soft Radial Falloff) */}
               <sprite position={[0, -0.10, 0]} scale={[0.8, 1.1, 1]} material={materials.softCoreMat} renderOrder={30} />
               <sprite position={[0, -0.45, 0]} scale={[1.4, 1.7, 1]} material={materials.softCoreMat} renderOrder={30} />
+              {/* Supersonic Mach Diamond Compression-Expansion Shock Discs */}
+              {[-0.32, -0.72, -1.16].map((dy, dIdx) => (
+                <group key={`mach-diamond-${vIdx}-${dIdx}`} position={[0, dy, 0]} scale={[1 - dIdx * 0.18, 1 - dIdx * 0.12, 1 - dIdx * 0.18]}>
+                  <mesh position={[0, 0.055, 0]} material={materials.flameShock}>
+                    <coneGeometry args={[0.075, 0.11, 10, 1, true]} />
+                  </mesh>
+                  <mesh position={[0, -0.055, 0]} rotation={[Math.PI, 0, 0]} material={materials.flameShock}>
+                    <coneGeometry args={[0.075, 0.11, 10, 1, true]} />
+                  </mesh>
+                </group>
+              ))}
               {/* Incandescent Golden/Orange Expanding Plume Sprites (Zero Hard Silhouette Edges) */}
               <sprite position={[0, -0.95, 0]} scale={[2.1, 2.6, 1]} material={materials.softPlumeMat} renderOrder={29} />
               <sprite position={[0, -1.65, 0]} scale={[3.0, 3.6, 1]} material={materials.softPlumeMat} renderOrder={28} />
@@ -1076,6 +1229,13 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <sprite position={[0, -6.50, 0]} scale={[6.8, 8.0, 1]} material={materials.softPlumeMat} renderOrder={26} />
             <sprite position={[0, -8.60, 0]} scale={[7.8, 9.6, 1]} material={materials.softPlumeMat} renderOrder={25} />
           </group>
+
+          {/* Post-Separation Solid Motor Residual Burnout Smoke Trail */}
+          <group ref={boosterTrailLeftRef} position={[0, -1.75, 0]} visible={false}>
+            <sprite position={[0, -0.4, 0]} scale={[1.2, 1.8, 1]} material={materials.boosterBurnoutTrailMat} renderOrder={24} />
+            <sprite position={[0, -1.6, 0]} scale={[2.2, 3.0, 1]} material={materials.boosterBurnoutTrailMat} renderOrder={23} />
+            <sprite position={[0, -3.2, 0]} scale={[3.4, 4.4, 1]} material={materials.boosterBurnoutTrailMat} renderOrder={22} />
+          </group>
         </group>
 
         {/* Right S200 Booster (INDIA Livery) */}
@@ -1147,6 +1307,13 @@ export const RocketModel: React.FC<RocketModelProps> = ({
             <sprite position={[0, -4.80, 0]} scale={[5.8, 6.6, 1]} material={materials.softPlumeMat} renderOrder={27} />
             <sprite position={[0, -6.50, 0]} scale={[6.8, 8.0, 1]} material={materials.softPlumeMat} renderOrder={26} />
             <sprite position={[0, -8.60, 0]} scale={[7.8, 9.6, 1]} material={materials.softPlumeMat} renderOrder={25} />
+          </group>
+
+          {/* Post-Separation Solid Motor Residual Burnout Smoke Trail */}
+          <group ref={boosterTrailRightRef} position={[0, -1.75, 0]} visible={false}>
+            <sprite position={[0, -0.4, 0]} scale={[1.2, 1.8, 1]} material={materials.boosterBurnoutTrailMat} renderOrder={24} />
+            <sprite position={[0, -1.6, 0]} scale={[2.2, 3.0, 1]} material={materials.boosterBurnoutTrailMat} renderOrder={23} />
+            <sprite position={[0, -3.2, 0]} scale={[3.4, 4.4, 1]} material={materials.boosterBurnoutTrailMat} renderOrder={22} />
           </group>
         </group>
 

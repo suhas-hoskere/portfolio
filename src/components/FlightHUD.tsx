@@ -91,21 +91,31 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
       };
     } else if (sp < 0.360) {
       const ascFrac = (sp - 0.240) / 0.120;
-      const isMaxQ = sp >= 0.27 && sp <= 0.31;
+      const isMaxQ = sp >= 0.270 && sp <= 0.315;
+      const isBoosterSep = sp > 0.315 && sp < 0.340;
+      const isFairingSep = sp >= 0.340;
+      const status = isFairingSep
+        ? 'STAGE 01 // FAIRING JETTISON'
+        : isBoosterSep
+          ? 'STAGE 01 // S200 BOOSTER SEP'
+          : isMaxQ
+            ? 'STAGE 01 // TRANSONIC MAX-Q'
+            : 'STAGE 01 // ATMOSPHERIC ASCENT';
       return {
-        status: isMaxQ ? 'STAGE 01 // TRANSONIC MAX-Q' : 'STAGE 01 // ATMOSPHERIC ASCENT',
+        status,
         altitude: `${Math.round(12 + ascFrac * 173)} KM`,
         velocity: `${(0.42 + ascFrac * 7.24).toFixed(2)} KM/S`,
         dynPressure: isMaxQ ? '35.8 KPA (MAX-Q)' : `${(56.3 * Math.exp(-ascFrac * 4.5)).toFixed(2)} KPA`,
         gForce: `${(2.10 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
       };
     } else if (sp < 0.520) {
+      const isTliBurn = sp >= 0.470 && sp <= 0.515;
       return {
-        status: 'STAGE 02 // LOW EARTH ORBIT (LEO)',
+        status: isTliBurn ? 'STAGE 02 // TLI HYPERGOLIC BURN' : 'STAGE 02 // LOW EARTH ORBIT (LEO)',
         altitude: '420 KM (CIRCULAR)',
-        velocity: '7.66 KM/S (ORBITAL)',
+        velocity: isTliBurn ? '10.82 KM/S (TLI)' : '7.66 KM/S (ORBITAL)',
         dynPressure: '0.00 KPA (HARD VACUUM)',
-        gForce: '0.00 G (MICROGRAVITY)',
+        gForce: isTliBurn ? '1.15 G (TLI BURN)' : '0.00 G (MICROGRAVITY)',
       };
     } else if (sp < 0.740) {
       const moonFrac = (sp - 0.520) / 0.220;

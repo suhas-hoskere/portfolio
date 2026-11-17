@@ -250,6 +250,22 @@ function getCachedPadMaterials(terrain: any, smokeTexture: any, mistTexture: any
     }),
     flameDeflectorSteel: new THREE.MeshLambertMaterial({
       color: '#334155',
+      emissive: new THREE.Color('#000000'),
+      emissiveIntensity: 0.0,
+    }),
+    delugeSprayMat: new THREE.MeshBasicMaterial({
+      color: '#e0f2fe',
+      transparent: true,
+      opacity: 0.0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+    qdPurgeMat: new THREE.SpriteMaterial({
+      map: mistTexture,
+      transparent: true,
+      opacity: 0.0,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
     }),
     handrailYellow: new THREE.MeshLambertMaterial({
       color: '#f59e0b',
@@ -361,6 +377,9 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
   const beaconLightRef = useRef<THREE.PointLight>(null);
   const flameTrenchLightRef = useRef<THREE.PointLight>(null);
   const cryoVentPointsRef = useRef<THREE.Points>(null);
+  const holdDownClampsRef = useRef<THREE.Group>(null);
+  const qdPurgeGroupRef = useRef<THREE.Group>(null);
+  const delugeSprayGroupRef = useRef<THREE.Group>(null);
 
   const terrain = useMemo(() => getCachedTerrainTextures(), []);
   const smokeTexture = useMemo(() => getCachedSmokeTexture(), []);
@@ -507,14 +526,54 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         // Step 0 & 1: Arms firmly connected to rocket body
         swingAngle = 0;
       } else if (sp < 0.125) {
-        // Step 2: Arms swing smoothly 55 degrees away from the vehicle as you scroll
-        const swingProgress = (sp - 0.080) / (0.125 - 0.080);
-        swingAngle = Math.min(Math.max(swingProgress, 0), 1.0) * 0.95;
+        // Step 2: Arms swing smoothly 55 degrees away from the vehicle with damped ease-out
+        const rawProg = Math.min(Math.max((sp - 0.080) / (0.125 - 0.080), 0), 1.0);
+        const easedProg = 1.0 - Math.pow(1.0 - rawProg, 2.2);
+        swingAngle = easedProg * 0.95;
       } else {
         // Step 3 & 4: Fully swung clear
         swingAngle = 0.95;
       }
       umbilicalArmsRef.current.rotation.y = swingAngle;
+    }
+
+    // 2B. Hold-Down Support Clamps Disengagement (Step 02)
+    if (holdDownClampsRef.current) {
+      const clampOpen = sp < 0.080 ? 0 : Math.min((sp - 0.080) / 0.045, 1.0);
+      const children = holdDownClampsRef.current.children;
+      for (let c = 0; c < children.length; c++) {
+        const dir = c < 2 ? 1 : -1; // Left clamps tilt outward left (+Z), right clamps tilt outward right (-Z)
+        children[c].rotation.z = dir * clampOpen * 0.28;
+      }
+    }
+
+    // 2C. Cryogenic Quick-Disconnect (QD) Coupling Purge Vapour Puff (Step 02)
+    if (qdPurgeGroupRef.current) {
+      if (sp >= 0.080 && sp < 0.130) {
+        qdPurgeGroupRef.current.visible = true;
+        const qdProg = (sp - 0.080) / 0.050;
+        const qdFade = Math.sin(qdProg * Math.PI);
+        materials.qdPurgeMat.opacity = qdFade * 0.62;
+        const qdScale = 0.45 + qdProg * 0.85;
+        qdPurgeGroupRef.current.scale.set(qdScale, qdScale, qdScale);
+      } else {
+        qdPurgeGroupRef.current.visible = false;
+        materials.qdPurgeMat.opacity = 0;
+      }
+    }
+
+    // 2D. High-Flow Water Deluge Quench Spray Manifolds (Step 03)
+    if (delugeSprayGroupRef.current) {
+      if (sp >= 0.125 && sp < 0.215) {
+        delugeSprayGroupRef.current.visible = true;
+        const delugeProg = (sp - 0.125) / 0.090;
+        const delugeWave = Math.sin(delugeProg * Math.PI);
+        const sprayFlicker = (0.78 + Math.sin(t * 48) * 0.16) * delugeWave;
+        materials.delugeSprayMat.opacity = sprayFlicker * 0.72;
+      } else {
+        delugeSprayGroupRef.current.visible = false;
+        materials.delugeSprayMat.opacity = 0;
+      }
     }
 
     // 3. Bilateral Trench Smoke & Deluge Steam
@@ -564,7 +623,8 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
           smokeDensity = Math.max(0, 1.0 - (sp - 0.170) / 0.090);
         }
 
-        materials.smokeMat.opacity = smokeDensity * 0.60;
+        materials.smokeMat.opacity = smokeDensity * 0.64;
+        materials.smokeMat.size = 4.4 + smokeDensity * 2.6;
 
         const posAttr = smokeGeom.getAttribute('position') as THREE.BufferAttribute;
         const colAttr = smokeGeom.getAttribute('color') as THREE.BufferAttribute;
@@ -578,6 +638,9 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
           if (p.age >= p.life) {
             p.age = 0;
             p.life = 1.4 + Math.random() * 1.5;
+            p.vx = p.dirX * (3.0 + Math.random() * 2.6);
+            p.vy = 0.15 + Math.random() * 0.35;
+            p.vz = (Math.random() - 0.5) * 0.9;
             posArray[i * 3] = p.dirX * (0.9 + Math.random() * 0.3);
             posArray[i * 3 + 1] = -0.3;
             posArray[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
@@ -586,20 +649,21 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
             posArray[i * 3 + 1] += p.vy * delta;
             posArray[i * 3 + 2] += p.vz * delta;
 
-            p.vx *= 0.985;
-            p.vy *= 0.99;
+            // Aerodynamic drag horizontally + buoyant steam billow lift as cloud rolls outward
+            p.vx *= 0.982;
+            p.vy += delta * 0.55;
           }
 
-          // Sunrise side-lit illumination
+          // Sunrise side-lit illumination + warm fire trench under-glow near origin
           const progressRatio = p.age / p.life;
           if (p.dirX > 0) {
             colArray[i * 3] = 1.0;
-            colArray[i * 3 + 1] = 0.90 - progressRatio * 0.2;
-            colArray[i * 3 + 2] = 0.72 - progressRatio * 0.3;
+            colArray[i * 3 + 1] = 0.92 - progressRatio * 0.18;
+            colArray[i * 3 + 2] = 0.76 - progressRatio * 0.25;
           } else {
-            colArray[i * 3] = 0.75 - progressRatio * 0.2;
-            colArray[i * 3 + 1] = 0.82 - progressRatio * 0.2;
-            colArray[i * 3 + 2] = 0.90 - progressRatio * 0.1;
+            colArray[i * 3] = 0.78 - progressRatio * 0.15;
+            colArray[i * 3 + 1] = 0.85 - progressRatio * 0.16;
+            colArray[i * 3 + 2] = 0.93 - progressRatio * 0.08;
           }
         }
 
@@ -610,22 +674,30 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
       }
     }
 
-    // 5. Fire Trench Light & Ignition Flash
+    // 5. Fire Trench Light, Deflector Thermal Incandescence & Ignition Flash
     if (flameTrenchLightRef.current) {
       if (sp >= 0.035 && sp < 0.240) {
         const fireIntensity = Math.min((sp - 0.035) / 0.025, 1.0);
         const flicker = (8.0 + Math.sin(t * 55) * 3.0) * fireIntensity;
         flameTrenchLightRef.current.intensity = flicker;
+
+        // Thermal heat glow on double-sided flame deflector steel wedge under 2,000C exhaust
+        const heatRamp = sp < 0.170 ? fireIntensity : Math.max(0, 1.0 - (sp - 0.170) / 0.070);
+        materials.flameDeflectorSteel.emissiveIntensity = heatRamp * (1.35 + Math.sin(t * 38) * 0.28);
+        materials.flameDeflectorSteel.emissive.setRGB(1.0 * heatRamp, 0.38 * heatRamp, 0.06 * heatRamp);
       } else {
         flameTrenchLightRef.current.intensity = 0;
+        materials.flameDeflectorSteel.emissiveIntensity = 0;
       }
     }
 
-    // 6. Flying Sparks Simulation
+    // 6. Flying Incandescent Trench Sparks Simulation (Step 01 Ignition through Liftoff)
     if (sparkPointsRef.current) {
-      if (isSmoking && sp < 0.22) {
+      if (sp >= 0.035 && sp < 0.220) {
         sparkPointsRef.current.visible = true;
-        materials.sparkMat.opacity = 0.85;
+        const sparkRamp = Math.min((sp - 0.035) / 0.025, 1.0);
+        const sparkFade = sp < 0.170 ? 1.0 : Math.max(0, 1.0 - (sp - 0.170) / 0.050);
+        materials.sparkMat.opacity = 0.90 * sparkRamp * sparkFade;
 
         const posAttr = sparkGeom.getAttribute('position') as THREE.BufferAttribute;
         const posArray = posAttr.array as Float32Array;
@@ -637,6 +709,9 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
           if (spk.age >= spk.life) {
             spk.age = 0;
             const dirX = Math.random() > 0.5 ? 1 : -1;
+            spk.vx = dirX * (3.5 + Math.random() * 3.2);
+            spk.vy = 1.4 + Math.random() * 2.6;
+            spk.vz = (Math.random() - 0.5) * 1.8;
             posArray[i * 3] = dirX * (0.6 + Math.random() * 0.3);
             posArray[i * 3 + 1] = -0.2;
             posArray[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
@@ -695,22 +770,49 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         <mesh position={[0.95, 0.14, 0]} material={materials.mlpDeckSteel}>
           <boxGeometry args={[1.1, 0.08, 2.6]} />
         </mesh>
-                {/* 4 Hold-Down Launch Support Pedestals elevating the vehicle above the deck */}
-        {[
-          { x: -0.22, z: 0.12 },
-          { x: -0.22, z: -0.12 },
-          { x: 0.22, z: 0.12 },
-          { x: 0.22, z: -0.12 },
-        ].map((clamp, cIdx) => (
-          <group key={`launch-clamp-${cIdx}`} position={[clamp.x, 0.18, clamp.z]}>
-            <mesh position={[0, 0.04, 0]} material={materials.towerSteel}>
-              <boxGeometry args={[0.09, 0.10, 0.09]} />
-            </mesh>
-            <mesh position={[0, 0.10, 0]} material={materials.mlpDeckSteel}>
-              <boxGeometry args={[0.06, 0.04, 0.06]} />
-            </mesh>
-          </group>
-        ))}
+        {/* 4 Hold-Down Launch Support Pedestals elevating the vehicle above the deck */}
+        <group ref={holdDownClampsRef}>
+          {[
+            { x: -0.22, z: 0.12 },
+            { x: -0.22, z: -0.12 },
+            { x: 0.22, z: 0.12 },
+            { x: 0.22, z: -0.12 },
+          ].map((clamp, cIdx) => (
+            <group key={`launch-clamp-${cIdx}`} position={[clamp.x, 0.18, clamp.z]}>
+              <mesh position={[0, 0.04, 0]} material={materials.towerSteel}>
+                <boxGeometry args={[0.09, 0.10, 0.09]} />
+              </mesh>
+              <mesh position={[0, 0.10, 0]} material={materials.mlpDeckSteel}>
+                <boxGeometry args={[0.06, 0.04, 0.06]} />
+              </mesh>
+            </group>
+          ))}
+        </group>
+
+        {/* Step 03 Water Deluge Quench Spray Nozzles along Flame Trench Lip */}
+        <group ref={delugeSprayGroupRef} visible={false}>
+          {[
+            { x: -0.52, z: -0.65 },
+            { x: -0.52, z: 0.0 },
+            { x: -0.52, z: 0.65 },
+            { x: 0.52, z: -0.65 },
+            { x: 0.52, z: 0.0 },
+            { x: 0.52, z: 0.65 },
+          ].map((noz, nIdx) => (
+            <group key={`deluge-noz-${nIdx}`} position={[noz.x, 0.12, noz.z]}>
+              <mesh material={materials.pipingRed}>
+                <cylinderGeometry args={[0.024, 0.024, 0.08, 8]} />
+              </mesh>
+              <mesh
+                position={[noz.x < 0 ? 0.18 : -0.18, -0.14, 0]}
+                rotation={[0, 0, noz.x < 0 ? -0.82 : 0.82]}
+                material={materials.delugeSprayMat}
+              >
+                <coneGeometry args={[0.17, 0.42, 10, 1, true]} />
+              </mesh>
+            </group>
+          ))}
+        </group>
         {/* Flame Trench Cutout Pit beneath vehicle */}
         <mesh position={[0, -0.22, 0]} material={materials.trenchPit}>
           <boxGeometry args={[1.2, 0.44, 2.2]} />
@@ -777,6 +879,18 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
               </mesh>
             </group>
           ))}
+
+          {/* Step 02 Cryogenic Quick-Disconnect (QD) Coupling Purge Vapour Puffs */}
+          <group ref={qdPurgeGroupRef} visible={false}>
+            {[0.4, 0.8, 1.25].map((py, pIdx) => (
+              <sprite
+                key={`qd-purge-${pIdx}`}
+                position={[0.06, py, 0.96]}
+                scale={[0.9, 0.75, 1]}
+                material={materials.qdPurgeMat}
+              />
+            ))}
+          </group>
         </group>
 
         {/* Tower Top Mast & Red Aviation Beacon */}
@@ -843,9 +957,10 @@ export const Stage00LaunchPad: React.FC<Stage00LaunchPadProps> = ({
         <planeGeometry args={[65, 95]} />
       </mesh>
 
-      {/* 7. Lateral Trench Bilateral Billowing Smoke & Steam */}
+      {/* 7. Lateral Trench Bilateral Billowing Smoke, Steam & Incandescent Sparks */}
       <points ref={cryoVentPointsRef} geometry={cryoGeom} material={materials.cryoVentMat} />
       <points ref={smokePointsRef} geometry={smokeGeom} material={materials.smokeMat} />
+      <points ref={sparkPointsRef} geometry={sparkGeom} material={materials.sparkMat} visible={false} />
 
       {/* 9. Flame Trench Lighting & Ignition Flash */}
       <pointLight
