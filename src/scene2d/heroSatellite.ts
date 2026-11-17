@@ -63,30 +63,27 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     reducedMotion,
   } = frame;
 
-  if (sp < 0.340) return;
+  if (sp < 0.380) return;
 
-  const deployRatio = clamp((sp - 0.340) / 0.085, 0, 1);
+  const deployRatio = clamp((sp - 0.380) / 0.115, 0, 1);
   const deployEase = easeOutCubic(deployRatio);
 
-  let satScale = lerp(0.42, 1.0, deployEase);
-  if (sp >= 0.86) {
-    const terminalZoom = easeOutCubic((sp - 0.86) / 0.11);
-    satScale = lerp(1.0, 1.44, terminalZoom);
+  // Emerges from fairing into crisp LEO showcase scale, magnifies cleanly on final Orbital Uplink stage
+  let satScale = lerp(0.42, 1.04, deployEase);
+  if (sp >= 0.87) {
+    const terminalZoom = easeOutCubic((sp - 0.87) / 0.10);
+    satScale = lerp(1.04, 1.42, terminalZoom);
   }
   if (cameraMode === 'BOOSTER') satScale *= 1.18;
   else if (cameraMode === 'CHASE') satScale *= 1.10;
 
   const s = unit * satScale;
-  const bobY = reducedMotion ? 0 : Math.sin(t * 1.35) * s * 0.04;
-  const cx = vehicleAnchorX - mouseX * 10 - (sp >= 0.86 ? smoothstep(0.86, 0.96, sp) * unit * 0.20 : 0);
-  const cy = lerp(h * 0.44, h * 0.48, deployEase) + bobY - mouseY * 7;
+  const bobY = reducedMotion ? 0 : Math.sin(t * 1.25) * s * 0.038;
+  const cx = vehicleAnchorX - mouseX * 10 - (sp >= 0.87 ? smoothstep(0.87, 0.96, sp) * unit * 0.18 : 0);
+  const cy = lerp(h * 0.43, h * 0.44, deployEase) + bobY - mouseY * 7;
 
-  let bankRad = reducedMotion ? 0 : Math.sin(t * 0.55) * 0.025;
-  if (sp >= 0.50 && sp <= 0.70) {
-    bankRad -= Math.sin(((sp - 0.50) / 0.20) * Math.PI) * 0.16;
-  } else if (sp >= 0.72 && sp <= 0.86) {
-    bankRad -= Math.sin(((sp - 0.72) / 0.14) * Math.PI) * 0.19;
-  }
+  // Calm orbital attitude cruise over Earth's horizon
+  const bankRad = reducedMotion ? 0 : Math.sin(t * 0.50) * 0.028;
 
   ctx.save();
   ctx.translate(cx, cy);
@@ -95,27 +92,7 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const busW = s * 0.60;
   const busH = s * 0.74;
 
-  // 1. TRANSLUNAR INJECTION (TLI) FLICKERING MONOCHROME THRUST CONE (0.470 -> 0.515)
-  if (sp >= 0.470 && sp <= 0.515) {
-    const tliBell = Math.sin(((sp - 0.470) / 0.045) * Math.PI);
-    const flicker = reducedMotion ? 1 : 0.88 + Math.sin(t * 54) * 0.14;
-    const flameY = busH * 0.5 + s * 0.16;
-    const flameLen = s * 1.15 * tliBell * flicker;
-    const flameW = s * 0.22 * tliBell;
-
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.30 * tliBell})`;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.88 * tliBell})`;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(-flameW * 0.55, flameY);
-    ctx.lineTo(0, flameY + flameLen);
-    ctx.lineTo(flameW * 0.55, flameY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  // 2. STAGE 05 TERMINAL UPLINK CONTINUOUSLY EXPANDING RF SIGNAL ARCS & CARRIER BEAM
+  // 1. STAGE 05 ORBITAL DOWNLINK CONTINUOUSLY EXPANDING RF SIGNAL ARCS & CARRIER BEAM
   if (sp >= 0.875) {
     const txAlpha = smoothstep(0.875, 0.915, sp);
     const dishTipY = -busH * 0.5 - s * 0.42;

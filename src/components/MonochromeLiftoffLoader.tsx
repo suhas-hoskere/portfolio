@@ -178,9 +178,9 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
         const liftoffFrac = Math.min(Math.max((norm - 0.64) / 0.36, 0), 1);
         const liftPx = Math.pow(liftoffFrac, 2.5) * 210;
 
-        // Live rocket combustion rumble on pad before clearing
-        const rumble = ignitionRamp * (1 - liftoffFrac * 0.5);
-        const rx = cx + (Math.sin(tSec * 95) * 1.4 + Math.cos(tSec * 140) * 0.7) * rumble;
+        // Gentle engine hum on pad before clearing (no excessive shaking)
+        const rumble = ignitionRamp * (1 - liftoffFrac * 0.6);
+        const rx = cx + Math.sin(tSec * 85) * 0.55 * rumble;
         const ry = padY - 6 - liftPx;
 
         // Roaring flickering monochrome supersonic flames

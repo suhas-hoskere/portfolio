@@ -7,7 +7,6 @@ import { renderLaunchPadBack, renderLaunchPadFront } from '../scene2d/launchPad'
 import { renderRocketVehicle } from '../scene2d/rocketVehicle';
 import { renderAtmosphericClouds } from '../scene2d/clouds';
 import { renderEarthAndOrbit } from '../scene2d/earthAndOrbit';
-import { renderDeepSpaceEncounters } from '../scene2d/deepSpace';
 import { renderHeroSatellite } from '../scene2d/heroSatellite';
 
 interface SpaceFlightCanvas2DProps {
@@ -18,10 +17,9 @@ interface SpaceFlightCanvas2DProps {
 }
 
 /**
- * Pure Monochrome Black & White Live 2D Flight Canvas:
- * - Zero WebGL, zero radial gradients, zero backdrop-blur -> < 0.7ms per frame!
- * - Smooth 60 FPS during launch/scroll/ascent so flames, smoke, sparks & satellites stay alive!
- * - Auto-pauses completely when tab is hidden (0% background CPU).
+ * Pure Monochrome Black & White Earth-to-Orbit 2D Flight Canvas:
+ * - Zero WebGL, zero camera shake, zero Moon/Mars detours — pure Launch -> Outer Atmosphere -> Satellite in LEO!
+ * - Smooth 60 FPS during active launch/scroll, 36 FPS calm orbital cruise, 0% CPU when tab is hidden.
  */
 export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.memo(({
   scrollProgressRef,
@@ -91,9 +89,8 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       const targetSp = scrollProgressRef.current;
       const isScrolling =
         Math.abs(targetSp - smoothSp) > 0.0002 || scrollSpeedRef.current > 0.02;
-      const isLaunchActive = targetSp >= 0.035 && targetSp < 0.365;
+      const isLaunchActive = targetSp >= 0.035 && targetSp < 0.43;
 
-      // Full 60fps when scrolling or during rocket ignition/liftoff/ascent; smooth 36fps in calm space
       const minInterval = isScrolling || isLaunchActive ? 1 / 62 : 1 / 36;
       if (rawDt < minInterval) return;
 
@@ -119,22 +116,6 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
         128
       );
 
-      // Subtle launch rumble shake during engine burn & Max-Q
-      let shakeX = 0;
-      let shakeY = 0;
-      if (!reducedMotion) {
-        if (smoothSp >= 0.035 && smoothSp < 0.240) {
-          const ramp = clamp((smoothSp - 0.035) / 0.12, 0.25, 1);
-          const amt = 1.9 * ramp;
-          shakeX = (Math.sin(elapsedSec * 86) * 0.7 + Math.cos(elapsedSec * 132) * 0.3) * amt;
-          shakeY = (Math.cos(elapsedSec * 94) * 0.7 + Math.sin(elapsedSec * 144) * 0.3) * amt;
-        } else if (smoothSp >= 0.270 && smoothSp <= 0.315) {
-          const qBell = Math.sin(((smoothSp - 0.270) / 0.045) * Math.PI);
-          shakeX = Math.sin(elapsedSec * 102) * 2.4 * qBell;
-          shakeY = Math.cos(elapsedSec * 116) * 2.4 * qBell;
-        }
-      }
-
       const frame: Scene2DFrameContext = {
         ctx,
         w: width,
@@ -153,11 +134,8 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
         reducedMotion,
       };
 
-      ctx.save();
-      if (shakeX !== 0 || shakeY !== 0) ctx.translate(shakeX, shakeY);
-
+      // Clean steady camera — zero viewport shake!
       renderSkyAndStars(frame);
-      renderDeepSpaceEncounters(frame);
       renderEarthAndOrbit(frame);
       renderAtmosphericClouds(frame);
       renderSriharikotaTerrain(frame);
@@ -165,8 +143,6 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       renderRocketVehicle(frame);
       renderHeroSatellite(frame);
       renderLaunchPadFront(frame);
-
-      ctx.restore();
     };
 
     rafId = requestAnimationFrame(renderLoop);

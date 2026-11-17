@@ -11,11 +11,11 @@ export interface StageWaypoint {
 
 export const STAGES: StageWaypoint[] = [
   { id: 'pad', stageName: 'Launch Pad', altitude: '0 km (Ground Zero)', scrollFraction: 0.0 },
-  { id: 'ascent', stageName: 'Ascent (Max-Q)', altitude: '14 km (Atmosphere)', scrollFraction: 0.27 },
-  { id: 'orbit', stageName: 'Low Earth Orbit', altitude: '420 km (LEO)', scrollFraction: 0.39 },
-  { id: 'moon', stageName: 'Lunar Flyby', altitude: '384,400 km (Luna)', scrollFraction: 0.58 },
-  { id: 'mars', stageName: 'Mars Encounter', altitude: '225M km (Mars)', scrollFraction: 0.78 },
-  { id: 'signal', stageName: 'Uplink Terminal', altitude: 'Deep Space', scrollFraction: 0.94 },
+  { id: 'ascent', stageName: 'Outer Atmosphere', altitude: '65 km (Max-Q)', scrollFraction: 0.30 },
+  { id: 'orbit', stageName: 'Satellite Deploy', altitude: '420 km (LEO)', scrollFraction: 0.46 },
+  { id: 'missions', stageName: 'Orbital Missions', altitude: '420 km (Payload)', scrollFraction: 0.66 },
+  { id: 'heritage', stageName: 'Karnataka Pass', altitude: '420 km (BLR Track)', scrollFraction: 0.80 },
+  { id: 'signal', stageName: 'Orbital Uplink', altitude: '420 km (Signal Lock)', scrollFraction: 0.94 },
 ];
 
 interface FlightHUDProps {
@@ -88,57 +88,54 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
         dynPressure: `${(101.3 - climbFrac * 45).toFixed(1)} KPA`,
         gForce: `${(1.62 + climbFrac * 0.4).toFixed(2)} G`,
       };
-    } else if (sp < 0.360) {
-      const ascFrac = (sp - 0.240) / 0.120;
-      const isMaxQ = sp >= 0.270 && sp <= 0.315;
-      const isBoosterSep = sp > 0.315 && sp < 0.340;
-      const isFairingSep = sp >= 0.340;
+    } else if (sp < 0.420) {
+      const ascFrac = (sp - 0.240) / 0.180;
+      const isMaxQ = sp >= 0.280 && sp <= 0.340;
+      const isBoosterSep = sp > 0.340 && sp < 0.380;
+      const isFairingSep = sp >= 0.380;
       const status = isFairingSep
         ? 'STAGE 01 // FAIRING JETTISON'
         : isBoosterSep
           ? 'STAGE 01 // S200 BOOSTER SEP'
           : isMaxQ
             ? 'STAGE 01 // TRANSONIC MAX-Q'
-            : 'STAGE 01 // ASCENT';
+            : 'STAGE 01 // OUTER ATMOSPHERE';
       return {
         status,
-        altitude: `${Math.round(12 + ascFrac * 173)} KM`,
+        altitude: `${Math.round(12 + ascFrac * 408)} KM`,
         velocity: `${(0.42 + ascFrac * 7.24).toFixed(2)} KM/S`,
-        dynPressure: isMaxQ ? '35.8 KPA (MAX-Q)' : `${(56.3 * Math.exp(-ascFrac * 4.5)).toFixed(2)} KPA`,
+        dynPressure: isMaxQ ? '35.8 KPA (MAX-Q)' : `${(56.3 * Math.exp(-ascFrac * 5.0)).toFixed(2)} KPA`,
         gForce: `${(2.10 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
       };
-    } else if (sp < 0.520) {
-      const isTliBurn = sp >= 0.470 && sp <= 0.515;
+    } else if (sp < 0.600) {
       return {
-        status: isTliBurn ? 'STAGE 02 // TLI BURN' : 'STAGE 02 // LOW EARTH ORBIT',
+        status: 'STAGE 02 // SATELLITE DEPLOYED (LEO)',
         altitude: '420 KM',
-        velocity: isTliBurn ? '10.82 KM/S' : '7.66 KM/S',
+        velocity: '7.66 KM/S',
         dynPressure: '0.00 KPA',
-        gForce: isTliBurn ? '1.15 G' : '0.00 G',
+        gForce: '0.00 G',
       };
-    } else if (sp < 0.740) {
-      const moonFrac = (sp - 0.520) / 0.220;
+    } else if (sp < 0.760) {
       return {
-        status: 'STAGE 03 // LUNAR TRAJECTORY',
-        altitude: `${Math.round(420 + moonFrac * 384000).toLocaleString()} KM`,
-        velocity: '10.82 KM/S',
+        status: 'STAGE 03 // ORBITAL PAYLOAD OPS',
+        altitude: '420 KM',
+        velocity: '7.66 KM/S',
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
     } else if (sp < 0.880) {
-      const marsFrac = (sp - 0.740) / 0.140;
       return {
-        status: 'STAGE 04 // MARS TRANSFER',
-        altitude: `${Math.round(384400 + marsFrac * 224600000).toLocaleString()} KM`,
-        velocity: '32.40 KM/S',
+        status: 'STAGE 04 // BANGALORE GROUND PASS',
+        altitude: '420 KM',
+        velocity: '7.66 KM/S',
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
     } else {
       return {
-        status: 'STAGE 05 // TERMINAL UPLINK',
-        altitude: '> 225M KM',
-        velocity: '17.20 KM/S',
+        status: 'STAGE 05 // ORBITAL UPLINK LOCKED',
+        altitude: '420 KM',
+        velocity: '7.66 KM/S',
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };

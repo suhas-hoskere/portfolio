@@ -86,9 +86,9 @@ export const App: React.FC = () => {
 
     let stage = 0;
     if (progress >= 0.88) stage = 5;
-    else if (progress >= 0.74) stage = 4;
-    else if (progress >= 0.52) stage = 3;
-    else if (progress >= 0.36) stage = 2;
+    else if (progress >= 0.76) stage = 4;
+    else if (progress >= 0.60) stage = 3;
+    else if (progress >= 0.42) stage = 2;
     else if (progress >= 0.24) stage = 1;
     else stage = 0;
 
@@ -97,7 +97,7 @@ export const App: React.FC = () => {
       lastStageRef.current = stage;
     }
 
-    // VHF Radio Voice Callouts & Acoustic Triggers at granular aerospace telemetry thresholds
+    // VHF Radio Voice Callouts & Acoustic Triggers across Earth-to-Orbit milestones
     if (progress < 0.02) {
       playedCallouts.current.clear();
     } else if (progress >= 0.035 && progress < 0.080 && !playedCallouts.current.has('ignition')) {
@@ -114,18 +114,15 @@ export const App: React.FC = () => {
     } else if (progress >= 0.170 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
       playedCallouts.current.add('liftoff');
       cosmicAudio.playRadioCallout('Vehicle has cleared the tower. Trajectory is nominal.');
-    } else if (progress >= 0.270 && progress < 0.320 && !playedCallouts.current.has('maxq')) {
+    } else if (progress >= 0.280 && progress < 0.340 && !playedCallouts.current.has('maxq')) {
       playedCallouts.current.add('maxq');
       cosmicAudio.playRadioCallout('Passing Max-Q. Aerodynamic pressures nominal.');
-    } else if (progress >= 0.360 && progress < 0.420 && !playedCallouts.current.has('orbit')) {
+    } else if (progress >= 0.420 && progress < 0.480 && !playedCallouts.current.has('orbit')) {
       playedCallouts.current.add('orbit');
-      cosmicAudio.playRadioCallout('Booster separation complete. Low Earth orbit insertion nominal.');
-    } else if (progress >= 0.470 && progress < 0.515 && !playedCallouts.current.has('tli')) {
-      playedCallouts.current.add('tli');
-      cosmicAudio.playThrusterPulse();
+      cosmicAudio.playRadioCallout('Fairing jettisoned. Satellite deployed in low Earth orbit.');
     } else if (progress >= 0.880 && !playedCallouts.current.has('uplink')) {
       playedCallouts.current.add('uplink');
-      cosmicAudio.playRadioCallout('Terminal uplink established. Carrier signal locked.');
+      cosmicAudio.playRadioCallout('Orbital uplink established. Carrier signal locked.');
     }
 
     setActiveStageIndex(stage);

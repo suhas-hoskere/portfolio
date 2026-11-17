@@ -296,7 +296,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     reducedMotion,
   } = frame;
 
-  if (sp >= 0.365) return;
+  if (sp >= 0.428) return;
 
   const camZoom =
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
@@ -308,26 +308,26 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   else if (cameraMode === 'CHASE') baseY -= unit * 0.26;
 
   // Dynamic upward ascent shift during liftoff & climb so vehicle physically rises!
-  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.280, sp) * unit * 0.55 : 0;
+  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.340, sp) * unit * 0.65 : 0;
   baseY -= climbLift;
 
-  const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.345, sp) * 0.14 : 0;
+  const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.380, sp) * 0.14 : 0;
 
-  const isBurning = sp >= 0.035 && sp < 0.355;
+  const isBurning = sp >= 0.035 && sp < 0.415;
   const fireRamp = isBurning ? clamp((sp - 0.035) / 0.025, 0, 1) : 0;
 
-  // Live acoustic engine rumble on rocket hull
+  // Very subtle, gentle engine hum on pad only (no jarring shake!)
   let vibeX = 0;
   let vibeY = 0;
-  if (isBurning && !reducedMotion) {
-    const amp = (sp < 0.22 ? 1.35 : 0.85) * fireRamp;
-    vibeX = (Math.sin(t * 82) * 0.7 + Math.cos(t * 134) * 0.3) * amp;
-    vibeY = (Math.cos(t * 90) * 0.7 + Math.sin(t * 142) * 0.3) * amp;
+  if (isBurning && sp < 0.20 && !reducedMotion) {
+    const amp = 0.42 * fireRamp;
+    vibeX = Math.sin(t * 72) * amp;
+    vibeY = Math.cos(t * 84) * amp * 0.6;
   }
 
   // High-speed atmospheric climb streamlines rushing downward past rocket (Step 04 -> Stage 01)
-  if (sp >= 0.175 && sp < 0.350 && !reducedMotion) {
-    const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.310, 0.350, sp));
+  if (sp >= 0.175 && sp < 0.395 && !reducedMotion) {
+    const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.340, 0.395, sp));
     ctx.save();
     ctx.strokeStyle = `rgba(255, 255, 255, ${0.22 * speedIntensity})`;
     ctx.lineWidth = 1;
@@ -345,9 +345,9 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  const isDeploying = sp >= 0.340;
-  const deployFrac = isDeploying ? clamp((sp - 0.340) / 0.025, 0, 1) : 0;
-  const coreDropY = deployFrac * u * 5.2;
+  const isDeploying = sp >= 0.380;
+  const deployFrac = isDeploying ? clamp((sp - 0.380) / 0.045, 0, 1) : 0;
+  const coreDropY = deployFrac * u * 5.4;
   const coreDropRot = deployFrac * 0.18;
 
   ctx.save();
@@ -383,7 +383,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   // Live supersonic monochrome spark streaks streaming down from all 4 engine nozzles
   if (isBurning && !reducedMotion) {
     const streaks = getExhaustStreaks();
-    const boostersActive = sp < 0.315;
+    const boostersActive = sp < 0.340;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.3;
     for (let i = 0; i < streaks.length; i++) {
@@ -499,9 +499,9 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     }
   }
 
-  // Twin S200 Solid Boosters
-  if (sp < 0.342) {
-    const sepProg = sp >= 0.315 ? easeOutCubic((sp - 0.315) / 0.025) : 0;
+  // Twin S200 Solid Boosters (separate cleanly at sp 0.340 -> 0.380)
+  if (sp < 0.382) {
+    const sepProg = sp >= 0.340 ? easeOutCubic((sp - 0.340) / 0.040) : 0;
     const baseBoosterX = coreR + u * 0.26;
     for (const side of [-1, 1] as const) {
       ctx.save();
@@ -512,9 +512,9 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     }
   }
 
-  // Breathing, Shimmering Prandtl-Glauert Max-Q Shock Cone (sp 0.270 -> 0.315)
-  if (sp >= 0.270 && sp <= 0.315) {
-    const qBell = Math.sin(((sp - 0.270) / 0.045) * Math.PI);
+  // Breathing, Shimmering Prandtl-Glauert Max-Q Shock Cone (sp 0.280 -> 0.340)
+  if (sp >= 0.280 && sp <= 0.340) {
+    const qBell = Math.sin(((sp - 0.280) / 0.060) * Math.PI);
     const shimmer = reducedMotion ? 1 : 1 + Math.sin(t * 54) * 0.05;
     const coneY = c25TopY - fairingCylH * 0.2;
     const coneW = u * 1.28 * shimmer;

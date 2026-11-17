@@ -50,26 +50,22 @@ function drawMonoMiniSat(
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
 
-  if (sp < 0.315 || sp > 0.518) return;
+  // Earth's curved outer atmosphere rises during orbital insertion (0.35+) and stays through 100%!
+  if (sp < 0.345) return;
 
-  const fadeIn = smoothstep(0.315, 0.365, sp);
-  const fadeOut = 1 - smoothstep(0.472, 0.518, sp);
-  const opacity = fadeIn * fadeOut;
+  const fadeIn = smoothstep(0.345, 0.435, sp);
+  const opacity = fadeIn;
   if (opacity < 0.01) return;
 
-  const earthR = Math.max(w, h) * 0.55;
+  const earthR = Math.max(w, h) * 0.56;
   const centerX = lerp(w * 0.58, vehicleAnchorX + unit * 0.4, 0.55) - mouseX * 10;
 
-  let centerY = h + earthR * 0.54;
-  if (sp < 0.365) {
-    centerY = lerp(h + earthR * 1.12, h + earthR * 0.54, fadeIn);
-  } else if (sp > 0.472) {
-    centerY = lerp(h + earthR * 0.54, h + earthR * 1.20, 1 - fadeOut);
-  }
-  centerY -= mouseY * 6;
+  // Rises majestically into Earth's outer atmosphere and settles cleanly beneath the orbiting satellite
+  const settleY = h + earthR * 0.56 + smoothstep(0.84, 1.0, sp) * earthR * 0.08;
+  const centerY = lerp(h + earthR * 1.15, settleY, fadeIn) - mouseY * 6;
 
   // Live orbital motion + scroll offset so Keplerian satellites continuously glide around Earth
-  const orbitAdvance = (sp - 0.32) * 3.2 + (reducedMotion ? 0 : t * 0.24);
+  const orbitAdvance = (sp - 0.35) * 3.0 + (reducedMotion ? 0 : t * 0.22);
 
   const satPos = (sat: OrbitalSatSpec, angle: number) => {
     const lx = Math.cos(angle) * earthR * sat.rxScale;

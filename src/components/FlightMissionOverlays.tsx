@@ -204,13 +204,13 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
           </div>
         )}
 
-        {/* STAGE 3: LUNAR FLYBY & THE 4 EXPLORATION MISSIONS */}
+        {/* STAGE 3: ORBITAL PAYLOAD & THE 4 EXPLORATION MISSIONS */}
         {activeStageIndex === 3 && (
           <div className="space-y-2.5 text-left max-h-[68vh] md:max-h-[78vh] overflow-y-auto pr-1">
             <div className="flex items-center justify-between border-b border-white/15 pb-2">
               <div>
                 <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
-                  STAGE 03 // LUNAR TRAJECTORY
+                  STAGE 03 // ORBITAL PAYLOAD MISSIONS
                 </span>
                 <h2 className="text-xl sm:text-2xl font-space text-white font-bold leading-tight tracking-tight">
                   Exploration Missions
@@ -260,12 +260,12 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
           </div>
         )}
 
-        {/* STAGE 4: MARS ENCOUNTER & KANNADA HERITAGE */}
+        {/* STAGE 4: KARNATAKA GROUND PASS & KANNADA HERITAGE */}
         {activeStageIndex === 4 && (
           <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
-              <span>STAGE 04 // MARS ENCOUNTER</span>
-              <span className="text-white">225M KM</span>
+              <span>STAGE 04 // KARNATAKA PASS</span>
+              <span className="text-white">420 KM LEO</span>
             </div>
 
             <div className="space-y-1">
@@ -278,7 +278,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
             </div>
 
             <p className="text-xs sm:text-base text-zinc-300 font-sans font-light leading-relaxed">
-              Carrying roots across interplanetary horizons. From Karnataka&apos;s deep cultural history to India&apos;s Mars Orbiter Mission triumphs, blending analytical code with creative Kannada prose.
+              Carrying roots above the Indian horizon. Looking down over Karnataka and Bangalore from Low Earth Orbit, blending analytical engineering with creative Kannada prose.
             </p>
 
             <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
