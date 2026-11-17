@@ -12,10 +12,10 @@ export interface StageWaypoint {
 export const STAGES: StageWaypoint[] = [
   { id: 'pad', stageName: 'Launch Pad', altitude: '0 km (Ground Zero)', scrollFraction: 0.0 },
   { id: 'ascent', stageName: 'Ascent (Max-Q)', altitude: '14 km (Atmosphere)', scrollFraction: 0.27 },
-  { id: 'orbit', stageName: 'Low Earth Orbit', altitude: '420 km (LEO & EVA)', scrollFraction: 0.39 },
-  { id: 'moon', stageName: 'Lunar Flyby', altitude: '384,400 km (Lunar)', scrollFraction: 0.58 },
-  { id: 'mars', stageName: 'Mars Encounter', altitude: '225M km (Mangalyaan)', scrollFraction: 0.78 },
-  { id: 'signal', stageName: 'Uplink Transmission', altitude: 'Deep Space (Terminal)', scrollFraction: 0.94 },
+  { id: 'orbit', stageName: 'Low Earth Orbit', altitude: '420 km (LEO)', scrollFraction: 0.39 },
+  { id: 'moon', stageName: 'Lunar Flyby', altitude: '384,400 km (Luna)', scrollFraction: 0.58 },
+  { id: 'mars', stageName: 'Mars Encounter', altitude: '225M km (Mars)', scrollFraction: 0.78 },
+  { id: 'signal', stageName: 'Uplink Terminal', altitude: 'Deep Space', scrollFraction: 0.94 },
 ];
 
 interface FlightHUDProps {
@@ -45,7 +45,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  // Dynamic Aerospace Telemetry Computer
   const telemetry = useMemo(() => {
     const sp = scrollProgress;
     if (sp < 0.035) {
@@ -58,7 +57,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
       };
     } else if (sp < 0.080) {
       return {
-        status: 'STEP 01 // MAIN ENGINE IGNITION',
+        status: 'STEP 01 // ENGINE IGNITION',
         altitude: '0.0 KM',
         velocity: '0 M/S',
         dynPressure: '101.3 KPA',
@@ -66,7 +65,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
       };
     } else if (sp < 0.125) {
       return {
-        status: 'STEP 02 // UMBILICAL CLAMPS RELEASE',
+        status: 'STEP 02 // CLAMPS RELEASE',
         altitude: '0.0 KM',
         velocity: '0 M/S',
         dynPressure: '101.3 KPA',
@@ -74,7 +73,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
       };
     } else if (sp < 0.170) {
       return {
-        status: 'STEP 03 // WATER DELUGE & TRENCH SMOKE',
+        status: 'STEP 03 // WATER DELUGE',
         altitude: '0.0 KM',
         velocity: '0 M/S',
         dynPressure: '101.3 KPA',
@@ -83,7 +82,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
     } else if (sp < 0.240) {
       const climbFrac = (sp - 0.170) / 0.070;
       return {
-        status: 'STEP 04 // POSITIVE LIFTOFF CLIMB',
+        status: 'STEP 04 // LIFTOFF CLIMB',
         altitude: `${(0.1 + climbFrac * 11.9).toFixed(1)} KM`,
         velocity: `${Math.round(climbFrac * 420)} M/S`,
         dynPressure: `${(101.3 - climbFrac * 45).toFixed(1)} KPA`,
@@ -100,7 +99,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
           ? 'STAGE 01 // S200 BOOSTER SEP'
           : isMaxQ
             ? 'STAGE 01 // TRANSONIC MAX-Q'
-            : 'STAGE 01 // ATMOSPHERIC ASCENT';
+            : 'STAGE 01 // ASCENT';
       return {
         status,
         altitude: `${Math.round(12 + ascFrac * 173)} KM`,
@@ -111,35 +110,35 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
     } else if (sp < 0.520) {
       const isTliBurn = sp >= 0.470 && sp <= 0.515;
       return {
-        status: isTliBurn ? 'STAGE 02 // TLI HYPERGOLIC BURN' : 'STAGE 02 // LOW EARTH ORBIT (LEO)',
-        altitude: '420 KM (CIRCULAR)',
-        velocity: isTliBurn ? '10.82 KM/S (TLI)' : '7.66 KM/S (ORBITAL)',
-        dynPressure: '0.00 KPA (HARD VACUUM)',
-        gForce: isTliBurn ? '1.15 G (TLI BURN)' : '0.00 G (MICROGRAVITY)',
+        status: isTliBurn ? 'STAGE 02 // TLI BURN' : 'STAGE 02 // LOW EARTH ORBIT',
+        altitude: '420 KM',
+        velocity: isTliBurn ? '10.82 KM/S' : '7.66 KM/S',
+        dynPressure: '0.00 KPA',
+        gForce: isTliBurn ? '1.15 G' : '0.00 G',
       };
     } else if (sp < 0.740) {
       const moonFrac = (sp - 0.520) / 0.220;
       return {
-        status: 'STAGE 03 // TRANSLUNAR TRAJECTORY',
+        status: 'STAGE 03 // LUNAR TRAJECTORY',
         altitude: `${Math.round(420 + moonFrac * 384000).toLocaleString()} KM`,
-        velocity: '10.82 KM/S (TLI)',
+        velocity: '10.82 KM/S',
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
     } else if (sp < 0.880) {
       const marsFrac = (sp - 0.740) / 0.140;
       return {
-        status: 'STAGE 04 // MARS TRANSFER TRAJECTORY',
+        status: 'STAGE 04 // MARS TRANSFER',
         altitude: `${Math.round(384400 + marsFrac * 224600000).toLocaleString()} KM`,
-        velocity: '32.40 KM/S (HELIOCENTRIC)',
+        velocity: '32.40 KM/S',
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
     } else {
       return {
-        status: 'STAGE 05 // DEEP SPACE TERMINAL',
-        altitude: '> 225M KM (DEEP SPACE)',
-        velocity: '17.20 KM/S (SOLAR ESCAPE)',
+        status: 'STAGE 05 // TERMINAL UPLINK',
+        altitude: '> 225M KM',
+        velocity: '17.20 KM/S',
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
@@ -148,34 +147,33 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
 
   return (
     <header className="fixed inset-0 pointer-events-none z-30 select-none">
-      {/* ===== REFINED TOP BAR ===== */}
-      <div className="absolute top-0 left-0 right-0 p-5 sm:p-7 flex items-center justify-between">
-        {/* Identity & Heritage */}
-        <div className="flex items-center gap-2.5 pointer-events-auto">
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-400/40 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+      {/* ===== PURE MONOCHROME TOP BAR ===== */}
+      <div className="absolute top-0 left-0 right-0 p-3.5 sm:p-6 flex items-center justify-between gap-2">
+        {/* Identity */}
+        <div className="flex items-center gap-2.5 pointer-events-auto min-w-0">
+          <div className="flex items-center justify-center w-7 h-7 rounded-md bg-white text-black shrink-0">
             <Rocket className="w-3.5 h-3.5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-space text-sm sm:text-base font-bold text-white tracking-tight">
+              <span className="font-space text-sm sm:text-base font-bold text-white tracking-tight truncate">
                 Suhas Hoskere
               </span>
-              <span className="font-kannada text-xs font-semibold text-amber-400">
+              <span className="hidden sm:inline font-kannada text-xs font-medium text-zinc-400">
                 ಸುಹಾಸ್ ಹೊಸಕೆರೆ
               </span>
             </div>
-            <p className="text-[10px] font-mono text-slate-400 tracking-wider uppercase">
-              PES University // Bangalore · AI & ML
+            <p className="text-[10px] font-mono text-zinc-400 tracking-wider uppercase truncate">
+              PES University // Bangalore
             </p>
           </div>
         </div>
 
-        {/* Aerospace Flight Controls Action Station */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Multi-Angle Camera Switcher */}
+        {/* Flight Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
           {onSetCameraMode && (
-            <div className="hidden md:flex items-center p-1 rounded-lg bg-[#0c1220]/92 border border-white/15 gap-1">
-              <Camera className="w-3 h-3 text-slate-400 ml-1.5 mr-0.5" />
+            <div className="hidden md:flex items-center p-0.5 rounded-md bg-[#09090b]/95 border border-white/20 gap-0.5">
+              <Camera className="w-3 h-3 text-zinc-400 mx-1.5" />
               {(
                 [
                   { id: 'CINEMATIC', label: 'MISSION' },
@@ -191,12 +189,11 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
                       cosmicAudio.playTelemetryChirp(1180, 0.04);
                       onSetCameraMode(cam.id);
                     }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono transition-all cursor-pointer ${
+                    className={`px-2 py-1 rounded text-[10px] font-mono transition-colors cursor-pointer ${
                       isActive
-                        ? 'bg-cyan-500/25 border border-cyan-400/50 text-cyan-300 font-semibold shadow-[0_0_8px_rgba(6,182,212,0.35)]'
-                        : 'text-slate-400 hover:text-white border border-transparent'
+                        ? 'bg-white text-black font-semibold'
+                        : 'text-zinc-400 hover:text-white'
                     }`}
-                    title={`Switch camera to ${cam.label} perspective`}
                   >
                     {cam.label}
                   </button>
@@ -205,89 +202,75 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
             </div>
           )}
 
-          {/* Holographic X-Ray Blueprint Toggle */}
           {onToggleBlueprint && (
             <button
               onClick={() => {
                 cosmicAudio.playTelemetryChirp(1380, 0.04);
                 onToggleBlueprint();
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-mono text-[11px] transition-all cursor-pointer shadow-sm ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border font-mono text-[11px] transition-colors cursor-pointer ${
                 blueprintMode
-                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                  : 'bg-[#0c1220]/92 border-white/15 hover:border-cyan-400/60 text-slate-300 hover:text-white'
+                  ? 'bg-white border-white text-black font-semibold'
+                  : 'bg-[#09090b]/95 border-white/20 hover:border-white/50 text-zinc-300 hover:text-white'
               }`}
-              title="Toggle Holographic Structural Blueprint Mode"
+              title="Toggle Structural Wireframe Mode"
             >
-              <Layers className={`w-3.5 h-3.5 ${blueprintMode ? 'text-cyan-400 animate-pulse' : 'text-slate-400'}`} />
-              <span className="hidden sm:inline">BLUEPRINT</span>
+              <Layers className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">WIREFRAME</span>
             </button>
           )}
 
-          {/* Mission Terminal CLI Modal Trigger */}
           {onOpenTerminal && (
             <button
               onClick={() => {
                 cosmicAudio.playTelemetryChirp(1200, 0.04);
                 onOpenTerminal();
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0c1220]/92 border border-white/15 hover:border-emerald-400/60 text-slate-300 hover:text-emerald-300 font-mono text-[11px] transition-all cursor-pointer shadow-sm group"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#09090b]/95 border border-white/20 hover:border-white/50 text-zinc-300 hover:text-white font-mono text-[11px] transition-colors cursor-pointer"
               title="Open Mission Control Terminal (~ key)"
             >
-              <Terminal className="w-3.5 h-3.5 text-emerald-400 group-hover:animate-pulse" />
+              <Terminal className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">CLI</span>
-              <kbd className="text-[9px] px-1 py-0.2 rounded bg-white/10 text-slate-400 group-hover:text-emerald-300">~</kbd>
             </button>
           )}
 
-          {/* Minimal Audio Toggle */}
           <button
             onClick={onToggleAudio}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0c1220]/92 border border-white/15 hover:border-cyan-400/60 text-slate-200 hover:text-white font-mono text-xs transition-all cursor-pointer shadow-sm"
-            aria-label="Toggle Rocket Acoustic Sound"
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border font-mono text-[11px] transition-colors cursor-pointer ${
+              audioActive
+                ? 'bg-white border-white text-black font-semibold'
+                : 'bg-[#09090b]/95 border-white/20 hover:border-white/50 text-zinc-300 hover:text-white'
+            }`}
+            aria-label="Toggle Sound"
           >
-            {audioActive ? (
-              <>
-                <Volume2 className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-                <span className="text-cyan-300 text-[11px] font-mono font-medium">ACOUSTICS: ON</span>
-              </>
-            ) : (
-              <>
-                <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-slate-400 text-[11px] font-mono">ACOUSTICS: OFF</span>
-              </>
-            )}
+            {audioActive ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{audioActive ? 'AUDIO: ON' : 'AUDIO'}</span>
           </button>
         </div>
       </div>
 
-      {/* ===== SLEEK MINIMAL VERTICAL FLIGHT RAIL (Right Margin) ===== */}
+      {/* ===== VERTICAL FLIGHT RAIL (Right Margin, Desktop & Tablet) ===== */}
       <nav
         aria-label="Flight trajectory navigation"
-        className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-center gap-3 pointer-events-auto py-3 px-1.5"
+        className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-center pointer-events-auto py-3 px-1.5"
       >
-        <div className="relative flex flex-col items-center justify-between h-48">
-          {/* Subtle connecting track line */}
-          <div className="absolute top-1 bottom-1 w-[1.5px] bg-white/10 rounded-full" />
-
-          {/* Active progress indicator pip */}
+        <div className="relative flex flex-col items-center justify-between h-44">
+          <div className="absolute top-1 bottom-1 w-[1px] bg-white/15" />
           <div
-            className="absolute w-[2px] bg-gradient-to-b from-cyan-400 via-sky-400 to-amber-500 rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(6,182,212,0.6)]"
+            className="absolute w-[2px] bg-white"
             style={{
               top: '4px',
               height: `${Math.min(Math.max((scrollProgress / 0.95) * 100, 0), 100)}%`,
             }}
           />
 
-          {/* Waypoint Pips */}
           {STAGES.map((s, idx) => {
             const isActive = idx === activeStageIndex;
             const isHovered = hoveredIdx === idx;
-
             return (
               <div
                 key={s.id}
-                className="relative flex items-center justify-center cursor-pointer group py-1"
+                className="relative flex items-center justify-center cursor-pointer py-1"
                 onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
                 onClick={() => {
@@ -295,31 +278,29 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
                   onJumpToStage(s.scrollFraction);
                 }}
               >
-                {/* Floating tooltip only on hover or active */}
                 {(isHovered || (isActive && hoveredIdx === null)) && (
                   <div
-                    className={`absolute right-7 px-3 py-1.5 rounded-lg border text-right whitespace-nowrap transition-all duration-200 pointer-events-none ${
+                    className={`absolute right-6 px-2.5 py-1 rounded-md border text-right whitespace-nowrap pointer-events-none ${
                       isActive
-                        ? 'bg-[#0e131f]/95 border-cyan-400/50 shadow-[0_0_20px_rgba(6,182,212,0.25)] opacity-100 scale-100'
-                        : 'bg-[#080e1a]/95 border-white/15 opacity-90 scale-95'
+                        ? 'bg-[#09090b]/95 border-white/40 text-white'
+                        : 'bg-[#09090b]/95 border-white/15 text-zinc-300'
                     }`}
                   >
-                    <div className="text-[11px] font-space font-semibold text-white tracking-tight">
+                    <div className="text-[10px] font-space font-semibold tracking-tight">
                       {s.stageName}
                     </div>
-                    <div className="text-[9px] font-mono text-cyan-300/90 tracking-wider">
+                    <div className="text-[9px] font-mono text-zinc-400">
                       {s.altitude}
                     </div>
                   </div>
                 )}
 
-                {/* Minimalist 6px Pip */}
                 <button
                   aria-label={`Jump to ${s.stageName}`}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 focus:outline-none cursor-pointer ${
+                  className={`rounded-full transition-transform cursor-pointer ${
                     isActive
-                      ? 'w-2.5 h-2.5 bg-cyan-400 ring-4 ring-cyan-400/30 shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-125'
-                      : 'bg-white/30 hover:bg-cyan-200 hover:scale-125'
+                      ? 'w-2.5 h-2.5 bg-white ring-4 ring-white/20'
+                      : 'w-2 h-2 bg-zinc-600 hover:bg-white'
                   }`}
                 />
               </div>
@@ -328,31 +309,29 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
         </div>
       </nav>
 
-      {/* ===== BOTTOM AEROSPACE TELEMETRY HUD BAR ===== */}
-      <div className="absolute bottom-5 left-0 right-0 flex flex-col items-center justify-center gap-1.5 pointer-events-none px-4">
+      {/* ===== BOTTOM MONOCHROME TELEMETRY BAR ===== */}
+      <div className="absolute bottom-3.5 sm:bottom-5 left-0 right-0 flex justify-center pointer-events-none px-3">
         {scrollProgress < 0.035 ? (
-          <div className="flex flex-col items-center gap-1 animate-bounce opacity-90">
-            <span className="text-[10px] font-mono tracking-[0.25em] text-amber-300 uppercase font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-              SCROLL DOWN TO COMMENCE ENGINE IGNITION // STEP 01
-            </span>
-            <ChevronDown className="w-4 h-4 text-orange-400 animate-pulse" />
+          <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
+            <span>SCROLL TO LAUNCH</span>
+            <ChevronDown className="w-3.5 h-3.5 text-white" />
           </div>
         ) : (
-          <div className="px-4 py-2 rounded-xl bg-[#0c1220]/94 border border-cyan-500/35 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 shadow-[0_0_24px_rgba(6,182,212,0.22)]">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${scrollProgress < 0.24 ? 'bg-orange-400' : 'bg-cyan-400'} animate-ping`} />
-              <span className={`text-[10px] font-mono ${scrollProgress < 0.24 ? 'text-orange-300' : 'text-cyan-300'} font-semibold tracking-wider uppercase`}>
+          <div className="px-3.5 py-1.5 rounded-lg bg-[#09090b]/95 border border-white/20 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-mono">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+              <span className="text-white font-semibold tracking-wider uppercase">
                 {telemetry.status}
               </span>
             </div>
 
             <div className="h-3 w-[1px] bg-white/20 hidden sm:block" />
 
-            <div className="flex items-center gap-3 text-[10px] font-mono">
-              <span className="text-slate-400">ALT: <span className="text-white font-medium">{telemetry.altitude}</span></span>
-              <span className="text-slate-400">VEL: <span className="text-white font-medium">{telemetry.velocity}</span></span>
-              <span className="text-slate-400 hidden md:inline">Q: <span className="text-cyan-300 font-medium">{telemetry.dynPressure}</span></span>
-              <span className="text-slate-400 hidden md:inline">ACCEL: <span className="text-amber-300 font-medium">{telemetry.gForce}</span></span>
+            <div className="flex items-center gap-2.5 text-zinc-400">
+              <span>ALT <span className="text-white">{telemetry.altitude}</span></span>
+              <span>VEL <span className="text-white">{telemetry.velocity}</span></span>
+              <span className="hidden md:inline">Q <span className="text-white">{telemetry.dynPressure}</span></span>
+              <span className="hidden md:inline">G <span className="text-white">{telemetry.gForce}</span></span>
             </div>
           </div>
         )}

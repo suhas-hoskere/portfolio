@@ -24,10 +24,10 @@ export const CustomCursor: React.FC = () => {
       ringY += (mouseY - ringY) * 0.22;
 
       if (ringRef.current) {
-        const scale = isHovering ? 1.5 : 1.0;
+        const scale = isHovering ? 1.45 : 1.0;
         ringRef.current.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%) scale(${scale})`;
-        ringRef.current.style.borderColor = isHovering ? '#4cd7f6' : 'rgba(6, 182, 212, 0.4)';
-        ringRef.current.style.backgroundColor = isHovering ? 'rgba(6, 182, 212, 0.12)' : 'transparent';
+        ringRef.current.style.borderColor = isHovering ? '#ffffff' : 'rgba(255, 255, 255, 0.45)';
+        ringRef.current.style.backgroundColor = isHovering ? 'rgba(255, 255, 255, 0.10)' : 'transparent';
       }
 
       if (dotRef.current) {
@@ -88,16 +88,14 @@ export const CustomCursor: React.FC = () => {
 
   return (
     <>
-      {/* Smooth outer luminous follower ring */}
       <div
         ref={ringRef}
-        className="fixed top-0 left-0 w-7 h-7 rounded-full border border-cyan-400/40 pointer-events-none z-50 transition-colors duration-150 will-change-transform opacity-0"
+        className="fixed top-0 left-0 w-7 h-7 rounded-full border border-white/45 pointer-events-none z-50 transition-colors duration-150 will-change-transform opacity-0"
         style={{ transform: 'translate3d(-100px, -100px, 0)' }}
       />
-      {/* Precise center starlight dot */}
       <div
         ref={dotRef}
-        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-cyan-400 pointer-events-none z-50 will-change-transform opacity-0 shadow-[0_0_8px_#06b6d4]"
+        className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-white pointer-events-none z-50 will-change-transform opacity-0"
         style={{ transform: 'translate3d(-100px, -100px, 0)' }}
       />
     </>

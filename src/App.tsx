@@ -202,20 +202,10 @@ export const App: React.FC = () => {
     animateScrollTo(0.25 * maxScroll, 2800);
   };
 
-  // Background atmosphere color dynamically shifts from dawn sky to cosmic black
-  const bgColors = [
-    'bg-[#060b19]', // Stage 0: Dawn at India Launch Pad
-    'bg-[#040816]', // Stage 1: Atmospheric Ascent
-    'bg-[#030611]', // Stage 2: Low Earth Orbit
-    'bg-[#02040b]', // Stage 3: Lunar Flyby
-    'bg-[#080408]', // Stage 4: Mars Encounter (deep Martian interplanetary ambient)
-    'bg-[#020206]', // Stage 5: Interstellar Uplink
-  ];
-
   return (
     <div
       ref={trackRef}
-      className={`relative min-h-[850vh] ${bgColors[activeStageIndex]} text-[#f4f2ed] overflow-x-hidden selection:bg-orange-500/30 selection:text-orange-200 transition-colors duration-700`}
+      className="relative min-h-[850vh] bg-[#050505] text-white overflow-x-hidden selection:bg-white selection:text-black"
     >
       {/* On-demand comet follower ring cursor */}
       <CustomCursor />

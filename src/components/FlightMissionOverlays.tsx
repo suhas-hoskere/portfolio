@@ -1,7 +1,6 @@
-import { Stage00ScrollCards } from './Stage00ScrollCards';
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight, Mail, ExternalLink, Play, Sparkles } from 'lucide-react';
+import { Stage00ScrollCards } from './Stage00ScrollCards';
 import { GithubIcon, LinkedinIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
 
@@ -125,286 +124,230 @@ interface FlightMissionOverlaysProps {
   isLiftoffActive?: boolean;
 }
 
-const cardTransition = {
-  duration: 0.32,
-  ease: [0.16, 1, 0.3, 1] as const,
-};
-
 export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
   activeStageIndex,
   scrollProgress = 0,
   onLaunch,
   onSelectProject,
-  isLiftoffActive: _isLiftoffActive = false,
 }) => {
   return (
-    <div className="fixed inset-0 pointer-events-none z-20 flex items-end sm:items-center justify-start px-4 sm:px-8 md:px-12 lg:px-16 pb-6 sm:pb-0 select-none">
-      <div className="w-full max-w-[92vw] sm:max-w-[480px] lg:max-w-[520px] pointer-events-auto">
-        <AnimatePresence>
-          {/* =========================================================================
-              STAGE 0: GROUND ZERO — INDIA LAUNCH COMPLEX (SCROLL-DRIVEN MILESTONES)
-             ========================================================================= */}
-          {activeStageIndex === 0 && (
-            <Stage00ScrollCards
-              scrollProgress={scrollProgress}
-              onLaunch={onLaunch}
-              cardTransition={cardTransition}
-            />
-          )}
+    <div className="fixed inset-0 pointer-events-none z-20 flex items-end md:items-center justify-start px-4 sm:px-8 md:px-12 lg:px-16 pb-16 md:pb-0 select-none">
+      <div className="w-full max-w-[96vw] sm:max-w-[460px] lg:max-w-[500px] pointer-events-auto">
+        {/* STAGE 0: GROUND ZERO — INDIA LAUNCH COMPLEX */}
+        {activeStageIndex === 0 && (
+          <Stage00ScrollCards
+            scrollProgress={scrollProgress}
+            onLaunch={onLaunch}
+          />
+        )}
 
-          {/* =========================================================================
-              STAGE 1: ATMOSPHERIC ASCENT & DAVANAGERE
-             ========================================================================= */}
-          {activeStageIndex === 1 && (
-            <motion.div
-              key="stage-1"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={cardTransition}
-              className="p-6 sm:p-7 rounded-2xl bg-[#0c1220]/94 border border-orange-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
-            >
-              <div className="flex items-center justify-between text-xs font-mono text-orange-400 uppercase tracking-widest">
-                <span>STAGE 01 // ASCENT</span>
-                <span>2020 ERA</span>
+        {/* STAGE 1: ATMOSPHERIC ASCENT & DAVANAGERE */}
+        {activeStageIndex === 1 && (
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
+              <span>STAGE 01 // ASCENT</span>
+              <span className="text-white">2020 ERA</span>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
+              Davanagere Origins
+            </h2>
+
+            <p className="text-xs sm:text-base text-zinc-300 font-sans font-light leading-relaxed">
+              Siddaganga PU College, Davanagere. Where deep curiosity for analytical mathematics, physics, and computer science first ignited. Laying the ground foundations for scalable software and machine intelligence.
+            </p>
+
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <span className="px-2.5 py-1 rounded-md bg-black border border-white/15 text-[11px] font-mono text-zinc-200">
+                Mathematics &amp; Physics
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-black border border-white/15 text-[11px] font-mono text-zinc-200">
+                Siddaganga PU College
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-black border border-white/15 text-[11px] font-mono text-zinc-200">
+                Davanagere, Karnataka
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* STAGE 2: LOW EARTH ORBIT & BANGALORE */}
+        {activeStageIndex === 2 && (
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
+              <span>STAGE 02 // ORBIT</span>
+              <span className="text-white">420 KM LEO</span>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
+              Bangalore &amp; PES University
+            </h2>
+
+            <p className="text-xs sm:text-base text-zinc-300 font-sans font-light leading-relaxed">
+              Electronic City Campus, Bangalore. Pursuing B.Tech in Artificial Intelligence &amp; Machine Learning. Engineering distributed architectures, deep learning models, and real-time speech systems.
+            </p>
+
+            <div className="pt-2 grid grid-cols-3 gap-2 border-t border-white/10">
+              <div className="p-2 rounded-lg bg-black border border-white/15">
+                <div className="text-[10px] font-mono text-zinc-400">ALTITUDE</div>
+                <div className="text-xs font-mono text-white font-medium">420 KM</div>
               </div>
+              <div className="p-2 rounded-lg bg-black border border-white/15">
+                <div className="text-[10px] font-mono text-zinc-400">VELOCITY</div>
+                <div className="text-xs font-mono text-white font-medium">7.66 KM/S</div>
+              </div>
+              <div className="p-2 rounded-lg bg-black border border-white/15">
+                <div className="text-[10px] font-mono text-zinc-400">STATION</div>
+                <div className="text-xs font-mono text-white font-medium">BANGALORE</div>
+              </div>
+            </div>
+          </div>
+        )}
 
-              <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
-                Davanagere Origins
-              </h2>
-
-              <p className="text-sm sm:text-base text-slate-200 font-sans font-light leading-relaxed">
-                Siddaganga PU College, Davanagere. Where deep curiosity for analytical mathematics, physics, and computer science first ignited. Laying the ground foundations for scalable software and machine intelligence.
-              </p>
-
-              <div className="flex flex-wrap gap-2 pt-1">
-                <span className="px-3 py-1 rounded-lg bg-[#161c28]/80 border border-orange-400/25 text-xs font-mono text-orange-300">
-                  Mathematics & Physics
+        {/* STAGE 3: LUNAR FLYBY & THE 4 EXPLORATION MISSIONS */}
+        {activeStageIndex === 3 && (
+          <div className="space-y-2.5 text-left max-h-[68vh] md:max-h-[78vh] overflow-y-auto pr-1">
+            <div className="flex items-center justify-between border-b border-white/15 pb-2">
+              <div>
+                <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
+                  STAGE 03 // LUNAR TRAJECTORY
                 </span>
-                <span className="px-3 py-1 rounded-lg bg-[#161c28]/80 border border-orange-400/25 text-xs font-mono text-orange-300">
-                  Siddaganga PU College
-                </span>
-                <span className="px-3 py-1 rounded-lg bg-[#161c28]/80 border border-orange-400/25 text-xs font-mono text-orange-300">
-                  Davanagere, Karnataka
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* =========================================================================
-              STAGE 2: LOW EARTH ORBIT & BANGALORE
-             ========================================================================= */}
-          {activeStageIndex === 2 && (
-            <motion.div
-              key="stage-2"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={cardTransition}
-              className="p-6 sm:p-7 rounded-2xl bg-[#0c1220]/94 border border-cyan-400/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
-            >
-              <div className="flex items-center justify-between text-xs font-mono text-cyan-400 uppercase tracking-widest">
-                <span>STAGE 02 // ORBIT</span>
-                <span>420 KM LEO</span>
-              </div>
-
-              <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
-                Bangalore & PES University
-              </h2>
-
-              <p className="text-sm sm:text-base text-slate-200 font-sans font-light leading-relaxed">
-                Electronic City Campus, Bangalore. Pursuing B.Tech in Artificial Intelligence & Machine Learning. Engineering distributed architectures, deep learning models, and real-time speech systems.
-              </p>
-
-              <div className="pt-2 grid grid-cols-3 gap-2 border-t border-white/10">
-                <div className="p-2.5 rounded-xl bg-[#080e1a]/80 border border-cyan-500/20">
-                  <div className="text-[10px] font-mono text-cyan-400">ALTITUDE</div>
-                  <div className="text-xs font-mono text-white font-medium">420 KM LEO</div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-[#080e1a]/80 border border-cyan-500/20">
-                  <div className="text-[10px] font-mono text-cyan-400">VELOCITY</div>
-                  <div className="text-xs font-mono text-white font-medium">7.66 KM/S</div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-[#080e1a]/80 border border-cyan-500/20">
-                  <div className="text-[10px] font-mono text-cyan-400">GROUND TRACK</div>
-                  <div className="text-xs font-mono text-white font-medium">BANGALORE</div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* =========================================================================
-              STAGE 3: LUNAR FLYBY & THE 4 EXPLORATION MISSIONS
-             ========================================================================= */}
-          {activeStageIndex === 3 && (
-            <motion.div
-              key="stage-3"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={cardTransition}
-              className="space-y-3 text-left max-h-[82vh] overflow-y-auto pr-1"
-            >
-              <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                <div>
-                  <span className="text-xs font-mono text-amber-400 uppercase tracking-widest">
-                    STAGE 03 // LUNAR TRAJECTORY & EVA
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
-                    Exploration Missions
-                  </h2>
-                </div>
-                <span className="text-[11px] font-mono text-cyan-400">Click to test live demo</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {PROJECTS.map((proj) => (
-                  <div
-                    key={proj.id}
-                    onClick={() => {
-                      cosmicAudio.playTelemetryChirp(1380, 0.05);
-                      onSelectProject(proj);
-                    }}
-                    className="p-3.5 sm:p-4 rounded-xl bg-[#0c1220]/94 border border-white/10 hover:border-cyan-400/50 shadow-lg space-y-2 cursor-pointer transition-all transform hover:-translate-y-0.5 group hover:shadow-[0_0_24px_-4px_rgba(6,182,212,0.3)]"
-                  >
-                    <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400">
-                      <span className="font-semibold uppercase">{proj.name}</span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-400/30 text-cyan-300">
-                        {proj.badge}
-                      </span>
-                    </div>
-
-                    <h3 className="text-sm font-space text-white font-bold group-hover:text-cyan-300 transition-colors flex items-center justify-between tracking-tight">
-                      <span>{proj.title}</span>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-400" />
-                    </h3>
-
-                    <p className="text-[11px] text-slate-300 font-sans font-light leading-relaxed line-clamp-2">
-                      {proj.description}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                      <div className="text-[10px] font-mono text-amber-400">
-                        {proj.metrics[0].label}: {proj.metrics[0].value}
-                      </div>
-                      <div className="flex items-center gap-1 text-[11px] font-mono font-medium text-cyan-400">
-                        <Play className="w-2.5 h-2.5 fill-cyan-400" />
-                        <span>Live Demo</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* =========================================================================
-              STAGE 4: DEEP SPACE VOID & KANNADA HERITAGE
-             ========================================================================= */}
-          {activeStageIndex === 4 && (
-            <motion.div
-              key="stage-4"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={cardTransition}
-              className="p-6 sm:p-8 rounded-2xl bg-[#0c1220]/94 border border-orange-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
-            >
-              <div className="flex items-center justify-between text-xs font-mono text-orange-400 uppercase tracking-widest">
-                <span>STAGE 04 // MARS ENCOUNTER</span>
-                <span>225M KM // MANGALYAAN</span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-kannada text-2xl sm:text-3xl font-bold text-amber-400">
-                  ಕನ್ನಡ ಕೂಟ
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
-                  Kannada Koota Club · Content Writer
+                <h2 className="text-xl sm:text-2xl font-space text-white font-bold leading-tight tracking-tight">
+                  Exploration Missions
                 </h2>
               </div>
+              <span className="text-[10px] font-mono text-zinc-300">Click for live demo</span>
+            </div>
 
-              <p className="text-sm sm:text-base text-slate-200 font-sans font-light leading-relaxed">
-                Carrying roots across interplanetary horizons. From Karnataka's deep cultural history to India's Mars Orbiter Mission triumphs, blending analytical code with creative Kannada prose.
-              </p>
-
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                <span className="font-kannada text-sm font-semibold text-amber-300 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
-                </span>
-                <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">
-                  Cultural Column
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* =========================================================================
-              STAGE 5: DEEP SPACE UPLINK & CONTACT
-             ========================================================================= */}
-          {activeStageIndex === 5 && (
-            <motion.div
-              key="stage-5"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -18, scale: 0.98 }}
-              transition={cardTransition}
-              className="p-6 sm:p-8 rounded-2xl bg-[#0c1220]/95 border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-4 text-left"
-            >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-400/30 text-[11px] font-mono font-medium text-cyan-400 uppercase tracking-widest shadow-[0_0_12px_rgba(6,182,212,0.2)]">
-                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                <span>TERMINAL VECTOR // 05</span>
-              </div>
-
-              <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
-                Establish Uplink.
-              </h2>
-
-              <p className="text-sm text-slate-200 font-sans font-light leading-relaxed">
-                Open to technical collaborations, speech pipelines, open-source architectures, and engineering roles.
-              </p>
-
-              <div className="space-y-2.5 pt-1">
-                <a
-                  href="mailto:suhashoskere@gmail.com"
-                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-400 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2.5 shadow-[0_0_25px_rgba(6,182,212,0.45)] transition-all transform hover:scale-[1.02] cursor-pointer"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {PROJECTS.map((proj) => (
+                <div
+                  key={proj.id}
+                  onClick={() => {
+                    cosmicAudio.playTelemetryChirp(1380, 0.05);
+                    onSelectProject(proj);
+                  }}
+                  className="p-3.5 rounded-xl bg-[#09090b]/95 border border-white/15 hover:border-white/60 space-y-1.5 cursor-pointer transition-colors group"
                 >
-                  <Mail className="w-4 h-4 text-slate-950" />
-                  <span>suhashoskere@gmail.com</span>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-zinc-300">
+                    <span className="font-semibold uppercase text-white">{proj.name}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white/10 border border-white/15 text-zinc-200">
+                      {proj.badge}
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-space text-white font-bold flex items-center justify-between tracking-tight">
+                    <span>{proj.title}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white shrink-0" />
+                  </h3>
+
+                  <p className="text-[11px] text-zinc-400 font-sans font-light leading-relaxed line-clamp-2">
+                    {proj.description}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-1.5 border-t border-white/10">
+                    <div className="text-[10px] font-mono text-zinc-300">
+                      {proj.metrics[0].label}: <span className="text-white">{proj.metrics[0].value}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] font-mono font-medium text-white">
+                      <Play className="w-2.5 h-2.5 fill-white" />
+                      <span>Demo</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* STAGE 4: MARS ENCOUNTER & KANNADA HERITAGE */}
+        {activeStageIndex === 4 && (
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
+              <span>STAGE 04 // MARS ENCOUNTER</span>
+              <span className="text-white">225M KM</span>
+            </div>
+
+            <div className="space-y-1">
+              <span className="font-kannada text-2xl sm:text-3xl font-bold text-white">
+                ಕನ್ನಡ ಕೂಟ
+              </span>
+              <h2 className="text-xl sm:text-2xl font-space text-zinc-200 font-bold leading-tight tracking-tight">
+                Kannada Koota Club · Content Writer
+              </h2>
+            </div>
+
+            <p className="text-xs sm:text-base text-zinc-300 font-sans font-light leading-relaxed">
+              Carrying roots across interplanetary horizons. From Karnataka&apos;s deep cultural history to India&apos;s Mars Orbiter Mission triumphs, blending analytical code with creative Kannada prose.
+            </p>
+
+            <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+              <span className="font-kannada text-sm font-semibold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
+                <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider shrink-0">
+                Cultural Column
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* STAGE 5: DEEP SPACE UPLINK & CONTACT */}
+        {activeStageIndex === 5 && (
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/25 space-y-3.5 text-left">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-[11px] font-mono font-medium text-white uppercase tracking-widest">
+              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+              <span>TERMINAL VECTOR // 05</span>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-space text-white font-bold leading-tight tracking-tight">
+              Establish Uplink.
+            </h2>
+
+            <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed">
+              Open to technical collaborations, speech pipelines, open-source architectures, and engineering roles.
+            </p>
+
+            <div className="space-y-2 pt-1">
+              <a
+                href="mailto:suhashoskere@gmail.com"
+                className="w-full py-3 px-5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <Mail className="w-4 h-4 text-black" />
+                <span>suhashoskere@gmail.com</span>
+              </a>
+
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href="https://github.com/suhashoskere"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-2.5 px-3 rounded-lg bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <GithubIcon className="w-4 h-4" />
+                  <span>GitHub</span>
+                  <ExternalLink className="w-3 h-3 text-zinc-400" />
                 </a>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <a
-                    href="https://github.com/suhashoskere"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="py-2.5 px-4 rounded-xl bg-[#080e1a]/85 border border-white/15 hover:border-cyan-400 text-slate-200 hover:text-white font-mono text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    <GithubIcon className="w-4 h-4" />
-                    <span>GitHub Profile</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400" />
-                  </a>
-
-                  <a
-                    href="https://linkedin.com/in/suhashoskere"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="py-2.5 px-4 rounded-xl bg-[#080e1a]/85 border border-white/15 hover:border-cyan-400 text-slate-200 hover:text-white font-mono text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    <LinkedinIcon className="w-4 h-4" />
-                    <span>LinkedIn Link</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400" />
-                  </a>
-                </div>
+                <a
+                  href="https://linkedin.com/in/suhashoskere"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-2.5 px-3 rounded-lg bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <LinkedinIcon className="w-4 h-4" />
+                  <span>LinkedIn</span>
+                  <ExternalLink className="w-3 h-3 text-zinc-400" />
+                </a>
               </div>
+            </div>
 
-              <div className="pt-2 border-t border-white/10 text-xs font-kannada text-amber-400/90">
-                ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            <div className="pt-2 border-t border-white/10 text-xs font-kannada text-zinc-300">
+              ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
