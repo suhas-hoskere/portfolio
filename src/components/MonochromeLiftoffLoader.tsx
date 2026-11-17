@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Rocket } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
+import { drawIndiaSilhouette, INDIA_LANDMARKS } from '../scene2d/indiaMapPath';
 
 interface MonochromeLiftoffLoaderProps {
   onComplete: () => void;
@@ -113,6 +114,26 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
       if (ctx) {
         ctx.fillStyle = '#09090b';
         ctx.fillRect(0, 0, cw, ch);
+
+        // Subtle India silhouette watermark behind the launching rocket
+        const mapScale = 58;
+        const mapCx = cw * 0.50;
+        const mapCy = ch * 0.44;
+        drawIndiaSilhouette(
+          ctx,
+          mapCx,
+          mapCy,
+          mapScale,
+          'rgba(255,255,255,0.05)',
+          'rgba(255,255,255,0.22)',
+          1
+        );
+        const mSharX = mapCx + INDIA_LANDMARKS.sriharikota[0] * mapScale;
+        const mSharY = mapCy + INDIA_LANDMARKS.sriharikota[1] * mapScale;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(mSharX, mSharY, 2, 0, Math.PI * 2);
+        ctx.fill();
 
         // Subtle vertical altitude scale ticks on right edge
         ctx.strokeStyle = 'rgba(255,255,255,0.12)';
