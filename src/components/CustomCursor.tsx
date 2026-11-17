@@ -16,38 +16,12 @@ export const CustomCursor: React.FC = () => {
     let ringY = -100;
     let isHovering = false;
     let isVisible = false;
-    let rafId: number;
+    let rafId = 0;
 
-    const onMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      if (!isVisible) {
-        isVisible = true;
-        if (ringRef.current) ringRef.current.style.opacity = '1';
-        if (dotRef.current) dotRef.current.style.opacity = '1';
-      }
-
-      // Check hover
-      const target = e.target as HTMLElement | null;
-      if (target) {
-        const clickable = target.closest('a, button, [role="button"], input, textarea, select, .cursor-pointer');
-        isHovering = Boolean(clickable);
-      }
-    };
-
-    const onMouseLeave = () => {
-      isVisible = false;
-      if (ringRef.current) ringRef.current.style.opacity = '0';
-      if (dotRef.current) dotRef.current.style.opacity = '0';
-    };
-
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-    document.addEventListener('mouseleave', onMouseLeave);
-
-    // Smooth follower loop via direct style transform (0% React render overhead)
+    // On-demand follower loop: runs only while catching up to pointer, then sleeps at 0% CPU
     const renderLoop = () => {
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
+      ringX += (mouseX - ringX) * 0.22;
+      ringY += (mouseY - ringY) * 0.22;
 
       if (ringRef.current) {
         const scale = isHovering ? 1.5 : 1.0;
@@ -60,15 +34,55 @@ export const CustomCursor: React.FC = () => {
         dotRef.current.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
       }
 
-      rafId = requestAnimationFrame(renderLoop);
+      if (Math.abs(mouseX - ringX) > 0.35 || Math.abs(mouseY - ringY) > 0.35) {
+        rafId = requestAnimationFrame(renderLoop);
+      } else {
+        rafId = 0;
+      }
     };
 
-    rafId = requestAnimationFrame(renderLoop);
+    const wakeLoop = () => {
+      if (!rafId) {
+        rafId = requestAnimationFrame(renderLoop);
+      }
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (!isVisible) {
+        isVisible = true;
+        ringX = mouseX;
+        ringY = mouseY;
+        if (ringRef.current) ringRef.current.style.opacity = '1';
+        if (dotRef.current) dotRef.current.style.opacity = '1';
+      }
+
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const clickable = target.closest('a, button, [role="button"], input, textarea, select, .cursor-pointer');
+        isHovering = Boolean(clickable);
+      }
+      wakeLoop();
+    };
+
+    const onMouseLeave = () => {
+      isVisible = false;
+      if (ringRef.current) ringRef.current.style.opacity = '0';
+      if (dotRef.current) dotRef.current.style.opacity = '0';
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    document.addEventListener('mouseleave', onMouseLeave);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseleave', onMouseLeave);
-      cancelAnimationFrame(rafId);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 

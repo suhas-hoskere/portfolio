@@ -174,7 +174,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
         <div className="flex items-center gap-2 pointer-events-auto">
           {/* Multi-Angle Camera Switcher */}
           {onSetCameraMode && (
-            <div className="hidden md:flex items-center p-1 rounded-lg bg-[#0e131f]/85 border border-white/15 backdrop-blur-md gap-1">
+            <div className="hidden md:flex items-center p-1 rounded-lg bg-[#0c1220]/92 border border-white/15 gap-1">
               <Camera className="w-3 h-3 text-slate-400 ml-1.5 mr-0.5" />
               {(
                 [
@@ -212,10 +212,10 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
                 cosmicAudio.playTelemetryChirp(1380, 0.04);
                 onToggleBlueprint();
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-mono text-[11px] backdrop-blur-md transition-all cursor-pointer shadow-sm ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-mono text-[11px] transition-all cursor-pointer shadow-sm ${
                 blueprintMode
                   ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                  : 'bg-[#0e131f]/80 border-white/15 hover:border-cyan-400/60 text-slate-300 hover:text-white'
+                  : 'bg-[#0c1220]/92 border-white/15 hover:border-cyan-400/60 text-slate-300 hover:text-white'
               }`}
               title="Toggle Holographic Structural Blueprint Mode"
             >
@@ -231,7 +231,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
                 cosmicAudio.playTelemetryChirp(1200, 0.04);
                 onOpenTerminal();
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0e131f]/80 border border-white/15 hover:border-emerald-400/60 text-slate-300 hover:text-emerald-300 font-mono text-[11px] backdrop-blur-md transition-all cursor-pointer shadow-sm group"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0c1220]/92 border border-white/15 hover:border-emerald-400/60 text-slate-300 hover:text-emerald-300 font-mono text-[11px] transition-all cursor-pointer shadow-sm group"
               title="Open Mission Control Terminal (~ key)"
             >
               <Terminal className="w-3.5 h-3.5 text-emerald-400 group-hover:animate-pulse" />
@@ -243,7 +243,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
           {/* Minimal Audio Toggle */}
           <button
             onClick={onToggleAudio}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e131f]/80 border border-white/15 hover:border-cyan-400/60 text-slate-200 hover:text-white font-mono text-xs backdrop-blur-md transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0c1220]/92 border border-white/15 hover:border-cyan-400/60 text-slate-200 hover:text-white font-mono text-xs transition-all cursor-pointer shadow-sm"
             aria-label="Toggle Rocket Acoustic Sound"
           >
             {audioActive ? (
@@ -298,7 +298,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
                 {/* Floating tooltip only on hover or active */}
                 {(isHovered || (isActive && hoveredIdx === null)) && (
                   <div
-                    className={`absolute right-7 px-3 py-1.5 rounded-lg backdrop-blur-xl border text-right whitespace-nowrap transition-all duration-200 pointer-events-none ${
+                    className={`absolute right-7 px-3 py-1.5 rounded-lg border text-right whitespace-nowrap transition-all duration-200 pointer-events-none ${
                       isActive
                         ? 'bg-[#0e131f]/95 border-cyan-400/50 shadow-[0_0_20px_rgba(6,182,212,0.25)] opacity-100 scale-100'
                         : 'bg-[#080e1a]/95 border-white/15 opacity-90 scale-95'
@@ -338,7 +338,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
             <ChevronDown className="w-4 h-4 text-orange-400 animate-pulse" />
           </div>
         ) : (
-          <div className="px-4 py-2 rounded-xl bg-[#0e131f]/90 backdrop-blur-xl border border-cyan-500/35 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 shadow-[0_0_24px_rgba(6,182,212,0.25)]">
+          <div className="px-4 py-2 rounded-xl bg-[#0c1220]/94 border border-cyan-500/35 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 shadow-[0_0_24px_rgba(6,182,212,0.22)]">
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${scrollProgress < 0.24 ? 'bg-orange-400' : 'bg-cyan-400'} animate-ping`} />
               <span className={`text-[10px] font-mono ${scrollProgress < 0.24 ? 'text-orange-300' : 'text-cyan-300'} font-semibold tracking-wider uppercase`}>

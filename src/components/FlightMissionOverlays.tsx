@@ -162,7 +162,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -18, scale: 0.98 }}
               transition={cardTransition}
-              className="p-6 sm:p-7 rounded-2xl bg-[#0e131f]/80 backdrop-blur-xl border border-orange-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
+              className="p-6 sm:p-7 rounded-2xl bg-[#0c1220]/94 border border-orange-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
             >
               <div className="flex items-center justify-between text-xs font-mono text-orange-400 uppercase tracking-widest">
                 <span>STAGE 01 // ASCENT</span>
@@ -201,7 +201,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -18, scale: 0.98 }}
               transition={cardTransition}
-              className="p-6 sm:p-7 rounded-2xl bg-[#0e131f]/80 backdrop-blur-xl border border-cyan-400/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
+              className="p-6 sm:p-7 rounded-2xl bg-[#0c1220]/94 border border-cyan-400/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
             >
               <div className="flex items-center justify-between text-xs font-mono text-cyan-400 uppercase tracking-widest">
                 <span>STAGE 02 // ORBIT</span>
@@ -265,7 +265,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
                       cosmicAudio.playTelemetryChirp(1380, 0.05);
                       onSelectProject(proj);
                     }}
-                    className="p-3.5 sm:p-4 rounded-xl bg-[#0e131f]/85 backdrop-blur-xl border border-white/10 hover:border-cyan-400/50 shadow-lg space-y-2 cursor-pointer transition-all transform hover:-translate-y-0.5 group hover:shadow-[0_0_24px_-4px_rgba(6,182,212,0.3)]"
+                    className="p-3.5 sm:p-4 rounded-xl bg-[#0c1220]/94 border border-white/10 hover:border-cyan-400/50 shadow-lg space-y-2 cursor-pointer transition-all transform hover:-translate-y-0.5 group hover:shadow-[0_0_24px_-4px_rgba(6,182,212,0.3)]"
                   >
                     <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400">
                       <span className="font-semibold uppercase">{proj.name}</span>
@@ -308,7 +308,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -18, scale: 0.98 }}
               transition={cardTransition}
-              className="p-6 sm:p-8 rounded-2xl bg-[#0e131f]/80 backdrop-blur-xl border border-orange-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
+              className="p-6 sm:p-8 rounded-2xl bg-[#0c1220]/94 border border-orange-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-3.5 text-left"
             >
               <div className="flex items-center justify-between text-xs font-mono text-orange-400 uppercase tracking-widest">
                 <span>STAGE 04 // MARS ENCOUNTER</span>
@@ -350,7 +350,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -18, scale: 0.98 }}
               transition={cardTransition}
-              className="p-6 sm:p-8 rounded-2xl bg-[#0e131f]/85 backdrop-blur-2xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-4 text-left"
+              className="p-6 sm:p-8 rounded-2xl bg-[#0c1220]/95 border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)] space-y-4 text-left"
             >
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-400/30 text-[11px] font-mono font-medium text-cyan-400 uppercase tracking-widest shadow-[0_0_12px_rgba(6,182,212,0.2)]">
                 <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />

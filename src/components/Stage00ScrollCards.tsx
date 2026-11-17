@@ -141,7 +141,7 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
               target="_blank"
               rel="noreferrer"
               onClick={() => cosmicAudio.playTelemetryChirp(1200, 0.05)}
-              className="px-4 py-3 rounded-xl bg-[#0e131f]/85 hover:bg-[#161c28] border border-white/15 hover:border-cyan-400 text-slate-200 hover:text-white font-mono text-xs flex items-center gap-2 backdrop-blur-md transition-all cursor-pointer shadow-lg"
+              className="px-4 py-3 rounded-xl bg-[#0c1220]/92 hover:bg-[#161c28] border border-white/15 hover:border-cyan-400 text-slate-200 hover:text-white font-mono text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg"
             >
               <GithubIcon className="w-4 h-4" />
               <span>github.com/suhashoskere</span>
@@ -163,7 +163,7 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -14 }}
           transition={cardTransition}
-          className={`p-6 sm:p-7 rounded-2xl bg-[#0e131f]/85 backdrop-blur-xl border ${activeMilestone.border} shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-3.5 text-left`}
+          className={`p-6 sm:p-7 rounded-2xl bg-[#0c1220]/94 border ${activeMilestone.border} shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-3.5 text-left`}
         >
           <div className="flex items-center justify-between text-xs font-mono uppercase tracking-widest">
             <span className={`flex items-center gap-1.5 ${activeMilestone.text}`}>

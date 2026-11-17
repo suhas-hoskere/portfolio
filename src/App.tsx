@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, Suspense, lazy } from 'react';
-import Lenis from 'lenis';
-import { CosmicFlightScene } from './components/CosmicFlightScene';
+import { SpaceFlightCanvas2D } from './components/SpaceFlightCanvas2D';
 import { FlightHUD } from './components/FlightHUD';
 import { FlightMissionOverlays } from './components/FlightMissionOverlays';
 import type { ProjectData } from './components/FlightMissionOverlays';
@@ -52,14 +51,14 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isTerminalOpen]);
 
-  // High-performance mutable refs read directly inside Three.js useFrame
+  // High-performance mutable refs read directly inside the 2D Canvas render loop
   const scrollProgressRef = useRef(0);
   const scrollSpeedRef = useRef(0);
-  const lenisRef = useRef<Lenis | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const lastScrollY = useRef(0);
   const lastScrollTime = useRef(Date.now());
   const rafThrottler = useRef<number | null>(null);
+  const scrollAnimRaf = useRef<number | null>(null);
   const lastStageRef = useRef<number>(0);
 
   // Throttled UI State updater
@@ -115,55 +114,69 @@ export const App: React.FC = () => {
     cosmicAudio.updateFallIntensity(progress);
   }, []);
 
-  // Initialize Lenis smooth scroll
+  // Lightweight native passive scroll listener (0% CPU when idle, no extra RAF loop)
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.35,
-      easing: (t: number) => 1 - Math.pow(1 - t, 3.5),
-      smoothWheel: true,
-      wheelMultiplier: 0.9,
-      touchMultiplier: 1.5,
-    });
-    lenisRef.current = lenis;
+    const cancelProgrammaticScroll = () => {
+      if (scrollAnimRaf.current) {
+        cancelAnimationFrame(scrollAnimRaf.current);
+        scrollAnimRaf.current = null;
+      }
+    };
 
-    let rafId: number;
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    }
-    rafId = requestAnimationFrame(raf);
-
-    lenis.on('scroll', (e: { scroll: number }) => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset || 0;
       const maxScroll = (trackRef.current?.scrollHeight || 8000) - window.innerHeight;
-      const progress = Math.min(Math.max(e.scroll / Math.max(maxScroll, 1), 0), 1);
+      const progress = Math.min(Math.max(scrollY / Math.max(maxScroll, 1), 0), 1);
       scrollProgressRef.current = progress;
 
-      // Compute instantaneous speed for GPU warp shader without triggering re-render
-      const now = Date.now();
+      const now = performance.now();
       const dt = Math.max(now - lastScrollTime.current, 1);
-      const dy = Math.abs(e.scroll - lastScrollY.current);
-      const speed = Math.min(dy / dt, 4.0);
-      scrollSpeedRef.current = speed;
+      const dy = Math.abs(scrollY - lastScrollY.current);
+      scrollSpeedRef.current = Math.min(dy / dt, 4.0);
 
-      lastScrollY.current = e.scroll;
+      lastScrollY.current = scrollY;
       lastScrollTime.current = now;
 
-      // Throttled UI state sync
       if (!rafThrottler.current) {
         rafThrottler.current = requestAnimationFrame(() => {
-          updateUI(progress);
+          updateUI(scrollProgressRef.current);
           rafThrottler.current = null;
         });
       }
-    });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('wheel', cancelProgrammaticScroll, { passive: true });
+    window.addEventListener('touchstart', cancelProgrammaticScroll, { passive: true });
 
     return () => {
-      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('wheel', cancelProgrammaticScroll);
+      window.removeEventListener('touchstart', cancelProgrammaticScroll);
       if (rafThrottler.current) cancelAnimationFrame(rafThrottler.current);
-      lenis.destroy();
-      lenisRef.current = null;
+      if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
     };
   }, [updateUI]);
+
+  const animateScrollTo = useCallback((targetY: number, durationMs: number) => {
+    if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
+    const startY = window.scrollY || window.pageYOffset || 0;
+    const dist = targetY - startY;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      window.scrollTo(0, startY + dist * eased);
+      if (t < 1) {
+        scrollAnimRaf.current = requestAnimationFrame(step);
+      } else {
+        scrollAnimRaf.current = null;
+      }
+    };
+    scrollAnimRaf.current = requestAnimationFrame(step);
+  }, []);
 
   const handleToggleAudio = () => {
     const active = cosmicAudio.toggle();
@@ -171,17 +184,13 @@ export const App: React.FC = () => {
   };
 
   const handleJumpToStage = (fraction: number) => {
-    if (!lenisRef.current || !trackRef.current) return;
+    if (!trackRef.current) return;
     const maxScroll = trackRef.current.scrollHeight - window.innerHeight;
-    lenisRef.current.scrollTo(fraction * maxScroll, {
-      duration: 1.4,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    });
+    animateScrollTo(fraction * maxScroll, 1100);
   };
 
   const handleLaunch = () => {
-    if (!lenisRef.current || !trackRef.current) return;
-    // Auto-engage acoustic audio engine on launch action
+    if (!trackRef.current) return;
     if (!audioActive) {
       cosmicAudio.unmute();
       setAudioActive(true);
@@ -190,11 +199,7 @@ export const App: React.FC = () => {
     cosmicAudio.playRadioCallout('Initiating liftoff sequence. Dual Vikas core ignited.');
 
     const maxScroll = trackRef.current.scrollHeight - window.innerHeight;
-    // Smoothly scroll forward through the liftoff sequence into Stage 01
-    lenisRef.current.scrollTo(0.25 * maxScroll, {
-      duration: 3.2,
-      easing: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-    });
+    animateScrollTo(0.25 * maxScroll, 2800);
   };
 
   // Background atmosphere color dynamically shifts from dawn sky to cosmic black
@@ -212,14 +217,13 @@ export const App: React.FC = () => {
       ref={trackRef}
       className={`relative min-h-[850vh] ${bgColors[activeStageIndex]} text-[#f4f2ed] overflow-x-hidden selection:bg-orange-500/30 selection:text-orange-200 transition-colors duration-700`}
     >
-      {/* Subtle comet follower ring cursor */}
+      {/* On-demand comet follower ring cursor */}
       <CustomCursor />
 
-      {/* 3D Cosmic WebGL Scene (Framed cleanly on the right half of the screen) */}
-      <CosmicFlightScene
+      {/* Ultra-lightweight 2.5D HTML5 Canvas Space Launch Engine (Zero WebGL / Three.js overhead) */}
+      <SpaceFlightCanvas2D
         scrollProgressRef={scrollProgressRef}
         scrollSpeedRef={scrollSpeedRef}
-        activeStageIndex={activeStageIndex}
         cameraMode={cameraMode}
         blueprintMode={blueprintMode}
       />
