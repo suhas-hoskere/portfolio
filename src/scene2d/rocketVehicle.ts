@@ -61,9 +61,9 @@ function drawLiveMonoPlume(
   const len = length * fireRamp * turbLen;
 
   // Outer translucent expanding supersonic envelope
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.20 * fireRamp})`;
-  ctx.strokeStyle = `rgba(255, 255, 255, ${0.52 * fireRamp})`;
-  ctx.lineWidth = 1;
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.14 * fireRamp})`;
+  ctx.strokeStyle = `rgba(255, 255, 255, ${0.24 * fireRamp})`;
+  ctx.lineWidth = 0.85;
   ctx.beginPath();
   ctx.moveTo(nx - w * 0.55, ny);
   ctx.quadraticCurveTo(nx - w * 1.25, ny + len * 0.52, nx, ny + len);
@@ -74,7 +74,7 @@ function drawLiveMonoPlume(
 
   // Mid glowing white plume
   const midLen = len * 0.72;
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.55 * fireRamp})`;
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.44 * fireRamp})`;
   ctx.beginPath();
   ctx.moveTo(nx - w * 0.42, ny);
   ctx.quadraticCurveTo(nx - w * 0.72, ny + midLen * 0.58, nx, ny + midLen);
@@ -82,9 +82,9 @@ function drawLiveMonoPlume(
   ctx.closePath();
   ctx.fill();
 
-  // Blinding pure-white supersonic core
+  // Soft bright supersonic core
   const coreLen = len * 0.48;
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.96 * fireRamp})`;
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.88 * fireRamp})`;
   ctx.beginPath();
   ctx.moveTo(nx - w * 0.30, ny);
   ctx.quadraticCurveTo(nx - w * 0.42, ny + coreLen * 0.65, nx, ny + coreLen);
@@ -95,13 +95,13 @@ function drawLiveMonoPlume(
   // Pulsing monochrome Mach diamond shock lozenges inside Vikas core plume
   if (withMachDiamonds && fireRamp > 0.25) {
     const pulse = reducedMotion ? 1 : 0.85 + Math.sin(t * 78) * 0.15;
-    ctx.strokeStyle = '#09090b';
-    ctx.fillStyle = '#ffffff';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(24, 24, 27, 0.32)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.lineWidth = 0.8;
     for (let d = 0; d < 3; d++) {
       const dy = ny + len * (0.15 + d * 0.14);
-      const dw = w * (0.32 - d * 0.06) * pulse;
-      const dh = len * (0.058 - d * 0.01) * pulse;
+      const dw = w * (0.30 - d * 0.06) * pulse;
+      const dh = len * (0.055 - d * 0.01) * pulse;
       ctx.beginPath();
       ctx.moveTo(nx, dy - dh);
       ctx.lineTo(nx + dw, dy);
@@ -153,8 +153,8 @@ function drawMonoS200Booster(
 
   if (sepProgress < 0.15) {
     const innerEdge = -side * bw;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
-    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.36)';
+    ctx.lineWidth = 1.1;
     ctx.beginPath();
     ctx.moveTo(innerEdge, topY + u * 0.18);
     ctx.lineTo(innerEdge - side * u * 0.14, topY + u * 0.06);
@@ -190,8 +190,8 @@ function drawMonoS200Booster(
     return;
   }
 
-  // Nose cone (white + silver shadow + ink stroke)
-  ctx.fillStyle = '#ffffff';
+  // Nose cone (sleek pearl-silver + soft hairline stroke)
+  ctx.fillStyle = '#e4e4e7';
   ctx.beginPath();
   ctx.moveTo(-bw, topY);
   ctx.quadraticCurveTo(-bw * 0.72, topY - noseH * 0.58, side * bw * 0.16, topY - noseH);
@@ -199,7 +199,7 @@ function drawMonoS200Booster(
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = '#d4d4d8';
+  ctx.fillStyle = '#c4c4cc';
   ctx.beginPath();
   ctx.moveTo(-bw, topY);
   ctx.quadraticCurveTo(-bw * 0.72, topY - noseH * 0.58, side * bw * 0.16, topY - noseH);
@@ -207,8 +207,8 @@ function drawMonoS200Booster(
   ctx.closePath();
   ctx.fill();
 
-  ctx.strokeStyle = '#09090b';
-  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = 'rgba(24, 24, 27, 0.38)';
+  ctx.lineWidth = 0.9;
   ctx.beginPath();
   ctx.moveTo(-bw, topY);
   ctx.quadraticCurveTo(-bw * 0.72, topY - noseH * 0.58, side * bw * 0.16, topY - noseH);
@@ -216,22 +216,22 @@ function drawMonoS200Booster(
   ctx.closePath();
   ctx.stroke();
 
-  // Main S200 White Casing + Black Roll Bands
-  ctx.fillStyle = '#ffffff';
+  // Main S200 Light Silver Casing + Delicate Charcoal Collar Bands
+  ctx.fillStyle = '#e4e4e7';
   ctx.fillRect(-bw, topY, bw * 2, bodyH);
-  ctx.fillStyle = '#d4d4d8';
+  ctx.fillStyle = '#c4c4cc';
   ctx.fillRect(-bw, topY, bw * 0.92, bodyH);
 
-  ctx.fillStyle = '#09090b';
-  ctx.fillRect(-bw, topY + u * 0.04, bw * 2, u * 0.08);
-  ctx.fillRect(-bw, topY + bodyH * 0.52, bw * 2, u * 0.06);
+  ctx.fillStyle = '#27272a';
+  ctx.fillRect(-bw, topY + u * 0.04, bw * 2, u * 0.045);
+  ctx.fillRect(-bw, topY + bodyH * 0.52, bw * 2, u * 0.032);
 
-  ctx.strokeStyle = '#09090b';
-  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = 'rgba(24, 24, 27, 0.38)';
+  ctx.lineWidth = 0.9;
   ctx.strokeRect(-bw, topY, bw * 2, bodyH);
 
-  ctx.strokeStyle = 'rgba(9, 9, 11, 0.35)';
-  ctx.lineWidth = 0.9;
+  ctx.strokeStyle = 'rgba(24, 24, 27, 0.16)';
+  ctx.lineWidth = 0.75;
   for (const frac of [0.28, 0.76]) {
     const sy = topY + bodyH * frac;
     ctx.beginPath();
@@ -240,24 +240,24 @@ function drawMonoS200Booster(
     ctx.stroke();
   }
 
-  // Aft Skirt & Nozzle Bell
-  ctx.fillStyle = '#18181b';
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1;
+  // Aft Skirt & Nozzle Bell (matte graphite, soft rim)
+  ctx.fillStyle = '#1f1f23';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
+  ctx.lineWidth = 0.85;
   ctx.beginPath();
   ctx.moveTo(-bw, -u * 0.02);
-  ctx.lineTo(-bw * 1.06, u * 0.08);
-  ctx.lineTo(bw * 1.06, u * 0.08);
+  ctx.lineTo(-bw * 1.05, u * 0.08);
+  ctx.lineTo(bw * 1.05, u * 0.08);
   ctx.lineTo(bw, -u * 0.02);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = '#27272a';
+  ctx.fillStyle = '#2e2e34';
   ctx.beginPath();
   ctx.moveTo(-bw * 0.54, u * 0.08);
-  ctx.lineTo(-bw * 0.78, u * 0.21);
-  ctx.lineTo(bw * 0.78, u * 0.21);
+  ctx.lineTo(-bw * 0.76, u * 0.20);
+  ctx.lineTo(bw * 0.76, u * 0.20);
   ctx.lineTo(bw * 0.54, u * 0.08);
   ctx.closePath();
   ctx.fill();
@@ -441,40 +441,50 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.fillText('C25', coreR + u * 0.10, c25TopY + c25H * 0.55);
     ctx.fillText('L110', coreR + u * 0.10, l110TopY + l110H * 0.55);
   } else {
-    ctx.fillStyle = '#ffffff';
+    // L110 Core Stage — sleek light pearl-silver hull with delicate minimal stage trim
+    ctx.fillStyle = '#e4e4e7';
     ctx.fillRect(-coreR, l110TopY, coreR * 2, l110H);
-    ctx.fillStyle = '#d4d4d8';
+    ctx.fillStyle = '#c4c4cc';
     ctx.fillRect(-coreR, l110TopY, coreR * 0.92, l110H);
 
-    ctx.fillStyle = '#09090b';
-    ctx.fillRect(-coreR, l110TopY + l110H * 0.68, coreR, l110H * 0.22);
-    ctx.fillRect(0, l110TopY + l110H * 0.46, coreR, l110H * 0.22);
+    // Subtle minimal charcoal trim bands (no heavy blocky checkerboards)
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(-coreR, l110TopY + l110H * 0.72, coreR * 2, u * 0.042);
+    ctx.strokeStyle = 'rgba(24, 24, 27, 0.16)';
+    ctx.lineWidth = 0.75;
+    ctx.beginPath();
+    ctx.moveTo(-coreR, l110TopY + l110H * 0.36);
+    ctx.lineTo(coreR, l110TopY + l110H * 0.36);
+    ctx.stroke();
 
-    ctx.strokeStyle = '#09090b';
-    ctx.lineWidth = 1.25;
+    ctx.strokeStyle = 'rgba(24, 24, 27, 0.38)';
+    ctx.lineWidth = 0.9;
     ctx.strokeRect(-coreR, l110TopY, coreR * 2, l110H);
 
-    ctx.fillStyle = '#09090b';
-    ctx.fillRect(-coreR * 1.02, interTopY, coreR * 2.04, interstageH);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(-coreR * 1.02, interTopY, coreR * 2.04, interstageH);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-coreR * 1.04, interTopY + interstageH * 0.45, coreR * 2.08, 2);
+    // Interstage Adapter — sleek matte graphite collar
+    ctx.fillStyle = '#1f1f23';
+    ctx.fillRect(-coreR * 1.01, interTopY, coreR * 2.02, interstageH);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+    ctx.lineWidth = 0.85;
+    ctx.strokeRect(-coreR * 1.01, interTopY, coreR * 2.02, interstageH);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillRect(-coreR * 1.02, interTopY + interstageH * 0.47, coreR * 2.04, 1.2);
 
-    ctx.fillStyle = '#ffffff';
+    // C25 Cryogenic Upper Stage — light pearl hull + thin collar line
+    ctx.fillStyle = '#ececef';
     ctx.fillRect(-coreR, c25TopY, coreR * 2, c25H);
-    ctx.fillStyle = '#e4e4e7';
+    ctx.fillStyle = '#d0d0d8';
     ctx.fillRect(-coreR, c25TopY, coreR * 0.92, c25H);
-    ctx.fillStyle = '#09090b';
-    ctx.fillRect(-coreR, c25TopY + c25H * 0.18, coreR * 2, u * 0.055);
-    ctx.strokeStyle = '#09090b';
-    ctx.lineWidth = 1.25;
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(-coreR, c25TopY + c25H * 0.18, coreR * 2, u * 0.032);
+    ctx.strokeStyle = 'rgba(24, 24, 27, 0.38)';
+    ctx.lineWidth = 0.9;
     ctx.strokeRect(-coreR, c25TopY, coreR * 2, c25H);
 
-    ctx.fillStyle = '#18181b';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
+    // Core Aft Boat-tail & Twin Vikas Nozzles (matte graphite, soft rim)
+    ctx.fillStyle = '#1f1f23';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
+    ctx.lineWidth = 0.85;
     ctx.beginPath();
     ctx.moveTo(-coreR, -u * 0.04);
     ctx.lineTo(-coreR * 0.84, u * 0.06);
@@ -487,12 +497,12 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     const vikasSpread = coreR * 0.46;
     for (const side of [-1, 1]) {
       const vx = side * vikasSpread;
-      ctx.fillStyle = '#27272a';
+      ctx.fillStyle = '#2e2e34';
       ctx.beginPath();
-      ctx.moveTo(vx - u * 0.05, u * 0.06);
-      ctx.lineTo(vx - u * 0.088, u * 0.20);
-      ctx.lineTo(vx + u * 0.088, u * 0.20);
-      ctx.lineTo(vx + u * 0.05, u * 0.06);
+      ctx.moveTo(vx - u * 0.048, u * 0.06);
+      ctx.lineTo(vx - u * 0.082, u * 0.19);
+      ctx.lineTo(vx + u * 0.082, u * 0.19);
+      ctx.lineTo(vx + u * 0.048, u * 0.06);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
@@ -558,7 +568,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.font = `600 ${Math.max(9, Math.round(u * 0.08))}px "JetBrains Mono", monospace`;
       ctx.fillText('PLF', coreR + u * 0.10, fairingBaseY - fairingCylH * 0.6);
     } else {
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#ececef';
       ctx.beginPath();
       ctx.moveTo(-coreR, fairingBaseY);
       ctx.lineTo(-coreR, fairingBaseY - fairingCylH);
@@ -568,7 +578,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#d4d4d8';
+      ctx.fillStyle = '#d0d0d8';
       ctx.beginPath();
       ctx.moveTo(-coreR, fairingBaseY);
       ctx.lineTo(-coreR, fairingBaseY - fairingCylH);
@@ -577,12 +587,11 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#09090b';
-      ctx.fillRect(-coreR, fairingBaseY - u * 0.045, coreR * 2, u * 0.048);
-      ctx.fillRect(-coreR, fairingBaseY - fairingCylH * 0.34, coreR * 2, u * 0.025);
+      ctx.fillStyle = '#27272a';
+      ctx.fillRect(-coreR, fairingBaseY - u * 0.032, coreR * 2, u * 0.032);
 
-      ctx.strokeStyle = '#09090b';
-      ctx.lineWidth = 1.25;
+      ctx.strokeStyle = 'rgba(24, 24, 27, 0.38)';
+      ctx.lineWidth = 0.9;
       ctx.beginPath();
       ctx.moveTo(-coreR, fairingBaseY);
       ctx.lineTo(-coreR, fairingBaseY - fairingCylH);
@@ -601,9 +610,9 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.save();
       ctx.translate(side * fSep * u * 2.35, fairingBaseY + fSep * u * 1.2);
       ctx.rotate(side * fSep * 0.76);
-      ctx.fillStyle = blueprintMode ? 'rgba(255,255,255,0.08)' : side > 0 ? '#ffffff' : '#d4d4d8';
-      ctx.strokeStyle = blueprintMode ? '#ffffff' : '#09090b';
-      ctx.lineWidth = 1.2;
+      ctx.fillStyle = blueprintMode ? 'rgba(255,255,255,0.08)' : side > 0 ? '#ececef' : '#d0d0d8';
+      ctx.strokeStyle = blueprintMode ? '#ffffff' : 'rgba(24, 24, 27, 0.38)';
+      ctx.lineWidth = 0.9;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(0, -(fairingCylH + fairingNoseH));

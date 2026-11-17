@@ -119,25 +119,25 @@ function getCloudSprites(): CloudSpriteCache {
 }
 
 const CLOUD_LAYERS: CloudLayerItem[] = [
-  // Layer 0: Low morning coastal cumulus floating gently above Sriharikota horizon
-  { layer: 0, sprite: 'cumulus', nx: 0.18, baseY: 0.20, wU: 3.4, hU: 1.55, alpha: 0.38, driftRate: 0.016, flipX: false },
-  { layer: 0, sprite: 'cumulus', nx: 0.56, baseY: 0.14, wU: 4.1, hU: 1.80, alpha: 0.44, driftRate: 0.012, flipX: true },
-  { layer: 0, sprite: 'cumulus', nx: 0.88, baseY: 0.24, wU: 3.6, hU: 1.60, alpha: 0.36, driftRate: 0.014, flipX: false },
+  // Layer 0: Light airy coastal cumulus floating gently above horizon
+  { layer: 0, sprite: 'cumulus', nx: 0.18, baseY: 0.20, wU: 3.4, hU: 1.50, alpha: 0.26, driftRate: 0.016, flipX: false },
+  { layer: 0, sprite: 'cumulus', nx: 0.56, baseY: 0.14, wU: 4.0, hU: 1.72, alpha: 0.30, driftRate: 0.012, flipX: true },
+  { layer: 0, sprite: 'cumulus', nx: 0.88, baseY: 0.24, wU: 3.5, hU: 1.55, alpha: 0.24, driftRate: 0.014, flipX: false },
 
-  // Layer 1: Dense mid-troposphere cloud punch deck (peaks during Stage 01 climb sp 0.24-0.34)
-  { layer: 1, sprite: 'cumulus', nx: 0.14, baseY: -0.34, wU: 5.4, hU: 2.50, alpha: 0.62, driftRate: -0.018, flipX: true },
-  { layer: 1, sprite: 'cumulus', nx: 0.44, baseY: -0.40, wU: 6.2, hU: 2.85, alpha: 0.68, driftRate: -0.014, flipX: false },
-  { layer: 1, sprite: 'cumulus', nx: 0.74, baseY: -0.30, wU: 5.8, hU: 2.70, alpha: 0.72, driftRate: -0.020, flipX: true },
-  { layer: 1, sprite: 'cumulus', nx: 0.96, baseY: -0.44, wU: 4.8, hU: 2.25, alpha: 0.58, driftRate: -0.016, flipX: false },
+  // Layer 1: Soft mid-troposphere cloud punch deck (peaks during Stage 01 climb sp 0.24-0.34)
+  { layer: 1, sprite: 'cumulus', nx: 0.14, baseY: -0.34, wU: 5.4, hU: 2.45, alpha: 0.44, driftRate: -0.018, flipX: true },
+  { layer: 1, sprite: 'cumulus', nx: 0.44, baseY: -0.40, wU: 6.2, hU: 2.80, alpha: 0.48, driftRate: -0.014, flipX: false },
+  { layer: 1, sprite: 'cumulus', nx: 0.74, baseY: -0.30, wU: 5.8, hU: 2.65, alpha: 0.52, driftRate: -0.020, flipX: true },
+  { layer: 1, sprite: 'cumulus', nx: 0.96, baseY: -0.44, wU: 4.8, hU: 2.20, alpha: 0.42, driftRate: -0.016, flipX: false },
 
   // Layer 2: High stratospheric ice-crystal cirrus wisps
-  { layer: 2, sprite: 'cirrus', nx: 0.28, baseY: -0.92, wU: 6.4, hU: 1.55, alpha: 0.52, driftRate: 0.024, flipX: false },
-  { layer: 2, sprite: 'cirrus', nx: 0.72, baseY: -1.04, wU: 7.2, hU: 1.75, alpha: 0.58, driftRate: 0.022, flipX: true },
+  { layer: 2, sprite: 'cirrus', nx: 0.28, baseY: -0.92, wU: 6.4, hU: 1.50, alpha: 0.38, driftRate: 0.024, flipX: false },
+  { layer: 2, sprite: 'cirrus', nx: 0.72, baseY: -1.04, wU: 7.2, hU: 1.70, alpha: 0.42, driftRate: 0.022, flipX: true },
 
   // Layer 3: Stratospheric cloud sea horizon receding below vehicle (sp 0.235 -> 0.385)
-  { layer: 3, sprite: 'cumulus', nx: 0.20, baseY: 0.88, wU: 6.8, hU: 2.65, alpha: 0.56, driftRate: 0.008, flipX: false },
-  { layer: 3, sprite: 'cumulus', nx: 0.55, baseY: 0.85, wU: 7.6, hU: 2.95, alpha: 0.64, driftRate: 0.006, flipX: true },
-  { layer: 3, sprite: 'cumulus', nx: 0.88, baseY: 0.89, wU: 6.6, hU: 2.60, alpha: 0.54, driftRate: 0.009, flipX: false },
+  { layer: 3, sprite: 'cumulus', nx: 0.20, baseY: 0.88, wU: 6.8, hU: 2.60, alpha: 0.40, driftRate: 0.008, flipX: false },
+  { layer: 3, sprite: 'cumulus', nx: 0.55, baseY: 0.85, wU: 7.6, hU: 2.90, alpha: 0.46, driftRate: 0.006, flipX: true },
+  { layer: 3, sprite: 'cumulus', nx: 0.88, baseY: 0.89, wU: 6.6, hU: 2.55, alpha: 0.38, driftRate: 0.009, flipX: false },
 ];
 
 /**
