@@ -51,10 +51,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
               >
                 ಸುಹಾಸ್ ಹೊಸಕೆರೆ
               </span>
-              <span
-                className="hidden sm:inline font-signature italic text-[15px] sm:text-base font-semibold text-zinc-400 tracking-wide leading-none"
-                style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}
-              >
+              <span className="hidden sm:inline font-space text-xs font-medium text-zinc-400 leading-none">
                 Suhas Hoskere
               </span>
             </div>
