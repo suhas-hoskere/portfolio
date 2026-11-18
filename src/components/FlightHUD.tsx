@@ -52,9 +52,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
                 Suhas Hoskere
               </span>
             </div>
-            <p className="text-[10px] font-mono text-zinc-400 tracking-wider uppercase truncate">
-              PES University // Bangalore
-            </p>
           </div>
         </button>
 
