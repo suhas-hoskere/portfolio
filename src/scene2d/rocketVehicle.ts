@@ -2,6 +2,7 @@ import {
   type Scene2DFrameContext,
   clamp,
   easeOutCubic,
+  lerp,
   smoothstep,
   mulberry32,
 } from './types';
@@ -359,8 +360,9 @@ function drawMonoS200Booster(
 
 /**
  * Shared physical rocket trajectory pose (used by both rocketVehicle & heroSatellite):
- * - Immediately starts shrinking smaller once it launches (0.140+) and curves far right across a
- *   generous, multi-screen launch-to-orbit ascent span (0.140 -> 0.540) for silky frame-by-frame motion!
+ * - Stays 100% FULL SIZE on the launch pad AND while lifting off & clearing the gantry tower (0.140 -> 0.210)!
+ * - Only AFTER clearing the tower (0.210 -> 0.540) does it smoothly shrink smaller as it climbs high
+ *   into the clouds and curves far right toward orbit!
  */
 export function getRocketPose(
   sp: number,
@@ -373,24 +375,25 @@ export function getRocketPose(
   const camZoom =
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
 
-  // Starts shrinking immediately on liftoff (0.140) across a long, smooth ascent to space (0.540):
-  // 0.14 -> 1.00 | 0.26 (clouds) -> ~0.36 | 0.42 (boosters) -> ~0.20 | 0.52 (orbit) -> 0.15
-  const climbDist = smoothstep(0.140, 0.540, sp);
-  const altitudeScale = Math.max(0.15, Math.pow(0.15, Math.pow(climbDist, 0.72)));
+  // Stays 100% FULL SIZE while on the pad and clearing the tower (sp <= 0.210);
+  // begins shrinking smoothly ONLY once clear in the sky climbing toward the clouds & orbit!
+  const shrinkProg = smoothstep(0.210, 0.540, sp);
+  const altitudeScale = lerp(1.0, 0.16, shrinkProg);
   const u = unit * camZoom * altitudeScale;
 
-  // Smooth gravity turn curving far right across the sky as rocket accelerates downrange toward orbit!
-  const turnProg = smoothstep(0.180, 0.540, sp);
+  // Vertical tower clearance first, then curves smoothly far right once clear of the tower (0.220 -> 0.540)
+  const turnProg = smoothstep(0.220, 0.540, sp);
   const pitchRad = Math.pow(turnProg, 1.1) * 0.34;
   const x = vehicleAnchorX - mouseX * 10 + Math.pow(turnProg, 1.2) * unit * 0.72;
 
-  // Physically blasts UPWARD off the pad (0.140 -> 0.480) high above Earth's limb
+  // Rocket blasts straight UPWARD off the pad first (0.140 -> 0.220) at full size, then climbs high into space
   let baseY = groundY - unit * 0.14;
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
   else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
-  const liftoffRise = sp >= 0.140 ? Math.pow(smoothstep(0.140, 0.480, sp), 0.90) * unit * 2.65 : 0;
-  const y = baseY - liftoffRise;
+  const towerClearRise = sp >= 0.140 ? smoothstep(0.140, 0.230, sp) * unit * 1.15 : 0;
+  const skyClimbRise = sp >= 0.210 ? smoothstep(0.210, 0.490, sp) * unit * 1.55 : 0;
+  const y = baseY - towerClearRise - skyClimbRise;
 
   return { x, y, u, pitchRad };
 }
