@@ -51,8 +51,17 @@ const linksClicked = new Set<string>();
 
 let lastFlushSignature = '';
 
+const MAX_MADHVA_LOGS_PER_SESSION = 40;
+
 function getWebhookUrl(): string {
-  return ((import.meta.env.VITE_SHEETS_WEBHOOK_URL as string | undefined) || '').trim();
+  const raw = ((import.meta.env.VITE_SHEETS_WEBHOOK_URL as string | undefined) || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'https:' ? raw : '';
+  } catch {
+    return '';
+  }
 }
 
 function detectOS(ua: string): string {
@@ -147,13 +156,18 @@ async function fetchCoarseGeo(): Promise<CoarseGeo> {
   );
 }
 
-/** Redact accidental emails or 10+ digit phone numbers so Madhva logs stay strictly non-PII */
+/** Prevent Google Sheets formula/CSV injection and redact accidental emails/phone numbers */
+function neutralizeFormula(val: string): string {
+  return /^[=+\-@\t\r]/.test(val) ? `'${val}` : val;
+}
+
 function sanitizeQuery(raw: string): string {
-  return raw
+  const cleaned = raw
     .trim()
     .slice(0, 300)
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
     .replace(/(?:\+?\d[\s\-().]*){10,}/g, '[redacted-number]');
+  return neutralizeFormula(cleaned);
 }
 
 function postToSheets(payload: Record<string, unknown>, preferBeacon = false): void {
@@ -313,6 +327,7 @@ export function trackMadhvaInteraction(
   if (!query) return;
 
   madhvaQueriesCount += 1;
+  if (madhvaQueriesCount > MAX_MADHVA_LOGS_PER_SESSION) return;
   const now = new Date();
 
   postToSheets({
