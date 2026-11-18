@@ -1,7 +1,7 @@
 /**
  * Strictly Anonymous, Non-PII Visitor, Engagement & Madhva Analytics Logger.
  * - Zero cookies, zero localStorage, zero raw IP, zero ISP, zero raw User-Agent, zero GPS.
- * - Sends coarse locale/device/display telemetry + engagement summary + Madhva Q&A logs
+ * - Sends clean, human-readable coarse locale/device/display info + engagement summary + Madhva Q&A
  *   to a Google Apps Script Web App URL configured via VITE_SHEETS_WEBHOOK_URL.
  * - Automatically redacts accidental emails/phone numbers inside Madhva queries before logging.
  */
@@ -28,12 +28,13 @@ const STAGE_NAMES = [
   '05 Contact',
 ] as const;
 
-// Purely ephemeral per-tab random tag kept in memory only (never stored in cookies/localStorage)
+// Purely ephemeral per-tab random key used only by Apps Script CacheService to update the same row
+// (never stored in cookies/localStorage and never written as a column in the spreadsheet)
 const sessionTag = Math.random().toString(36).slice(2, 10);
 
 let initialized = false;
 let visitStartMs = Date.now();
-let cachedGeo: CoarseGeo = { city: '', region: '', country: '' };
+let cachedGeo: CoarseGeo = { city: 'Unknown', region: 'Unknown', country: 'Unknown' };
 let cachedDeviceType: 'Desktop' | 'Mobile' | 'Tablet' = 'Desktop';
 
 // In-memory engagement state flushed on page exit
@@ -93,20 +94,17 @@ function extractReferrerDomain(ref: string): string {
   }
 }
 
-function getPageLoadMs(): number | '' {
-  try {
-    const navEntries = performance.getEntriesByType('navigation');
-    const first = navEntries[0] as PerformanceNavigationTiming | undefined;
-    if (first && first.loadEventEnd > 0) {
-      return Math.round(first.loadEventEnd - first.startTime);
-    }
-    if (first && first.domContentLoadedEventEnd > 0) {
-      return Math.round(first.domContentLoadedEventEnd - first.startTime);
-    }
-  } catch {
-    // Performance API unavailable
-  }
-  return '';
+function formatIST(date: Date): string {
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
 }
 
 /** Transiently look up coarse city/region/country without ever storing the IP address */
@@ -130,9 +128,9 @@ async function fetchCoarseGeo(): Promise<CoarseGeo> {
       const country = data.country_name || data.country || '';
       if (!country && !data.city) return null;
       return {
-        city: data.city || '',
-        region: data.region || '',
-        country,
+        city: data.city || 'Unknown',
+        region: data.region || 'Unknown',
+        country: country || 'Unknown',
       };
     } catch {
       return null;
@@ -142,9 +140,9 @@ async function fetchCoarseGeo(): Promise<CoarseGeo> {
   return (
     (await tryEndpoint('https://ipwho.is/')) ||
     (await tryEndpoint('https://ipapi.co/json/')) || {
-      city: '',
-      region: '',
-      country: '',
+      city: 'Unknown',
+      region: 'Unknown',
+      country: 'Unknown',
     }
   );
 }
@@ -195,8 +193,8 @@ function buildEngagementFields() {
     exploreJourneyUsed: exploreJourneyUsed ? 'Yes' : 'No',
     audioToggled: audioToggled ? 'Yes' : 'No',
     writingsBrowsed,
-    projectsViewed: Array.from(projectsViewed).join(', '),
-    linksClicked: Array.from(linksClicked).join(', '),
+    projectsViewed: projectsViewed.size > 0 ? Array.from(projectsViewed).join(', ') : 'None',
+    linksClicked: linksClicked.size > 0 ? Array.from(linksClicked).join(', ') : 'None',
     madhvaOpens,
     madhvaQueriesCount,
   };
@@ -241,42 +239,31 @@ export async function initVisitorAnalytics(): Promise<void> {
     connection?: { effectiveType?: string };
   };
   const now = new Date();
-  const params = new URLSearchParams(window.location.search);
   cachedGeo = await fetchCoarseGeo();
 
   const prefersDark =
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const prefersReducedMotion =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   postToSheets({
     type: 'visit',
     sessionTag,
-    istTime: now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-    timestampISO: now.toISOString(),
+    istTime: formatIST(now),
     city: cachedGeo.city,
     region: cachedGeo.region,
     country: cachedGeo.country,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-    language: navigator.language || '',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
+    language: navigator.language || 'Unknown',
     deviceType: cachedDeviceType,
     os: detectOS(ua),
     browser: detectBrowser(ua),
     screen: `${window.screen.width}x${window.screen.height}`,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
-    orientation: window.innerWidth >= window.innerHeight ? 'landscape' : 'portrait',
+    orientation: window.innerWidth >= window.innerHeight ? 'Landscape' : 'Portrait',
     touchCapable: (navigator.maxTouchPoints || 0) > 0 ? 'Yes' : 'No',
-    network: navExt.connection?.effectiveType || '',
-    colorScheme: prefersDark ? 'dark' : 'light',
-    reducedMotion: prefersReducedMotion ? 'Yes' : 'No',
-    pageLoadMs: getPageLoadMs(),
+    network: navExt.connection?.effectiveType ? navExt.connection.effectiveType.toUpperCase() : 'Unknown',
+    colorScheme: prefersDark ? 'Dark' : 'Light',
     referrerDomain: extractReferrerDomain(document.referrer || ''),
-    path: window.location.pathname + window.location.hash,
-    utmSource: params.get('utm_source') || '',
-    utmMedium: params.get('utm_medium') || '',
-    utmCampaign: params.get('utm_campaign') || '',
     ...buildEngagementFields(),
   });
 }
@@ -330,13 +317,11 @@ export function trackMadhvaInteraction(
 
   postToSheets({
     type: 'madhva',
-    istTime: now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-    timestampISO: now.toISOString(),
-    sessionTag,
+    istTime: formatIST(now),
     query,
-    replyKind,
-    replyHeadline,
     status: replyKind === 'fallback' ? 'FALLBACK' : 'MATCHED',
+    replyKind: replyKind || 'general',
+    replyHeadline: replyHeadline || '—',
     city: cachedGeo.city,
     country: cachedGeo.country,
     deviceType: cachedDeviceType,
