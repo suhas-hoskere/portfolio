@@ -3,13 +3,12 @@ import {
   ArrowUpRight,
   Mail,
   ExternalLink,
-  Play,
   Sparkles,
   MapPin,
   Rocket,
-  Flame,
-  Unlock,
-  Waves,
+  Download,
+  Code2,
+  BookOpen,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
@@ -26,137 +25,152 @@ export interface ProjectData {
   architecture: string[];
   tech: string[];
   github: string;
-  demo: string;
-  demoType: 'voice' | 'web' | 'desktop' | 'vision';
+  demo?: string;
 }
 
 export const PROJECTS: ProjectData[] = [
   {
-    id: 'voxstream-voice',
-    name: 'VoxStream AI',
-    title: 'Real-time Hybrid Voice Pipeline',
-    category: 'SPEECH AI // PIPELINE',
-    badge: 'v2.4 Active',
+    id: 'dlives',
+    name: 'DLives',
+    title: 'Dynamic Island for Windows 10 & 11',
+    category: 'DESKTOP APPLICATION // PYTHON',
+    badge: 'Live App',
     description:
-      'Low-latency multi-engine speech recognition pipeline integrating Whisper, Vosk, and Moonshine with neural text-to-speech voice synthesis and edge deployment.',
+      'Apple-inspired translucent glass pill resting at the edge of the Windows desktop — invisible when focused, alive on hover with native SMTC media controls, volume/brightness sliders, system diagnostics, alarms, Pomodoro, clipboard shelf, and local plain-text notes.',
     metrics: [
-      { label: 'Vosk Latency', value: '< 42ms' },
-      { label: 'Whisper Accuracy', value: '98.6%' },
-      { label: 'Architecture', value: 'Asynchronous' },
+      { label: 'Platform', value: 'Windows 10/11' },
+      { label: 'Core Stack', value: 'Python · PyQt6' },
+      { label: 'Modules', value: '9+ Built-in Suites' },
     ],
-    tags: ['Whisper', 'Vosk', 'Moonshine STT', 'Neural TTS', 'Python 3.12'],
+    tags: ['Python', 'PyQt6', 'Windows SMTC', 'CoreAudio', 'PyInstaller'],
     architecture: [
-      'Dual-engine STT: Vosk for instant offline streaming ingestion + Whisper for high-precision contextual decoding',
-      'Moonshine lightweight on-device speech model tailored for edge compute and resource-constrained nodes',
-      'Asynchronous ring buffering with voice-activity detection (VAD) and non-blocking neural TTS audio synthesis',
+      'Native Windows SMTC integration via winmedia-controller for Spotify, YouTube, Chrome & Apple Music plus CoreAudio (pycaw) volume and display brightness controls',
+      'Real-time CPU, RAM, Wi-Fi & battery diagnostics via psutil with one-click temporary cache cleanup and drag-and-drop clipboard/file shelf',
+      'Multi-note scratchpad auto-saving plain .txt files locally in %AppData%\\DLives\\notes\\ alongside calendar, alarms, timetable & Pomodoro focus timer',
     ],
-    tech: ['Python 3.12', 'Whisper', 'Vosk Engine', 'Moonshine STT', 'FastAPI', 'PyAudio'],
-    github: 'https://github.com/suhashoskere/voxstream-voice-engine',
-    demo: 'https://voxstream-ai.vercel.app',
-    demoType: 'voice',
+    tech: [
+      'Python',
+      'PyQt6',
+      'psutil',
+      'pycaw',
+      'comtypes',
+      'winmedia-controller',
+      'screen-brightness-control',
+      'pynput',
+      'PyInstaller',
+    ],
+    github: 'https://github.com/suhas-hoskere/Dlives',
+    demo: 'https://dlives.vercel.app/',
   },
   {
-    id: 'orbitstack-platform',
-    name: 'OrbitStack Platform',
-    title: 'Full-stack Distributed Web Platform',
-    category: 'WEB ARCHITECTURE',
-    badge: 'Production Ready',
+    id: 'santypes',
+    name: 'Santypes',
+    title: 'Multi-Script Precision Typing Platform',
+    category: 'WEB PLATFORM // TYPESCRIPT',
+    badge: 'Live App',
     description:
-      'Production-grade web application built with Next.js 15, React 19, MongoDB, and Docker, featuring real-time data streaming and containerized cloud deployment.',
+      'Keyboard-first, zero-framework TypeScript & Vite typing trainer running 100% locally in the browser with sub-millisecond keystroke timing, Indic grapheme-cluster segmentation (English, Kannada & Hindi), live analytics charts, and adaptive weak-keys drills.',
     metrics: [
-      { label: 'SSR Speed', value: '< 110ms' },
-      { label: 'Type Safety', value: '100% Strict' },
-      { label: 'Deployment', value: 'Dockerized' },
+      { label: 'Scripts', value: 'EN · KN · HI' },
+      { label: 'Runtime', value: '100% Local' },
+      { label: 'Quality', value: 'Vitest + Oxlint' },
     ],
-    tags: ['Next.js 15', 'React 19', 'MongoDB', 'Docker', 'Tailwind CSS'],
+    tags: ['TypeScript', 'Vite', 'Indic Graphemes', 'Vitest', 'Privacy-First'],
     architecture: [
-      'Next.js 15 App Router utilizing React Server Components with fine-grained caching strategies',
-      'MongoDB document persistence layer with indexed aggregation pipelines and optimistic UI updates',
-      'Containerized multi-stage Docker build pipeline optimized for reproducible cloud environments',
+      'Multilingual grapheme-cluster engine supporting English, Kannada (Native & Kanglish), and Hindi (Devanagari & Hinglish) with structured touch-typing chapters',
+      'Zero-framework TypeScript architecture with self-hosted @fontsource typography (zero external font CDN beacons) and Global Privacy Control (GPC) support',
+      'Local session analytics dashboard with velocity timelines, WPM bracket distribution, adaptive weak-key drills, and full JSON backup/erasure',
     ],
-    tech: ['Next.js 15', 'React 19', 'TypeScript', 'MongoDB', 'Docker', 'Tailwind CSS'],
-    github: 'https://github.com/suhashoskere/orbitstack-web-platform',
-    demo: 'https://orbitstack-platform.vercel.app',
-    demoType: 'web',
+    tech: [
+      'TypeScript',
+      'Vite',
+      'Three.js',
+      'Vitest',
+      'Oxlint',
+      '@fontsource/noto-sans-kannada',
+      '@fontsource/noto-sans-devanagari',
+    ],
+    github: 'https://github.com/suhas-hoskere/santypes',
+    demo: 'https://san-types.web.app/',
   },
   {
-    id: 'aeropilot-desktop',
-    name: 'AeroPilot Desktop',
-    title: 'Native Asynchronous AI Workstation',
-    category: 'NATIVE APPLICATION',
-    badge: 'Desktop Client',
+    id: 'ntools',
+    name: 'nTools',
+    title: 'OLED Productivity & Kannada Text Suite',
+    category: 'CROSS-PLATFORM // ANDROID & WEB',
+    badge: 'Open Source',
     description:
-      'Native multi-threaded desktop workstation tool designed with PyQt6 for managing local AI pipelines, weights quantization, and live hardware telemetry.',
+      'All-in-one pitch-black productivity suite and Kannada text conversion platform built with React 19, TypeScript & Capacitor Android — featuring real-time Kannada Unicode ↔ ASCII (Baraha/Nudi) conversion, PDF toolkit, lockscreen alarms, and Android AppWidgets.',
     metrics: [
-      { label: 'Frame Rate', value: '60 FPS' },
-      { label: 'UI Latency', value: 'Zero-Lock' },
-      { label: 'Threading', value: 'QThread Workers' },
+      { label: 'Platform', value: 'Android + Web' },
+      { label: 'Converter', value: 'Unicode ↔ ASCII' },
+      { label: 'Framework', value: 'React 19 · Cap 7' },
     ],
-    tags: ['PyQt6', 'QThread', 'Python 3.12', 'Hardware Monitor'],
+    tags: ['React 19', 'TypeScript', 'Capacitor Android', 'Tailwind CSS', 'pdf-lib'],
     architecture: [
-      'Isolated QThread asynchronous worker loops preventing UI thread freeze during heavy local neural inference',
-      'Custom dark-mode hardware interface styled using dynamic Qt Style Sheets (QSS) and vector icons',
-      'Direct hardware telemetry monitor tracking GPU VRAM, CPU load, and microphone input levels',
+      'Real-time two-way converter between Kannada Unicode and popular ASCII fonts (Baraha, Nudi) with case transforms, word counts & direct file export',
+      'Offline document & PDF suite built with pdf-lib and jsPDF supporting merge, split, compress, watermark, text extraction, and PDF-to-image conversion',
+      'Native Capacitor Android features including full-screen lockscreen alarm overlays, VIP-filtered Zen focus mode, Karnataka holiday calendar & Home Screen AppWidgets',
     ],
-    tech: ['Python 3.12', 'PyQt6', 'QThread', 'Qt Designer', 'PyInstaller'],
-    github: 'https://github.com/suhashoskere/aeropilot-desktop-client',
-    demo: 'https://github.com/suhashoskere/aeropilot-desktop-client/releases',
-    demoType: 'desktop',
+    tech: [
+      'React 19',
+      'TypeScript',
+      'Vite',
+      'Tailwind CSS',
+      'Capacitor 7',
+      'pdf-lib',
+      'jsPDF',
+      'JSZip',
+      'Vitest',
+    ],
+    github: 'https://github.com/suhas-hoskere/ntools',
   },
   {
-    id: 'astrovision-ml',
-    name: 'AstroVision ML',
-    title: 'Spatial Computer Vision & LLM Pipeline',
-    category: 'RESEARCH & INTELLIGENCE',
-    badge: 'Benchmarked',
+    id: 'wisewatt-ai',
+    name: 'WiseWatt AI',
+    title: 'AI Energy Prediction & Carbon Dashboard',
+    category: 'MACHINE LEARNING // PYTHON',
+    badge: 'Open Source',
     description:
-      'Applied machine learning experiments integrating Large Language Models, spatial computer vision object tracking, and Scikit-learn predictive pipelines.',
+      'AI-based energy consumption prediction web dashboard built with Python, Flask, and Scikit-learn — providing ML consumption forecasting, anomaly detection, electricity cost & carbon footprint estimation, and smart energy-saving recommendations.',
     metrics: [
-      { label: 'Vision Stream', value: '30+ FPS' },
-      { label: 'Inference', value: 'GPU Accelerated' },
-      { label: 'Tool Calling', value: 'Autonomous' },
+      { label: 'Backend', value: 'Python · Flask' },
+      { label: 'ML Core', value: 'Scikit-learn' },
+      { label: 'Outputs', value: 'Cost & CO₂' },
     ],
-    tags: ['LLMs', 'Computer Vision', 'Scikit-learn', 'OpenCV', 'Google Colab'],
+    tags: ['Python', 'Flask', 'Scikit-learn', 'Pandas', 'NumPy'],
     architecture: [
-      'Real-time frame evaluation for spatial object detection, coordinate boundary tracking, and optical flow',
-      'Scikit-learn predictive regression & classification pipelines evaluated and benchmarked on Colab GPU',
-      'Autonomous LLM agent reasoning loop with structured prompt templates and vector context retrieval',
+      'Supervised machine learning pipeline trained with Scikit-learn, Pandas & NumPy with serialized model.pkl and scaler.pkl artifacts for fast inference',
+      'Anomaly detection layer flagging unusual consumption spikes and computing estimated electricity cost alongside carbon impact metrics',
+      'Clean Flask web server rendering live prediction views and actionable energy-saving recommendations through lightweight HTML/CSS templates',
     ],
-    tech: ['Python', 'OpenCV', 'Scikit-learn', 'LLMs', 'NumPy', 'Google Colab'],
-    github: 'https://github.com/suhashoskere/astrovision-spatial-ml',
-    demo: 'https://astrovision-research.streamlit.app',
-    demoType: 'vision',
+    tech: ['Python', 'Flask', 'Scikit-learn', 'Pandas', 'NumPy', 'Joblib', 'HTML', 'CSS'],
+    github: 'https://github.com/suhas-hoskere/wisewatt.ai',
   },
 ];
 
-const LAUNCH_STEPS = [
+const SKILL_GROUPS = [
   {
-    step: '01',
-    time: 'T-00:03',
-    Icon: Flame,
-    title: 'Main Engine Ignition',
-    detail: 'Dual Vikas core & twin S200 solid boosters ignite at 5.85 MPa chamber pressure.',
+    label: 'LANGUAGES',
+    items: ['Python', 'C', 'TypeScript', 'JavaScript', 'SQL', 'HTML / CSS'],
   },
   {
-    step: '02',
-    time: 'T-00:01',
-    Icon: Unlock,
-    title: 'Umbilical & Clamp Release',
-    detail: 'Cryogenic supply lines decouple and service arms retract 55° clear of the fuselage.',
+    label: 'AI / ML & DATA',
+    items: ['Scikit-learn', 'Pandas', 'NumPy', 'Joblib', 'AI-Assisted Engineering'],
   },
   {
-    step: '03',
-    time: 'T-00:00',
-    Icon: Waves,
-    title: 'Water Deluge Suppression',
-    detail: '3,200 L/s flood the flame trench, dampening acoustic energy into billowing steam.',
-  },
-  {
-    step: '04',
-    time: 'T+00:03',
-    Icon: Rocket,
-    title: 'Vertical Liftoff & Tower Clearance',
-    detail: 'TWR reaches 1.62 G as the launch vehicle climbs vertically past the gantry tower.',
+    label: 'WEB, DESKTOP & MOBILE',
+    items: [
+      'React 19',
+      'Vite',
+      'Tailwind CSS',
+      'Flask',
+      'PyQt6',
+      'Capacitor Android',
+      'Three.js',
+      'Vitest',
+      'Git & Open Source',
+    ],
   },
 ];
 
@@ -167,22 +181,18 @@ interface FlightMissionOverlaysProps {
 }
 
 /**
- * Single Continuous Transparent Editorial Page:
- * - Zero solid opaque cards blocking the space flight canvas — pure high-contrast monochrome
- *   typography, delicate hairline dividers, and open transparent flow from Launch Pad to Orbit.
- * - Visitors scroll naturally and continuously down one unified document while the 2D Canvas
- *   plays the synchronized Sriharikota-to-LEO flight right beside & behind the text.
+ * Single Continuous Scrollable Portfolio Page with high-contrast dark text surfaces
+ * floating cleanly over the locked Earth-to-Orbit 2D space-launch canvas.
  */
 export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React.memo(
   ({ onLaunch, onSelectProject, entered = true }) => {
     const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
-
     const textWell =
       'bg-[#050505]/92 border border-white/15 rounded-2xl px-5 py-6 sm:px-8 sm:py-7 shadow-[0_14px_44px_rgba(0,0,0,0.85)]';
 
     return (
       <>
-        {/* Soft continuous feathered dark reading scrim behind the left editorial column (never clips hard!) */}
+        {/* Soft continuous feathered dark reading scrim behind the left editorial column */}
         <div
           aria-hidden="true"
           className="fixed inset-y-0 left-0 z-[5] w-full md:w-[62vw] lg:w-[62vw] xl:w-[960px] pointer-events-none bg-gradient-to-r from-[#050505]/95 via-[#050505]/78 to-transparent"
@@ -193,356 +203,387 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
           style={{ textShadow: '0 2px 14px rgba(0, 0, 0, 0.90)' }}
         >
           <div className="w-full max-w-[92vw] sm:max-w-[540px] md:max-w-[54vw] lg:max-w-[55vw] xl:max-w-[860px] pl-5 sm:pl-10 md:pl-14 lg:pl-20 pr-4 sm:pr-6">
-            {/* ===== SECTION 00: LAUNCH PAD — HERO ===== */}
+            {/* ===== SECTION 00: HOME — INTRO ===== */}
             <section
               id="section-pad"
               className="min-h-[100vh] flex flex-col justify-center py-24 pointer-events-auto"
             >
               <div className={`${textWell} space-y-4 sm:space-y-5 text-left`}>
-              <div
-                className={`flex flex-wrap items-center gap-2.5 ${enterCls}`}
-                style={{ animationDelay: '0ms' }}
-              >
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium tracking-[0.2em] uppercase text-white border-b border-white/35 pb-0.5">
-                  <MapPin className="w-3.5 h-3.5 text-zinc-300" />
-                  <span>INDIA LAUNCH COMPLEX // 00</span>
-                </span>
-                <span className="text-[11px] font-mono text-zinc-400">
-                  Karnataka &amp; Sriharikota
-                </span>
-              </div>
-
-              <div className={`space-y-1.5 ${enterCls}`} style={{ animationDelay: '75ms' }}>
-                <h1 className="text-[clamp(2.4rem,5.6vw,5.2rem)] font-space font-bold text-white leading-[0.96] tracking-tight">
-                  Suhas Hoskere
-                </h1>
-                <div className="font-kannada text-sm sm:text-base font-medium text-zinc-300 tracking-wide">
-                  ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
-                </div>
-              </div>
-
-              <p
-                className={`text-sm sm:text-base lg:text-lg text-zinc-200 font-sans font-light leading-relaxed max-w-2xl ${enterCls}`}
-                style={{ animationDelay: '140ms' }}
-              >
-                B.Tech in Artificial Intelligence &amp; Machine Learning at PES University, Bangalore.
-                Architecting intelligent systems, voice pipelines, and deep software.
-              </p>
-
-              <div
-                className={`pt-2 flex flex-wrap items-center gap-3 ${enterCls}`}
-                style={{ animationDelay: '210ms' }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    cosmicAudio.playStagingSound();
-                    onLaunch();
-                  }}
-                  className="px-5 py-3 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center gap-2 transition-colors cursor-pointer"
-                  style={{ textShadow: 'none' }}
+                <div
+                  className={`flex flex-wrap items-center gap-2.5 ${enterCls}`}
+                  style={{ animationDelay: '0ms' }}
                 >
-                  <Rocket className="w-4 h-4 text-black" />
-                  <span>Ignite &amp; Lift Off</span>
-                </button>
-
-                <a
-                  href="https://github.com/suhashoskere"
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => cosmicAudio.playTelemetryChirp(1200, 0.05)}
-                  className="px-4 py-3 rounded-lg bg-transparent hover:bg-white/10 border border-white/25 hover:border-white/60 text-zinc-100 hover:text-white font-mono text-xs flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  <GithubIcon className="w-4 h-4" />
-                  <span className="hidden xs:inline">github.com/suhashoskere</span>
-                  <span className="xs:hidden">GitHub</span>
-                  <ExternalLink className="w-3 h-3 text-zinc-400" />
-                </a>
-              </div>
-
-              <div
-                className={`pt-2 flex items-center gap-2 text-[11px] font-mono tracking-[0.18em] text-zinc-400 uppercase ${enterCls}`}
-                style={{ animationDelay: '280ms' }}
-              >
-                <span>▼</span>
-                <span>SCROLL CONTINUOUSLY TO LAUNCH</span>
-              </div>
-            </div>
-          </section>
-
-          {/* ===== TRANSPARENT LAUNCH SEQUENCE TIMELINE (Ignition -> Clamps -> Deluge -> Liftoff) ===== */}
-          <section
-            aria-label="Launch sequence telemetry log"
-            className="min-h-[65vh] flex flex-col justify-center py-10 pointer-events-auto"
-          >
-            <div className={textWell}>
-              <div className="border-l border-white/20 pl-5 sm:pl-6 space-y-6">
-                <div className="text-[10px] font-mono tracking-[0.22em] text-zinc-400 uppercase">
-                  LAUNCH SEQUENCE // T-00:03 → T+00:03
-                </div>
-                {LAUNCH_STEPS.map(({ step, time, Icon, title, detail }) => (
-                  <div key={step} className="relative space-y-1">
-                    <span
-                      aria-hidden="true"
-                      className="absolute -left-[25px] sm:-left-[29px] top-1.5 w-2 h-2 rounded-full bg-white"
-                    />
-                    <div className="flex items-center gap-2.5 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
-                      <Icon className="w-3 h-3 text-white" />
-                      <span className="text-white font-semibold">STEP {step}</span>
-                      <span>·</span>
-                      <span>{time}</span>
-                    </div>
-                    <h3 className="text-base sm:text-lg font-space font-semibold text-white tracking-tight">
-                      {title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed max-w-xl">
-                      {detail}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ===== SECTION 01: ATMOSPHERIC ASCENT & DAVANAGERE ORIGINS ===== */}
-          <section
-            id="section-ascent"
-            className="min-h-[125vh] flex flex-col justify-center py-20 pointer-events-auto"
-          >
-            <div className={`${textWell} space-y-4 text-left`}>
-              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                <span>STAGE 01 // ASCENT</span>
-                <span className="text-white">2020 ERA</span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight">
-                Davanagere Origins
-              </h2>
-
-              <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
-                Siddaganga PU College, Davanagere. Where deep curiosity for analytical mathematics,
-                physics, and computer science first ignited. Laying the ground foundations for
-                scalable software and machine intelligence.
-              </p>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                <span className="px-3 py-1 rounded-full bg-black/50 border border-white/20 text-[11px] font-mono text-zinc-200">
-                  Mathematics &amp; Physics
-                </span>
-                <span className="px-3 py-1 rounded-full bg-black/50 border border-white/20 text-[11px] font-mono text-zinc-200">
-                  Siddaganga PU College
-                </span>
-                <span className="px-3 py-1 rounded-full bg-black/50 border border-white/20 text-[11px] font-mono text-zinc-200">
-                  Davanagere, Karnataka
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* ===== SECTION 02: LOW EARTH ORBIT & BANGALORE ===== */}
-          <section
-            id="section-orbit"
-            className="min-h-[100vh] flex flex-col justify-center py-20 pointer-events-auto"
-          >
-            <div className={`${textWell} space-y-4 text-left`}>
-              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                <span>STAGE 02 // ORBIT</span>
-                <span className="text-white">420 KM LEO</span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight">
-                Bangalore &amp; PES University
-              </h2>
-
-              <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
-                Electronic City Campus, Bangalore. Pursuing B.Tech in Artificial Intelligence &amp;
-                Machine Learning. Engineering distributed architectures, deep learning models, and
-                real-time speech systems.
-              </p>
-
-              <div className="pt-4 grid grid-cols-3 gap-4 border-t border-white/15">
-                <div>
-                  <div className="text-[10px] font-mono text-zinc-400 tracking-widest">ALTITUDE</div>
-                  <div className="text-sm font-mono text-white font-semibold mt-0.5">420 KM</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-mono text-zinc-400 tracking-widest">VELOCITY</div>
-                  <div className="text-sm font-mono text-white font-semibold mt-0.5">7.66 KM/S</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-mono text-zinc-400 tracking-widest">STATION</div>
-                  <div className="text-sm font-mono text-white font-semibold mt-0.5">BANGALORE</div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ===== SECTION 03: EXPLORATION MISSIONS (4 PROJECTS) ===== */}
-          <section
-            id="section-missions"
-            className="min-h-[95vh] flex flex-col justify-center py-20 pointer-events-auto"
-          >
-            <div className={`${textWell} space-y-5 text-left`}>
-              <div className="flex items-end justify-between gap-2">
-                <div>
-                  <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                    STAGE 03 // ORBITAL PAYLOAD MISSIONS
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium tracking-[0.18em] uppercase text-white border-b border-white/35 pb-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-zinc-300" />
+                    <span>OPEN-SOURCE CONTRIBUTOR // KARNATAKA</span>
                   </span>
-                  <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight mt-1">
-                    Exploration Missions
-                  </h2>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider shrink-0">
-                  Click for demo
-                </span>
-              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 border-t border-white/15 pt-2">
-                {PROJECTS.map((proj) => (
+                <div className={`space-y-1.5 ${enterCls}`} style={{ animationDelay: '75ms' }}>
+                  <h1 className="text-[clamp(2.4rem,5.4vw,4.8rem)] font-space font-bold text-white leading-[0.96] tracking-tight">
+                    Suhas Hoskere
+                  </h1>
+                  <div className="font-kannada text-sm sm:text-base font-medium text-zinc-300 tracking-wide">
+                    ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
+                  </div>
+                </div>
+
+                <p
+                  className={`text-sm sm:text-base lg:text-[17px] text-zinc-200 font-sans font-light leading-relaxed max-w-2xl ${enterCls}`}
+                  style={{ animationDelay: '140ms' }}
+                >
+                  AI &amp; Machine Learning student at{' '}
+                  <span className="text-white font-medium">PES University</span> and a{' '}
+                  <span className="text-white font-medium">passionate writer</span>. Open-source
+                  contributor building desktop utilities, multi-script web apps, and applied ML
+                  tools — uniting code with creative writing.
+                </p>
+
+                <div
+                  className={`pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3 ${enterCls}`}
+                  style={{ animationDelay: '210ms' }}
+                >
                   <button
-                    key={proj.id}
                     type="button"
                     onClick={() => {
-                      cosmicAudio.playTelemetryChirp(1380, 0.05);
-                      onSelectProject(proj);
+                      cosmicAudio.playStagingSound();
+                      onLaunch();
                     }}
-                    className="w-full py-4 px-2.5 -mx-2.5 rounded-lg border-b border-white/15 text-left hover:bg-white/[0.06] transition-colors cursor-pointer group flex flex-col justify-between gap-2"
+                    className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center gap-2 transition-colors cursor-pointer"
+                    style={{ textShadow: 'none' }}
                   >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
-                        <span className="font-semibold uppercase text-white tracking-wider">
-                          {proj.name}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-black/50 border border-white/20 text-zinc-200">
-                          {proj.badge}
-                        </span>
-                      </div>
-
-                      <div className="text-base font-space text-white font-bold flex items-center justify-between gap-2 tracking-tight">
-                        <span>{proj.title}</span>
-                        <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
-                      </div>
-
-                      <p className="text-xs text-zinc-300 font-sans font-light leading-relaxed">
-                        {proj.description}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 text-[10px] font-mono">
-                      <span className="text-zinc-400">
-                        {proj.metrics[0].label}:{' '}
-                        <span className="text-white">{proj.metrics[0].value}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-white font-medium">
-                        <Play className="w-2.5 h-2.5 fill-white" />
-                        <span>Launch Demo</span>
-                      </span>
-                    </div>
+                    <Rocket className="w-4 h-4 text-black" />
+                    <span>Explore Journey</span>
                   </button>
-                ))}
-              </div>
-            </div>
-          </section>
 
-          {/* ===== SECTION 04: KARNATAKA PASS & KANNADA HERITAGE ===== */}
-          <section
-            id="section-heritage"
-            className="min-h-[80vh] flex flex-col justify-center py-20 pointer-events-auto"
-          >
-            <div className={`${textWell} space-y-4 text-left`}>
-              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                <span>STAGE 04 // KARNATAKA PASS</span>
-                <span className="text-white">420 KM LEO</span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-kannada text-3xl sm:text-4xl font-bold text-white block">
-                  ಕನ್ನಡ ಕೂಟ
-                </span>
-                <h2 className="text-xl sm:text-2xl font-space text-zinc-200 font-bold leading-tight tracking-tight">
-                  Kannada Koota Club · Content Writer
-                </h2>
-              </div>
-
-              <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
-                Carrying roots above the Indian horizon. Looking down over Karnataka and Bangalore
-                from Low Earth Orbit, blending analytical engineering with creative Kannada prose.
-              </p>
-
-              <div className="pt-3 border-t border-white/15 flex items-center justify-between gap-2">
-                <span className="font-kannada text-sm sm:text-base font-semibold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
-                  <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider shrink-0">
-                  Cultural Column
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* ===== SECTION 05: ORBITAL UPLINK & CONTACT ===== */}
-          <section
-            id="section-signal"
-            className="min-h-[100vh] flex flex-col justify-center pt-20 pb-28 pointer-events-auto"
-          >
-            <div className={`${textWell} space-y-5 text-left`}>
-              <div className="inline-flex items-center gap-2 text-[11px] font-mono font-medium text-white uppercase tracking-[0.22em]">
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                <span>TERMINAL VECTOR // 05</span>
-              </div>
-
-              <h2 className="text-3xl sm:text-5xl font-space text-white font-bold leading-tight tracking-tight">
-                Establish Uplink.
-              </h2>
-
-              <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed max-w-xl">
-                Open to technical collaborations, speech pipelines, open-source architectures, and
-                engineering roles.
-              </p>
-
-              <div className="space-y-2.5 pt-2 max-w-lg">
-                <a
-                  href="mailto:suhashoskere@gmail.com"
-                  className="w-full py-3.5 px-5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  style={{ textShadow: 'none' }}
-                >
-                  <Mail className="w-4 h-4 text-black" />
-                  <span>suhashoskere@gmail.com</span>
-                </a>
-
-                <div className="grid grid-cols-2 gap-2.5">
                   <a
-                    href="https://github.com/suhashoskere"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="py-3 px-4 rounded-lg bg-black/50 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    href="/resume.pdf"
+                    download="Suhas_Hoskere_Resume.pdf"
+                    onClick={() => cosmicAudio.playTelemetryChirp(1260, 0.05)}
+                    className="px-4 py-2.5 sm:py-3 rounded-lg bg-black/70 hover:bg-white/10 border border-white/30 hover:border-white text-white font-mono text-xs flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <GithubIcon className="w-4 h-4" />
-                    <span>GitHub</span>
-                    <ExternalLink className="w-3 h-3 text-zinc-400" />
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Resume</span>
                   </a>
 
                   <a
-                    href="https://linkedin.com/in/suhashoskere"
+                    href="https://github.com/suhas-hoskere"
                     target="_blank"
                     rel="noreferrer"
-                    className="py-3 px-4 rounded-lg bg-black/50 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    onClick={() => cosmicAudio.playTelemetryChirp(1200, 0.05)}
+                    className="px-4 py-2.5 sm:py-3 rounded-lg bg-transparent hover:bg-white/10 border border-white/20 hover:border-white/60 text-zinc-200 hover:text-white font-mono text-xs flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <LinkedinIcon className="w-4 h-4" />
-                    <span>LinkedIn</span>
+                    <GithubIcon className="w-4 h-4" />
+                    <span>suhas-hoskere</span>
                     <ExternalLink className="w-3 h-3 text-zinc-400" />
                   </a>
                 </div>
               </div>
+            </section>
 
-              <div className="pt-4 border-t border-white/15 text-xs font-kannada text-zinc-300">
-                ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
+            {/* ===== TECHNICAL STACK & TOOLING ===== */}
+            <section
+              aria-label="Technical skills and stack"
+              className="min-h-[65vh] flex flex-col justify-center py-10 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-5 text-left`}>
+                <div className="flex items-center justify-between text-[11px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
+                  <span className="inline-flex items-center gap-2 text-white">
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>TECH STACK &amp; MODULES</span>
+                  </span>
+                  <span>AI-ASSISTED DEV</span>
+                </div>
+
+                <div className="space-y-4">
+                  {SKILL_GROUPS.map((group) => (
+                    <div key={group.label} className="space-y-2">
+                      <div className="text-[10px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
+                        {group.label}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.items.map((item) => (
+                          <span
+                            key={item}
+                            className="px-2.5 py-1 rounded-md bg-black/75 border border-white/15 text-[11px] font-mono text-zinc-200"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
-        </div>
-      </main>
+            </section>
+
+            {/* ===== SECTION 01: DAVANAGERE ORIGINS & SCHOOLING ===== */}
+            <section
+              id="section-ascent"
+              className="min-h-[125vh] flex flex-col justify-center py-20 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-5 text-left`}>
+                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
+                  <span>STAGE 01 // ORIGINS</span>
+                  <span className="text-white">2012 – 2025</span>
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight">
+                  Davanagere Roots
+                </h2>
+
+                <div className="border-l border-white/20 pl-5 space-y-5">
+                  <div className="relative space-y-1">
+                    <span
+                      aria-hidden="true"
+                      className="absolute -left-[25px] top-1.5 w-2 h-2 rounded-full bg-white"
+                    />
+                    <div className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase">
+                      2023 – 2025 · PRE-UNIVERSITY (PU)
+                    </div>
+                    <h3 className="text-lg font-space font-bold text-white tracking-tight">
+                      Shree Siddaganga PU College, Davanagere
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed">
+                      Completed Pre-University education in Davanagere, Karnataka, strengthening
+                      analytical foundations in mathematics, physics, and computer science.
+                    </p>
+                  </div>
+
+                  <div className="relative space-y-1">
+                    <span
+                      aria-hidden="true"
+                      className="absolute -left-[25px] top-1.5 w-2 h-2 rounded-full bg-white/70"
+                    />
+                    <div className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase">
+                      2012 – 2023 · UKG – SSLC
+                    </div>
+                    <h3 className="text-lg font-space font-bold text-white tracking-tight">
+                      Rural Public School, Diddige
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed">
+                      Jagalur Taluk, Davanagere District, Karnataka. Studied from UKG through SSLC
+                      (passed out 2023), where early curiosity for engineering and writing first
+                      began.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ===== SECTION 02: BANGALORE & PES UNIVERSITY ===== */}
+            <section
+              id="section-orbit"
+              className="min-h-[100vh] flex flex-col justify-center py-20 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-4 text-left`}>
+                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
+                  <span>STAGE 02 // HIGHER EDUCATION</span>
+                  <span className="text-white">2025 – 2029</span>
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight">
+                  PES University, Bangalore
+                </h2>
+
+                <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
+                  Electronic City Campus, Bangalore. Pursuing B.Tech in Artificial Intelligence
+                  &amp; Machine Learning — independently building 5–10+ projects spanning native
+                  Windows tools, Android utilities, multi-script web apps, and ML dashboards while
+                  contributing to open source.
+                </p>
+
+                <div className="pt-4 grid grid-cols-3 gap-4 border-t border-white/15">
+                  <div>
+                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">DEGREE</div>
+                    <div className="text-xs sm:text-sm font-mono text-white font-semibold mt-0.5">
+                      B.Tech AI &amp; ML
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">CAMPUS</div>
+                    <div className="text-xs sm:text-sm font-mono text-white font-semibold mt-0.5">
+                      Electronic City
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">PROJECTS</div>
+                    <div className="text-xs sm:text-sm font-mono text-white font-semibold mt-0.5">
+                      5–10+ Built
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ===== SECTION 03: REAL OPEN-SOURCE PROJECTS ===== */}
+            <section
+              id="section-missions"
+              className="min-h-[95vh] flex flex-col justify-center py-20 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-5 text-left`}>
+                <div className="flex items-end justify-between gap-2">
+                  <div>
+                    <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
+                      STAGE 03 // SELECTED WORK
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight mt-1">
+                      Projects
+                    </h2>
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider shrink-0">
+                    Click for details
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 border-t border-white/15 pt-2">
+                  {PROJECTS.map((proj) => (
+                    <button
+                      key={proj.id}
+                      type="button"
+                      onClick={() => {
+                        cosmicAudio.playTelemetryChirp(1380, 0.05);
+                        onSelectProject(proj);
+                      }}
+                      className="w-full py-4 px-2.5 -mx-2.5 rounded-lg border-b border-white/15 text-left hover:bg-white/[0.06] transition-colors cursor-pointer group flex flex-col justify-between gap-2"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
+                          <span className="font-semibold uppercase text-white tracking-wider">
+                            {proj.name}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-black/70 border border-white/20 text-zinc-200">
+                            {proj.badge}
+                          </span>
+                        </div>
+
+                        <div className="text-base font-space text-white font-bold flex items-center justify-between gap-2 tracking-tight">
+                          <span>{proj.title}</span>
+                          <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                        </div>
+
+                        <p className="text-xs text-zinc-300 font-sans font-light leading-relaxed">
+                          {proj.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 text-[10px] font-mono">
+                        <span className="text-zinc-400">
+                          {proj.metrics[0].label}:{' '}
+                          <span className="text-white">{proj.metrics[0].value}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-white font-medium">
+                          <span>{proj.demo ? 'Live App & Specs' : 'View Specs'}</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ===== SECTION 04: KANNADA KOOTA & WRITINGS ===== */}
+            <section
+              id="section-heritage"
+              className="min-h-[80vh] flex flex-col justify-center py-20 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-4 text-left`}>
+                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
+                  <span>STAGE 04 // WRITING &amp; CULTURE</span>
+                  <span className="text-white">PESU EC CAMPUS</span>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="font-kannada text-3xl sm:text-4xl font-bold text-white block">
+                    ಕನ್ನಡ ಕೂಟ
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-space text-zinc-200 font-bold leading-tight tracking-tight">
+                    Kannada Koota Club · Content Writer
+                  </h2>
+                </div>
+
+                <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
+                  Content writer at Kannada Koota Club, PES University Electronic City Campus.
+                  Passionate about expressing ideas through creative Kannada and English writing —
+                  bringing together cultural storytelling and engineering curiosity.
+                </p>
+
+                <div className="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-kannada text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
+                    <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider shrink-0">
+                    <BookOpen className="w-3 h-3" />
+                    <span>Writings &amp; Pages</span>
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* ===== SECTION 05: CONTACT & LINKS ===== */}
+            <section
+              id="section-signal"
+              className="min-h-[100vh] flex flex-col justify-center pt-20 pb-28 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-5 text-left`}>
+                <div className="inline-flex items-center gap-2 text-[11px] font-mono font-medium text-white uppercase tracking-[0.22em]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                  <span>CONNECT // 05</span>
+                </div>
+
+                <h2 className="text-3xl sm:text-5xl font-space text-white font-bold leading-tight tracking-tight">
+                  Establish Uplink.
+                </h2>
+
+                <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed max-w-xl">
+                  Open to open-source collaborations, AI/ML &amp; software projects, and creative
+                  writing conversations.
+                </p>
+
+                <div className="space-y-2.5 pt-2 max-w-lg">
+                  <a
+                    href="mailto:suhashoskere@gmail.com"
+                    className="w-full py-3.5 px-5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    style={{ textShadow: 'none' }}
+                  >
+                    <Mail className="w-4 h-4 text-black" />
+                    <span>suhashoskere@gmail.com</span>
+                  </a>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <a
+                      href="https://github.com/suhas-hoskere"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <GithubIcon className="w-4 h-4" />
+                      <span>GitHub</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-400" />
+                    </a>
+
+                    <a
+                      href="https://www.linkedin.com/in/suhas-hoskere/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <LinkedinIcon className="w-4 h-4" />
+                      <span>LinkedIn</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-400" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/15 text-xs font-kannada text-zinc-300">
+                  ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ದಾವಣಗೆರೆ → ಬೆಂಗಳೂರು
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
       </>
     );
   }
