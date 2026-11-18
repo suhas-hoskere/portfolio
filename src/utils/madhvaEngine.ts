@@ -1,5 +1,6 @@
 import {
   EDUCATION,
+  KANNADA_WRITINGS,
   PERSONAL_QA,
   PROFILE,
   PROJECTS,
@@ -26,6 +27,7 @@ export type MadhvaKind =
   | 'who-are-you'
   | 'about'
   | 'writing'
+  | 'quote'
   | 'projects'
   | 'filtered-projects'
   | 'project-detail'
@@ -52,6 +54,8 @@ export interface MadhvaReply {
   lines?: string[];
   project?: ProjectData;
   filteredProjects?: ProjectData[];
+  quoteText?: string;
+  quoteIndex?: number;
   matchedSkill?: {
     queried: string;
     known: boolean;
@@ -70,6 +74,7 @@ export interface MadhvaContext {
   audioActive: boolean;
   lastKind?: MadhvaKind | null;
   lastProjectId?: string | null;
+  lastQuoteIndex?: number | null;
 }
 
 export const CLI_AUTOCOMPLETE_TERMS = [
@@ -77,6 +82,7 @@ export const CLI_AUTOCOMPLETE_TERMS = [
   'about',
   'whoami',
   'writing',
+  'quote',
   'projects',
   'skills',
   'education',
@@ -116,11 +122,11 @@ export const CLI_AUTOCOMPLETE_TERMS = [
 
 export const STARTER_PROMPTS = [
   'Who is Suhas?',
+  'Share a quote',
   'What does he write about?',
   'What projects has he built?',
   'Is he open to internships?',
   'What is his future goal?',
-  'Why is your name Madhva?',
   'neofetch',
   'help',
 ];
@@ -442,16 +448,11 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   }
 
   if (hasAnyKeyword(text, tokens, ['tell me more', 'more info', 'more details', 'what else', 'anything else'])) {
+    if (ctx.lastKind === 'quote') {
+      return buildQuoteReply(ctx.lastQuoteIndex);
+    }
     if (ctx.lastKind === 'writing') {
-      return {
-        kind: 'writing',
-        headline: 'MORE ON SUHAS’S WRITING // LOVE & PAIN',
-        lines: [
-          PERSONAL_QA.writingThemes,
-          'He writes for Kannada Koota Club (PES University EC Campus) and shares his pieces across @mugulnage_manasu_10 (Kannada) and @unofficial_overthinker_ (English & tech).',
-        ],
-        suggestions: ['goto writing', 'What is his future goal?', 'Show his projects'],
-      };
+      return buildQuoteReply(ctx.lastQuoteIndex);
     }
     if (ctx.lastKind === 'project-detail' && lastProject) {
       return {
@@ -861,6 +862,28 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   const skillCheck = checkSpecificSkillQuery(trimmed, text, tokens);
   if (skillCheck) return skillCheck;
 
+  // Share one of Suhas's Kannada writings / quotes
+  if (
+    hasAnyKeyword(text, tokens, [
+      'quote',
+      'quotes',
+      'another quote',
+      'next quote',
+      'share a quote',
+      'read a quote',
+      'poem',
+      'poems',
+      'poetry',
+      'excerpt',
+      'lines',
+      'ಕವಿತೆ',
+      'ಸಾಲು',
+      'ಸಾಲುಗಳು',
+    ])
+  ) {
+    return buildQuoteReply(ctx.lastQuoteIndex);
+  }
+
   // Writing & Culture + Love & Pain Themes (Kannada Koota + Instagram pages)
   if (
     hasAnyKeyword(text, tokens, [
@@ -1075,7 +1098,21 @@ function buildWritingReply(): MadhvaReply {
       PERSONAL_QA.writingThemes,
       `He is also a Content Writer at Kannada Koota Club (PES University, Electronic City Campus).`,
     ],
-    suggestions: ['goto writing', 'Show his projects', 'What is his future goal?'],
+    suggestions: ['Share a quote', 'goto writing', 'Show his projects'],
+  };
+}
+
+function buildQuoteReply(lastQuoteIndex?: number | null): MadhvaReply {
+  const nextIdx =
+    lastQuoteIndex === null || lastQuoteIndex === undefined
+      ? 0
+      : (lastQuoteIndex + 1) % KANNADA_WRITINGS.length;
+  return {
+    kind: 'quote',
+    headline: `WRITING ${String(nextIdx + 1).padStart(2, '0')} / ${String(KANNADA_WRITINGS.length).padStart(2, '0')} // ಕನ್ನಡ`,
+    quoteText: KANNADA_WRITINGS[nextIdx],
+    quoteIndex: nextIdx,
+    suggestions: ['Another quote', 'goto writing', 'What does he write about?'],
   };
 }
 

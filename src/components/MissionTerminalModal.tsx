@@ -133,6 +133,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
 
   const lastKindRef = useRef<MadhvaKind | null>('greeting');
   const lastProjectIdRef = useRef<string | null>(null);
+  const lastQuoteIndexRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -186,6 +187,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
         audioActive,
         lastKind: lastKindRef.current,
         lastProjectId: lastProjectIdRef.current,
+        lastQuoteIndex: lastQuoteIndexRef.current,
       });
 
       const effect = reply.sideEffect;
@@ -195,6 +197,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             setEntries([]);
             lastKindRef.current = null;
             lastProjectIdRef.current = null;
+            lastQuoteIndexRef.current = null;
             return;
           case 'exit':
             onClose();
@@ -238,6 +241,9 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
       lastKindRef.current = reply.kind;
       if (reply.project) {
         lastProjectIdRef.current = reply.project.id;
+      }
+      if (reply.quoteIndex !== undefined) {
+        lastQuoteIndexRef.current = reply.quoteIndex;
       }
 
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -434,6 +440,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-zinc-400">
               <div><span className="text-white font-semibold">about</span> — Writer &amp; AIML profile</div>
               <div><span className="text-white font-semibold">writing</span> — Love, pain, Kannada Koota &amp; IG</div>
+              <div><span className="text-white font-semibold">quote</span> — Read Suhas&apos;s Kannada writings</div>
               <div><span className="text-white font-semibold">projects</span> — Public repos + Private R&amp;D</div>
               <div><span className="text-white font-semibold">open &lt;name&gt;</span> — Inspect project modal</div>
               <div><span className="text-white font-semibold">skills</span> — Stack &amp; voice pipelines</div>
@@ -494,6 +501,16 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
                 {f.kind === 'dir' ? <span className="font-bold">{f.name}</span> : f.name}
               </button>
             ))}
+          </div>
+        );
+
+      case 'quote':
+        return (
+          <div className="p-3.5 rounded-lg bg-black border border-white/20 space-y-2">
+            <blockquote className="font-kannada text-sm sm:text-base leading-[1.85] text-white whitespace-pre-line">
+              &ldquo;{reply.quoteText}&rdquo;
+            </blockquote>
+            <div className="text-[11px] font-kannada text-zinc-400">— ಸುಹಾಸ್ ಹೊಸಕೆರೆ</div>
           </div>
         );
 

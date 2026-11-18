@@ -11,10 +11,13 @@ import {
   Lock,
   Copy,
   Check,
+  ChevronLeft,
+  ChevronRight,
+  Feather,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon, InstagramIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
-import { PROJECTS, SKILL_GROUPS, type ProjectData } from '../data/portfolioData';
+import { KANNADA_WRITINGS, PROJECTS, SKILL_GROUPS, type ProjectData } from '../data/portfolioData';
 
 interface FlightMissionOverlaysProps {
   onLaunch: () => void;
@@ -29,7 +32,18 @@ interface FlightMissionOverlaysProps {
 export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React.memo(
   ({ onLaunch, onSelectProject, entered = true }) => {
     const [copiedEmail, setCopiedEmail] = useState(false);
+    const [activeQuoteIndex, setActiveQuoteIndex] = useState(0);
     const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
+
+    const showPrevQuote = () => {
+      cosmicAudio.playTelemetryChirp(1180, 0.04);
+      setActiveQuoteIndex((prev) => (prev - 1 + KANNADA_WRITINGS.length) % KANNADA_WRITINGS.length);
+    };
+
+    const showNextQuote = () => {
+      cosmicAudio.playTelemetryChirp(1260, 0.04);
+      setActiveQuoteIndex((prev) => (prev + 1) % KANNADA_WRITINGS.length);
+    };
 
     const handleCopyEmail = () => {
       cosmicAudio.playTelemetryChirp(1320, 0.04);
@@ -304,6 +318,82 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   Passionate about expressing ideas through creative Kannada and English writing —
                   bringing together cultural storytelling and engineering curiosity.
                 </p>
+
+                {/* Card-by-Card Kannada Writings Deck */}
+                <div className="rounded-xl bg-black/85 border border-white/20 p-4 sm:p-5 space-y-3.5">
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400 uppercase tracking-[0.18em]">
+                    <span className="inline-flex items-center gap-1.5 text-zinc-200">
+                      <Feather className="w-3.5 h-3.5 text-white shrink-0" />
+                      <span>SELECTED WRITINGS · ಕನ್ನಡ</span>
+                    </span>
+                    <span className="tabular-nums text-white font-semibold">
+                      {String(activeQuoteIndex + 1).padStart(2, '0')} /{' '}
+                      {String(KANNADA_WRITINGS.length).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  <div className="min-h-[104px] sm:min-h-[116px] flex items-center py-1">
+                    <blockquote
+                      key={activeQuoteIndex}
+                      className="animate-stage-in font-kannada text-sm sm:text-base lg:text-[17px] leading-[1.9] text-white/95 whitespace-pre-line"
+                    >
+                      &ldquo;{KANNADA_WRITINGS[activeQuoteIndex]}&rdquo;
+                    </blockquote>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-3">
+                    <span className="font-kannada text-xs text-zinc-400 shrink-0">
+                      — ಸುಹಾಸ್ ಹೊಸಕೆರೆ
+                    </span>
+
+                    <div
+                      className="hidden sm:flex items-center gap-1"
+                      role="tablist"
+                      aria-label="Select writing card"
+                    >
+                      {KANNADA_WRITINGS.map((_, idx) => {
+                        const active = idx === activeQuoteIndex;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            role="tab"
+                            aria-selected={active}
+                            aria-label={`Read quote ${idx + 1}`}
+                            onClick={() => {
+                              cosmicAudio.playTelemetryChirp(1220, 0.03);
+                              setActiveQuoteIndex(idx);
+                            }}
+                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                              active ? 'w-5 bg-white' : 'w-1.5 bg-white/25 hover:bg-white/60'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={showPrevQuote}
+                        aria-label="Previous writing"
+                        title="Previous writing"
+                        className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white hover:text-black border border-white/20 text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={showNextQuote}
+                        aria-label="Next writing"
+                        title="Next writing"
+                        className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white hover:text-black border border-white/20 text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Writing Instagram Pages */}
                 <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
