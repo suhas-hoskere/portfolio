@@ -32,7 +32,7 @@ export const FlightMissionModal: React.FC<FlightMissionModalProps> = ({ project,
         {/* Top Bar */}
         <div className="flex items-center justify-between border-b border-white/15 pb-4">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="px-3 py-1 rounded-md bg-white text-black text-xs font-mono font-bold uppercase tracking-widest">
+            <span className="px-3 py-1 rounded-md bg-white text-black text-xs font-mono font-bold tracking-wide">
               {project.name}
             </span>
             <span className="text-xs font-mono text-zinc-400 uppercase">{project.category}</span>

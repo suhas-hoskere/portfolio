@@ -9,6 +9,7 @@ import {
   Download,
   Code2,
   BookOpen,
+  Lock,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon, InstagramIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
@@ -31,7 +32,7 @@ export interface ProjectData {
 export const PROJECTS: ProjectData[] = [
   {
     id: 'dlives',
-    name: 'DLives',
+    name: 'Dlives',
     title: 'Dynamic Island for Windows 10 & 11',
     category: 'DESKTOP APPLICATION // PYTHON',
     badge: 'Live App',
@@ -64,7 +65,7 @@ export const PROJECTS: ProjectData[] = [
   },
   {
     id: 'santypes',
-    name: 'Santypes',
+    name: 'santypes',
     title: 'Multi-Script Precision Typing Platform',
     category: 'WEB PLATFORM // TYPESCRIPT',
     badge: 'Live App',
@@ -95,7 +96,7 @@ export const PROJECTS: ProjectData[] = [
   },
   {
     id: 'ntools',
-    name: 'nTools',
+    name: 'ntools',
     title: 'OLED Productivity & Kannada Text Suite',
     category: 'CROSS-PLATFORM // ANDROID & WEB',
     badge: 'Open Source',
@@ -127,7 +128,7 @@ export const PROJECTS: ProjectData[] = [
   },
   {
     id: 'wisewatt-ai',
-    name: 'WiseWatt AI',
+    name: 'wisewatt.ai',
     title: 'AI Energy Prediction & Carbon Dashboard',
     category: 'MACHINE LEARNING // PYTHON',
     badge: 'Open Source',
@@ -155,8 +156,18 @@ const SKILL_GROUPS = [
     items: ['Python', 'C', 'TypeScript', 'JavaScript', 'SQL', 'HTML / CSS'],
   },
   {
-    label: 'AI / ML & DATA',
-    items: ['Scikit-learn', 'Pandas', 'NumPy', 'Joblib', 'AI-Assisted Engineering'],
+    label: 'AI / ML & VOICE PIPELINES',
+    items: [
+      'Voice Pipelines',
+      'Neural TTS',
+      'Moonshine Voices',
+      'Whisper Engines',
+      'Scikit-learn',
+      'Pandas',
+      'NumPy',
+      'Joblib',
+      'AI-Assisted Engineering',
+    ],
   },
   {
     label: 'WEB, DESKTOP & MOBILE',
@@ -215,7 +226,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 >
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium tracking-[0.18em] uppercase text-white border-b border-white/35 pb-0.5">
                     <MapPin className="w-3.5 h-3.5 text-zinc-300" />
-                    <span>OPEN-SOURCE CONTRIBUTOR // KARNATAKA</span>
+                    <span>WRITER · AIML STUDENT · OPEN-SOURCE CONTRIBUTOR</span>
                   </span>
                 </div>
 
@@ -232,11 +243,12 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   className={`text-sm sm:text-base lg:text-[17px] text-zinc-200 font-sans font-light leading-relaxed max-w-2xl ${enterCls}`}
                   style={{ animationDelay: '140ms' }}
                 >
-                  AI &amp; Machine Learning student at{' '}
-                  <span className="text-white font-medium">PES University</span> and a{' '}
-                  <span className="text-white font-medium">passionate writer</span>. Open-source
-                  contributor building desktop utilities, multi-script web apps, and applied ML
-                  tools — uniting code with creative writing.
+                  A <span className="text-white font-medium">passionate writer</span> and{' '}
+                  <span className="text-white font-medium">
+                    AI &amp; Machine Learning student at PES University
+                  </span>
+                  . Open-source contributor building voice pipelines (Neural TTS, Moonshine,
+                  Whisper), desktop utilities, multi-script web apps, and applied ML tools.
                 </p>
 
                 <div
@@ -449,7 +461,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     >
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
-                          <span className="font-semibold uppercase text-white tracking-wider">
+                          <span className="font-semibold text-white tracking-wide">
                             {proj.name}
                           </span>
                           <span className="px-2 py-0.5 rounded-full bg-black/70 border border-white/20 text-zinc-200">
@@ -479,6 +491,26 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       </div>
                     </button>
                   ))}
+                </div>
+
+                {/* Private Repositories / Ongoing R&D Showcase */}
+                <div className="p-4 rounded-xl bg-black/75 border border-white/15 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-white uppercase tracking-widest">
+                      <Lock className="w-3.5 h-3.5 text-zinc-300" />
+                      <span>Private Repositories // Active R&amp;D</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-[10px] font-mono text-zinc-200">
+                      In Development
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed">
+                    Also actively developing several private repositories — including local voice
+                    pipelines built with <span className="text-white">Neural TTS</span>,{' '}
+                    <span className="text-white">Moonshine Voices</span>, and{' '}
+                    <span className="text-white">Whisper engines</span>, along with unreleased AI
+                    &amp; desktop experiments. Available for live walkthroughs upon request.
+                  </p>
                 </div>
               </div>
             </section>
@@ -627,10 +659,6 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       <ExternalLink className="w-3 h-3 text-zinc-400 shrink-0" />
                     </a>
                   </div>
-                </div>
-
-                <div className="pt-4 border-t border-white/15 text-xs font-kannada text-zinc-300">
-                  ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ದಾವಣಗೆರೆ → ಬೆಂಗಳೂರು
                 </div>
               </div>
             </section>
