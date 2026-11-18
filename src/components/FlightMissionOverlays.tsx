@@ -240,29 +240,28 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </section>
 
-            {/* ===== SECTION 02: WRITINGS (ಬರಹಗಳು) ===== */}
+            {/* ===== SECTION 02: WRITINGS (ಬರಹಗಳು — 100% Kannada) ===== */}
             <section
               id="section-heritage"
               className="min-h-[95vh] flex flex-col justify-center py-20 pointer-events-auto"
             >
               <div className={`${textWell} space-y-4 text-left`}>
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                  <span>STAGE 02 // WRITINGS</span>
-                  <span className="text-white">KANNADA · ENGLISH</span>
+                <div className="flex items-center justify-between text-xs font-kannada text-zinc-400">
+                  <span>ಹಂತ ೦೨ // ಬರಹಗಳು</span>
+                  <span className="text-white">ಕನ್ನಡ · ಇಂಗ್ಲಿಷ್</span>
                 </div>
 
                 <div className="space-y-1">
-                  <span className="font-kannada text-3xl sm:text-4xl font-bold text-white block">
+                  <h2 className="font-kannada text-3xl sm:text-4xl font-bold text-white leading-tight">
                     ಬರಹಗಳು
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-space text-zinc-200 font-bold leading-tight tracking-tight">
-                    Writer · Kannada &amp; English
                   </h2>
+                  <div className="font-kannada text-base sm:text-lg font-medium text-zinc-300">
+                    ಬರಹಗಾರ · ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್
+                  </div>
                 </div>
 
-                <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
-                  Independent writer expressing raw thoughts on love, memory, and pain in Kannada
-                  and English.
+                <p className="font-kannada text-sm sm:text-base text-zinc-200 leading-[1.85]">
+                  ಪ್ರೀತಿ, ನೆನಪು ಮತ್ತು ನೋವಿನ ನೈಜ ಭಾವನೆಗಳನ್ನು ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಅಕ್ಷರಗಳಿಗಿಳಿಸುವ ಸ್ವತಂತ್ರ ಬರಹಗಾರ.
                 </p>
 
                 {/* Card-by-Card Kannada Writings Deck (100% Kannada) */}
@@ -344,15 +343,13 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   </div>
                 </div>
 
-                {/* Subtle Club Contribution Note (below the writings card) */}
-                <div className="px-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="text-zinc-300 font-sans font-light">
-                    Also contributes as a{' '}
-                    <span className="text-white font-medium">Content Writer</span> at{' '}
-                    <span className="text-white font-medium">Kannada Koota Club</span>
+                {/* Subtle Club Contribution Note (below the writings card — in Kannada) */}
+                <div className="px-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-kannada">
+                  <span className="text-zinc-300">
+                    <span className="text-white font-medium">ಕನ್ನಡ ಕೂಟ ಕ್ಲಬ್‌ನಲ್ಲಿ</span> ಬರಹಗಾರನಾಗಿಯೂ ಕೊಡುಗೆ ನೀಡುತ್ತಿದ್ದೇನೆ
                   </span>
-                  <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
-                    PESU EC Campus
+                  <span className="text-[11px] text-zinc-400">
+                    ಪಿಇಎಸ್ ವಿಶ್ವವಿದ್ಯಾಲಯ · ಇಸಿ ಕ್ಯಾಂಪಸ್
                   </span>
                 </div>
 
@@ -366,9 +363,9 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
                   >
                     <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5 text-xs font-kannada text-zinc-400">
                         <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
-                        <span>Kannada Writings</span>
+                        <span>ಕನ್ನಡ ಬರಹಗಳು</span>
                       </div>
                       <div className="text-sm font-mono font-semibold text-white truncate">
                         @mugulnage_manasu_10
@@ -385,9 +382,9 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
                   >
                     <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5 text-xs font-kannada text-zinc-400">
                         <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
-                        <span>English &amp; Tech</span>
+                        <span>ಇಂಗ್ಲಿಷ್ ಮತ್ತು ತಂತ್ರಜ್ಞಾನ</span>
                       </div>
                       <div className="text-sm font-mono font-semibold text-white truncate">
                         @unofficial_overthinker_
