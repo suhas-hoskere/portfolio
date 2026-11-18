@@ -18,7 +18,6 @@ interface MonoStar {
 
 let cachedStars: MonoStar[] | null = null;
 let cachedSunSprite: HTMLCanvasElement | null = null;
-let cachedMoonSprite: HTMLCanvasElement | null = null;
 
 function getStars(): MonoStar[] {
   if (cachedStars) return cachedStars;
@@ -115,124 +114,8 @@ function getSunSprite(): HTMLCanvasElement {
 }
 
 /**
- * Pre-renders a telescope-grade monochrome crescent/gibbous Moon sprite ONCE (128x128):
- * - Authentic lunar maria (dark basaltic plains) + bright highland craters & Tycho rays
- * - Smooth spherical terminator shadow + faint earthshine on the night side (no clunky oval cutout!)
- */
-function getMoonSprite(): HTMLCanvasElement {
-  if (cachedMoonSprite) return cachedMoonSprite;
-  const size = 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  const c = size * 0.5;
-  const r = 28;
-
-  // 1. Soft silvery moonlight atmospheric aura
-  const halo = ctx.createRadialGradient(c + 4, c - 3, r * 0.85, c, c, c);
-  halo.addColorStop(0.0, 'rgba(240, 240, 248, 0.22)');
-  halo.addColorStop(0.42, 'rgba(215, 215, 225, 0.065)');
-  halo.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath();
-  ctx.arc(c, c, c, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 2. Render lunar globe inside circular clip
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(c, c, r, 0, Math.PI * 2);
-  ctx.clip();
-
-  // Base sunlit regolith gradient (lit from right/upper-right toward the Sun)
-  const baseGrad = ctx.createRadialGradient(c + r * 0.42, c - r * 0.25, 2, c, c, r * 1.45);
-  baseGrad.addColorStop(0.0, '#fafafa');
-  baseGrad.addColorStop(0.48, '#dcdce2');
-  baseGrad.addColorStop(0.82, '#9a9aa6');
-  baseGrad.addColorStop(1.0, '#52525c');
-  ctx.fillStyle = baseGrad;
-  ctx.fillRect(c - r, c - r, r * 2, r * 2);
-
-  // Authentic lunar maria (Mare Tranquillitatis, Serenitatis, Imbrium, Crisium)
-  const maria = [
-    { x: -6, y: -8, rx: 10, ry: 8, rot: -0.3, a: 0.24 },
-    { x: 5, y: -4, rx: 8.5, ry: 7, rot: 0.2, a: 0.22 },
-    { x: 11, y: 4, rx: 6.5, ry: 5.5, rot: 0.4, a: 0.20 },
-    { x: -10, y: 6, rx: 9, ry: 6.5, rot: -0.15, a: 0.22 },
-    { x: 2, y: 9, rx: 6, ry: 4.5, rot: 0.1, a: 0.16 },
-    { x: 15, y: -6, rx: 4, ry: 5, rot: 0.2, a: 0.24 },
-  ];
-  for (const m of maria) {
-    ctx.save();
-    ctx.translate(c + m.x, c + m.y);
-    ctx.rotate(m.rot);
-    const mg = ctx.createRadialGradient(0, 0, 1, 0, 0, m.rx);
-    mg.addColorStop(0, `rgba(28, 28, 34, ${m.a})`);
-    mg.addColorStop(0.75, `rgba(42, 42, 50, ${m.a * 0.55})`);
-    mg.addColorStop(1, 'rgba(42, 42, 50, 0)');
-    ctx.fillStyle = mg;
-    ctx.scale(1, m.ry / m.rx);
-    ctx.beginPath();
-    ctx.arc(0, 0, m.rx, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Crisp bright highland impact craters with subtle shadow & sunlit rim
-  const craters = [
-    { x: 8, y: 12, cr: 3.4 }, // Tycho
-    { x: -3, y: 2, cr: 2.8 }, // Copernicus
-    { x: 13, y: -1, cr: 2.2 },
-    { x: 4, y: -12, cr: 2.5 },
-    { x: -8, y: -2, cr: 2.0 },
-    { x: 10, y: 7, cr: 1.7 },
-  ];
-  for (const cr of craters) {
-    ctx.fillStyle = 'rgba(20, 20, 24, 0.22)';
-    ctx.beginPath();
-    ctx.arc(c + cr.x - 0.5, c + cr.y + 0.4, cr.cr, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.lineWidth = 0.7;
-    ctx.beginPath();
-    ctx.arc(c + cr.x, c + cr.y, cr.cr, -Math.PI * 0.4, Math.PI * 0.5);
-    ctx.stroke();
-  }
-
-  // Smooth spherical night-side terminator shading (waxing gibbous/crescent with realistic earthshine!)
-  const term = ctx.createRadialGradient(
-    c + r * 0.58,
-    c - r * 0.14,
-    r * 0.48,
-    c + r * 0.38,
-    c - r * 0.10,
-    r * 1.18
-  );
-  term.addColorStop(0.0, 'rgba(8, 8, 12, 0)');
-  term.addColorStop(0.58, 'rgba(8, 8, 12, 0.08)');
-  term.addColorStop(0.76, 'rgba(8, 8, 12, 0.68)');
-  term.addColorStop(0.92, 'rgba(7, 7, 10, 0.88)');
-  term.addColorStop(1.0, 'rgba(6, 6, 9, 0.92)');
-  ctx.fillStyle = term;
-  ctx.fillRect(c - r, c - r, r * 2, r * 2);
-
-  ctx.restore();
-
-  // Delicate sunlit crescent edge specular highlight
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-  ctx.lineWidth = 0.9;
-  ctx.beginPath();
-  ctx.arc(c, c, r - 0.4, -Math.PI * 0.52, Math.PI * 0.44);
-  ctx.stroke();
-
-  cachedMoonSprite = canvas;
-  return canvas;
-}
-
-/**
  * Ultra-fast pure monochrome Black & White sky, crisp twinkling starfield,
- * luminous monochrome Sun, and continuously moving telescope-grade Moon crossing full borders.
+ * and luminous monochrome Sun.
  */
 export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, scrollSpeed, mouseX, mouseY, reducedMotion } = frame;
@@ -313,26 +196,5 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   ctx.save();
   ctx.globalAlpha = lerp(0.94, 0.84, spaceBlend);
   ctx.drawImage(sunImg, sunX - sunSize * 0.5, sunY - sunSize * 0.5, sunSize, sunSize);
-  ctx.restore();
-
-  // 4. DISTANT CELESTIAL MOON (moves independently & calmly right-to-left, opposite the wind-blown clouds,
-  //    so clouds clearly pass in front of the distant Moon while it glides on its own celestial arc!)
-  const moonImg = getMoonSprite();
-  const moonSize = Math.min(w, h) * 0.115;
-  const moonSpan = w + moonSize * 2.4;
-  const moonTravel = reducedMotion ? 0.42 : ((0.44 - t * 0.0024 - sp * 0.22) % 1 + 1) % 1;
-  const moonX = moonTravel * moonSpan - moonSize * 1.2 - mouseX * 4;
-  // Smooth high celestial arc well clear of the upper-right Sun
-  const nearSunFactor = Math.exp(-Math.pow((moonX - sunX) / (w * 0.18), 2));
-  const arcOffset = Math.sin(moonTravel * Math.PI) * h * 0.08;
-  const moonY =
-    lerp(h * 0.27, h * 0.22, spaceBlend) -
-    arcOffset +
-    nearSunFactor * h * 0.14 -
-    mouseY * 2.5;
-
-  ctx.save();
-  ctx.globalAlpha = lerp(0.84, 0.96, spaceBlend);
-  ctx.drawImage(moonImg, moonX - moonSize * 0.5, moonY - moonSize * 0.5, moonSize, moonSize);
   ctx.restore();
 }
