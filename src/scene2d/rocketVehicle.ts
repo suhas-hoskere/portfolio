@@ -382,9 +382,9 @@ export function getRocketPose(
   const altitudeScale = lerp(1.0, 0.18, shrinkProg);
   const u = unit * camZoom * altitudeScale;
 
-  // Real gravity turn: vertical (0°) -> 45° climbing through atmosphere -> horizontal (88°, parallel to orbit!)
+  // Real gravity turn: vertical (0°) -> 45° climbing through atmosphere -> tangent parallel to Earth's curved horizon (~97°)
   const turnProg = smoothstep(0.215, 0.500, sp);
-  const pitchRad = turnProg * (Math.PI * 0.49);
+  const pitchRad = turnProg * (Math.PI * 0.535);
 
   // Subtle horizontal arc rightward into orbital insertion framing (keeping horizontal rocket & plume cleanly in view)
   const x = vehicleAnchorX - mouseX * 10 + Math.sin(turnProg * Math.PI * 0.72) * unit * 0.36;

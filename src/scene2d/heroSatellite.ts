@@ -5,6 +5,7 @@ import {
   smoothstep,
 } from './types';
 import { getRocketPose } from './rocketVehicle';
+import { getEarthOrbitGeometry } from './earthAndOrbit';
 
 function drawMonoSolarSegment(
   ctx: CanvasRenderingContext2D,
@@ -103,13 +104,15 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const startY = rocketPose.y + Math.cos(rocketPose.pitchRad) * localCavityY;
   const pitchRad = rocketPose.pitchRad;
 
-  // Stays tiny matching the fairing as it slides forward out of the horizontal nose cone,
-  // then smoothly zooms into clean horizontal LEO showcase framing once clear of the spent rocket stage!
-  const scaleEase = Math.pow(floatOut, 1.45);
-  let satScale = lerp(0.08, 0.88, scaleEase);
-  if (sp >= 0.90) {
-    const terminalZoom = easeOutCubic((sp - 0.90) / 0.08);
-    satScale = lerp(0.88, 1.12, terminalZoom);
+  // Realistic distance scale:
+  // - Emerges tiny out of the distant horizontal nose fairing (0.08) and cruises at a realistic compact
+  //   orbital scale (0.38) through Stages 02–04 (0.51 -> 0.86)
+  // - Enlarges dramatically ONLY during the final 2–3 scrolls (0.86 -> 0.98) for the Earth-facing RF downlink finale!
+  const scaleEase = Math.pow(floatOut, 1.35);
+  let satScale = lerp(0.08, 0.38, scaleEase);
+  if (sp >= 0.86) {
+    const finaleZoom = easeOutCubic(smoothstep(0.86, 0.98, sp));
+    satScale = lerp(0.38, 0.95, finaleZoom);
   }
   if (cameraMode === 'BOOSTER') satScale *= 1.16;
   else if (cameraMode === 'CHASE') satScale *= 1.08;
@@ -124,16 +127,20 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);
 
-  // Realistic orbital attitude sequence:
-  // 1) Cruises HORIZONTAL (~88°, parallel to orbit) straight out of the horizontal rocket nose
-  // 2) Smoothly slews NADIR-DOWNWARD (180°, Math.PI) on Karnataka Pass -> Orbital Uplink (0.84 -> 0.915)
-  //    so the parabolic dish faces directly toward Earth & beams RF downlink signals straight to Bangalore!
-  const orbitalHorizRad = Math.PI * 0.49;
-  const nadirSlew = easeOutCubic(smoothstep(0.840, 0.915, sp));
-  const targetAttitude = lerp(orbitalHorizRad, Math.PI, nadirSlew);
+  // Compute exact mathematical alignment with Earth's curved horizon right below the satellite!
+  const { centerX: earthCx, centerY: earthCy } = getEarthOrbitGeometry(frame);
+  const zenithRad = Math.atan2(cy - earthCy, cx - earthCx);
+  // 1) Exact tangent angle parallel to Earth's curved horizon directly beneath the satellite
+  const tangentAttitude = zenithRad + Math.PI;
+  // 2) Exact radial nadir angle aiming the parabolic dish straight toward Earth's center
+  //    (with solar array wings perfectly parallel to Earth's curved horizon!)
+  const nadirAttitude = zenithRad + Math.PI * 1.5;
+
+  const nadirSlew = easeOutCubic(smoothstep(0.855, 0.945, sp));
+  const targetAttitude = lerp(tangentAttitude, nadirAttitude, nadirSlew);
   const bankRad =
     lerp(pitchRad, targetAttitude, floatEase) +
-    (reducedMotion ? 0 : Math.sin(t * 0.45) * 0.018 * floatEase);
+    (reducedMotion ? 0 : Math.sin(t * 0.45) * 0.015 * floatEase);
 
   ctx.save();
   ctx.globalAlpha = revealAlpha;

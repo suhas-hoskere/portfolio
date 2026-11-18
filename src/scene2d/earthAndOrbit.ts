@@ -138,30 +138,40 @@ function drawMonoMiniSat(
   ctx.restore();
 }
 
+/** Shared Earth orbital center & radius so rocket & satellite align mathematically with Earth's curve */
+export function getEarthOrbitGeometry(frame: Scene2DFrameContext): {
+  centerX: number;
+  centerY: number;
+  earthR: number;
+  topLimbY: number;
+  climbCurve: number;
+} {
+  const { w, h, sp, mouseX, mouseY, vehicleAnchorX, unit } = frame;
+  const baseEarthR = Math.max(w, h) * 0.58;
+  const leoTopY = Math.max(h * 0.58, h - baseEarthR * 0.46);
+  const climbCurve = smoothstep(0.255, 0.560, sp);
+  const earthR = baseEarthR * Math.pow(3.2, Math.pow(1 - climbCurve, 1.25));
+  const terminalDrop = smoothstep(0.88, 1.0, sp) * baseEarthR * 0.06;
+  const topLimbY = lerp(h * 0.88, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
+  const leoCenterX = lerp(w * 0.62, vehicleAnchorX + unit * 0.15, 0.55);
+  const centerX = lerp(vehicleAnchorX, leoCenterX, climbCurve) - mouseX * (5 + 5 * climbCurve);
+  const centerY = topLimbY + earthR;
+  return { centerX, centerY, earthR, topLimbY, climbCurve };
+}
+
 /**
- * Pure Monochrome Photorealistic Earth-to-Orbit Globe (sp 0.215 -> 1.000):
+ * Pure Monochrome Photorealistic Earth-to-Orbit Globe (sp 0.255 -> 1.000):
  * - Clean atmospheric globe with swirling clouds & glowing limb (zero map outlines, zero grids)
  * - Subtle pulsing Bangalore orbital ground-track beacon + orbiting constellation satellites
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
-  const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
+  const { ctx, h, sp, t, unit, reducedMotion } = frame;
 
   // Rises gradually across the expanded ascent-to-orbit span (0.255 -> 0.560)
   if (sp < 0.255) return;
 
-  const baseEarthR = Math.max(w, h) * 0.58;
-  const leoTopY = Math.max(h * 0.58, h - baseEarthR * 0.46);
-
-  const climbCurve = smoothstep(0.255, 0.560, sp);
+  const { centerX, centerY, earthR, topLimbY } = getEarthOrbitGeometry(frame);
   const earthFadeIn = smoothstep(0.255, 0.365, sp);
-
-  const earthR = baseEarthR * Math.pow(3.2, Math.pow(1 - climbCurve, 1.25));
-  const terminalDrop = smoothstep(0.88, 1.0, sp) * baseEarthR * 0.06;
-  const topLimbY = lerp(h * 0.88, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
-
-  const leoCenterX = lerp(w * 0.62, vehicleAnchorX + unit * 0.15, 0.55);
-  const centerX = lerp(vehicleAnchorX, leoCenterX, climbCurve) - mouseX * (5 + 5 * climbCurve);
-  const centerY = topLimbY + earthR;
 
   const blrReticleAlpha = smoothstep(0.46, 0.57, sp);
   const orbitRingAlpha = smoothstep(0.47, 0.58, sp);
