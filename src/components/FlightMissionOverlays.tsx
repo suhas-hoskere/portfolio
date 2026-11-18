@@ -161,19 +161,19 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </section>
 
-            {/* ===== SECTION 01: DAVANAGERE ORIGINS & SCHOOLING ===== */}
+            {/* ===== SECTION 01: UNIFIED EDUCATION TIMELINE ===== */}
             <section
-              id="section-ascent"
-              className="min-h-[125vh] flex flex-col justify-center py-20 pointer-events-auto"
+              id="section-education"
+              className="min-h-[175vh] flex flex-col justify-center py-20 pointer-events-auto"
             >
               <div className={`${textWell} space-y-5 text-left`}>
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                  <span>STAGE 01 // ORIGINS</span>
-                  <span className="text-white">2012 – 2025</span>
+                  <span>STAGE 01 // EDUCATION</span>
+                  <span className="text-white">2012 – 2029</span>
                 </div>
 
                 <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight">
-                  Davanagere Roots
+                  Education
                 </h2>
 
                 <div className="border-l border-white/20 pl-5 space-y-5">
@@ -181,6 +181,25 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     <span
                       aria-hidden="true"
                       className="absolute -left-[25px] top-1.5 w-2 h-2 rounded-full bg-white"
+                    />
+                    <div className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase">
+                      2025 – 2029 · B.TECH AI &amp; MACHINE LEARNING
+                    </div>
+                    <h3 className="text-lg font-space font-bold text-white tracking-tight">
+                      PES University, Electronic City Campus, Bangalore
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed">
+                      Pursuing B.Tech in Artificial Intelligence &amp; Machine Learning — independently
+                      building projects spanning voice pipelines, native Windows tools, Android
+                      utilities, multi-script web apps, and applied ML dashboards while contributing
+                      to open source.
+                    </p>
+                  </div>
+
+                  <div className="relative space-y-1">
+                    <span
+                      aria-hidden="true"
+                      className="absolute -left-[25px] top-1.5 w-2 h-2 rounded-full bg-white/80"
                     />
                     <div className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase">
                       2023 – 2025 · PRE-UNIVERSITY (PU)
@@ -197,7 +216,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   <div className="relative space-y-1">
                     <span
                       aria-hidden="true"
-                      className="absolute -left-[25px] top-1.5 w-2 h-2 rounded-full bg-white/70"
+                      className="absolute -left-[25px] top-1.5 w-2 h-2 rounded-full bg-white/60"
                     />
                     <div className="text-[10px] font-mono tracking-widest text-zinc-400 uppercase">
                       2012 – 2023 · UKG – SSLC
@@ -215,59 +234,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </section>
 
-            {/* ===== SECTION 02: BANGALORE & PES UNIVERSITY ===== */}
-            <section
-              id="section-orbit"
-              className="min-h-[100vh] flex flex-col justify-center py-20 pointer-events-auto"
-            >
-              <div className={`${textWell} space-y-4 text-left`}>
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                  <span>STAGE 02 // HIGHER EDUCATION</span>
-                  <span className="text-white">2025 – 2029</span>
-                </div>
-
-                <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight">
-                  PES University, Bangalore
-                </h2>
-
-                <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
-                  Electronic City Campus, Bangalore. Pursuing B.Tech in Artificial Intelligence
-                  &amp; Machine Learning — independently building 5–10+ projects spanning native
-                  Windows tools, Android utilities, multi-script web apps, and ML dashboards while
-                  contributing to open source.
-                </p>
-
-                <div className="pt-4 grid grid-cols-3 gap-4 border-t border-white/15">
-                  <div>
-                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">DEGREE</div>
-                    <div className="text-xs sm:text-sm font-mono text-white font-semibold mt-0.5">
-                      B.Tech AI &amp; ML
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">CAMPUS</div>
-                    <div className="text-xs sm:text-sm font-mono text-white font-semibold mt-0.5">
-                      Electronic City
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-mono text-zinc-400 tracking-widest">PROJECTS</div>
-                    <div className="text-xs sm:text-sm font-mono text-white font-semibold mt-0.5">
-                      5–10+ Built
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* ===== SECTION 03: KANNADA KOOTA & WRITINGS ===== */}
+            {/* ===== SECTION 02: KANNADA KOOTA & WRITINGS ===== */}
             <section
               id="section-heritage"
-              className="min-h-[85vh] flex flex-col justify-center py-20 pointer-events-auto"
+              className="min-h-[95vh] flex flex-col justify-center py-20 pointer-events-auto"
             >
               <div className={`${textWell} space-y-4 text-left`}>
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                  <span>STAGE 03 // WRITING &amp; CULTURE</span>
+                  <span>STAGE 02 // WRITING &amp; CULTURE</span>
                   <span className="text-white">PESU EC CAMPUS</span>
                 </div>
 
@@ -415,16 +389,17 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </section>
 
-            {/* ===== TECHNICAL STACK & TOOLING ===== */}
+            {/* ===== SECTION 03: TECHNICAL STACK & TOOLING ===== */}
             <section
+              id="section-stack"
               aria-label="Technical skills and stack"
-              className="min-h-[65vh] flex flex-col justify-center py-14 pointer-events-auto"
+              className="min-h-[85vh] flex flex-col justify-center py-20 pointer-events-auto"
             >
               <div className={`${textWell} space-y-5 text-left`}>
                 <div className="flex items-center justify-between text-[11px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
                   <span className="inline-flex items-center gap-2 text-white">
                     <Code2 className="w-3.5 h-3.5" />
-                    <span>TECH STACK &amp; MODULES</span>
+                    <span>STAGE 03 // TECH STACK &amp; MODULES</span>
                   </span>
                   <span>AI-ASSISTED DEV</span>
                 </div>

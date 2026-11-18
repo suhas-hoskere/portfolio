@@ -103,9 +103,9 @@ export const CLI_AUTOCOMPLETE_TERMS = [
   'open ntools',
   'open wisewatt.ai',
   'goto home',
-  'goto origins',
-  'goto pesu',
+  'goto education',
   'goto writing',
+  'goto stack',
   'goto projects',
   'goto contact',
   'tour',
@@ -183,9 +183,13 @@ function hasAnyKeyword(text: string, tokens: string[], keywords: string[]): bool
 
 const STAGE_LOOKUP: { idx: number; label: string; aliases: string[] }[] = [
   { idx: 0, label: 'Home', aliases: ['home', 'pad', 'top', 'start', 'intro', 'hero'] },
-  { idx: 1, label: 'Origins', aliases: ['origins', 'roots', 'davanagere', 'school', 'diddige', 'pu'] },
-  { idx: 2, label: 'PESU', aliases: ['pesu', 'pes', 'college', 'university', 'bangalore', 'orbit'] },
-  { idx: 3, label: 'Writing', aliases: ['writing', 'writings', 'kannada', 'koota', 'heritage', 'culture'] },
+  {
+    idx: 1,
+    label: 'Education',
+    aliases: ['education', 'origins', 'roots', 'davanagere', 'school', 'diddige', 'pu', 'pesu', 'pes', 'college', 'university'],
+  },
+  { idx: 2, label: 'Writing', aliases: ['writing', 'writings', 'kannada', 'koota', 'heritage', 'culture'] },
+  { idx: 3, label: 'Stack', aliases: ['stack', 'skills', 'tech', 'tools', 'voice', 'modules'] },
   { idx: 4, label: 'Projects', aliases: ['projects', 'project', 'work', 'missions', 'repos', 'apps'] },
   { idx: 5, label: 'Contact', aliases: ['contact', 'uplink', 'signal', 'email', 'socials', 'links', 'bottom'] },
 ];

@@ -17,9 +17,9 @@ const MissionTerminalModal = lazy(() =>
 
 const SECTION_IDS = [
   'section-pad',
-  'section-ascent',
-  'section-orbit',
+  'section-education',
   'section-heritage',
+  'section-stack',
   'section-missions',
   'section-signal',
 ] as const;
