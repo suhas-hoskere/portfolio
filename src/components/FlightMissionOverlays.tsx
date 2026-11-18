@@ -234,30 +234,29 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </section>
 
-            {/* ===== SECTION 02: KANNADA KOOTA & WRITINGS ===== */}
+            {/* ===== SECTION 02: WRITINGS (ಬರಹಗಳು) ===== */}
             <section
               id="section-heritage"
               className="min-h-[95vh] flex flex-col justify-center py-20 pointer-events-auto"
             >
               <div className={`${textWell} space-y-4 text-left`}>
                 <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                  <span>STAGE 02 // WRITING &amp; CULTURE</span>
-                  <span className="text-white">PESU EC CAMPUS</span>
+                  <span>STAGE 02 // WRITINGS</span>
+                  <span className="text-white">KANNADA · ENGLISH</span>
                 </div>
 
                 <div className="space-y-1">
                   <span className="font-kannada text-3xl sm:text-4xl font-bold text-white block">
-                    ಕನ್ನಡ ಕೂಟ
+                    ಬರಹಗಳು
                   </span>
                   <h2 className="text-xl sm:text-2xl font-space text-zinc-200 font-bold leading-tight tracking-tight">
-                    Kannada Koota Club · Content Writer
+                    Writer · Kannada &amp; English
                   </h2>
                 </div>
 
                 <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
-                  Content writer at Kannada Koota Club, PES University Electronic City Campus.
-                  Passionate about expressing ideas through creative Kannada and English writing —
-                  bringing together cultural storytelling and engineering curiosity.
+                  Independent writer expressing raw thoughts on love, memory, and pain in Kannada
+                  and English.
                 </p>
 
                 {/* Card-by-Card Kannada Writings Deck */}
@@ -337,6 +336,18 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       </button>
                     </div>
                   </div>
+                </div>
+
+                {/* Subtle Club Contribution Note (below the writings card) */}
+                <div className="px-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="text-zinc-300 font-sans font-light">
+                    Also contributes as a{' '}
+                    <span className="text-white font-medium">Content Writer</span> at{' '}
+                    <span className="text-white font-medium">Kannada Koota Club</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                    PESU EC Campus
+                  </span>
                 </div>
 
                 {/* Writing Instagram Pages */}

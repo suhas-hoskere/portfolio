@@ -1097,10 +1097,10 @@ function buildAboutReply(): MadhvaReply {
 function buildWritingReply(): MadhvaReply {
   return {
     kind: 'writing',
-    headline: 'WRITING & CULTURE // LOVE, PAIN & ಕನ್ನಡ ಕೂಟ',
+    headline: 'WRITINGS // ಬರಹಗಳು (LOVE & PAIN)',
     lines: [
       PERSONAL_QA.writingThemes,
-      `He is also a Content Writer at Kannada Koota Club (PES University, Electronic City Campus).`,
+      `He also contributes as a content writer for Kannada Koota Club at PES University (Electronic City Campus).`,
     ],
     suggestions: ['Share a quote', 'goto writing', 'Show his projects'],
   };

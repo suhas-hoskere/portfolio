@@ -439,7 +439,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-zinc-400">
               <div><span className="text-white font-semibold">about</span> — Writer &amp; AIML profile</div>
-              <div><span className="text-white font-semibold">writing</span> — Love, pain, Kannada Koota &amp; IG</div>
+              <div><span className="text-white font-semibold">writing</span> — ಬರಹಗಳು (love, pain &amp; IG)</div>
               <div><span className="text-white font-semibold">quote</span> — Read Suhas&apos;s Kannada writings</div>
               <div><span className="text-white font-semibold">projects</span> — Public repos + Private R&amp;D</div>
               <div><span className="text-white font-semibold">open &lt;name&gt;</span> — Inspect project modal</div>
@@ -478,7 +478,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
                 <span className="font-mono text-xs text-zinc-400 font-normal">({PROFILE.name})</span>
               </p>
               <p><span className="text-zinc-500">ROLE:</span> Writer · AIML Student · Open Source</p>
-              <p><span className="text-zinc-500">WRITING:</span> Love &amp; Pain · Kannada Koota Club</p>
+              <p><span className="text-zinc-500">WRITING:</span> ಬರಹಗಳು · Love &amp; Pain (KN / EN)</p>
               <p><span className="text-zinc-500">GOAL:</span> Building a Startup</p>
               <p><span className="text-zinc-500">CAMPUS:</span> PES University, EC Campus (2025–2029)</p>
               <p><span className="text-zinc-500">VOICE AI:</span> Neural TTS · Moonshine · Whisper</p>
@@ -519,8 +519,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
           <div className="space-y-3 text-xs font-mono text-zinc-300">
             <p className="leading-relaxed text-zinc-200">{PERSONAL_QA.writingThemes}</p>
             <p className="leading-relaxed text-zinc-400">
-              He is also a <span className="text-white font-semibold">Content Writer at Kannada Koota Club</span>{' '}
-              (PES University, Electronic City Campus). Read his pages directly:
+              He also contributes as a content writer for Kannada Koota Club (PESU EC Campus). Read his pages directly:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <a

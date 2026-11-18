@@ -91,7 +91,7 @@ export interface StageWaypoint {
 export const STAGES: StageWaypoint[] = [
   { id: 'pad', code: '00', shortLabel: 'Home', stageName: 'Suhas Hoskere', altitude: 'Writer · AIML · OSS' },
   { id: 'education', code: '01', shortLabel: 'Education', stageName: 'Education', altitude: '2012 – 2029 // School · PU · PESU' },
-  { id: 'heritage', code: '02', shortLabel: 'Writing', stageName: 'Kannada Koota & Writing', altitude: 'PESU EC Campus' },
+  { id: 'heritage', code: '02', shortLabel: 'Writing', stageName: 'ಬರಹಗಳು · Writings', altitude: 'Kannada & English' },
   { id: 'stack', code: '03', shortLabel: 'Stack', stageName: 'Tech Stack & Modules', altitude: 'Voice AI · Python · Web' },
   { id: 'missions', code: '04', shortLabel: 'Projects', stageName: 'Open-Source & Private R&D', altitude: 'Dlives · santypes · ntools' },
   { id: 'signal', code: '05', shortLabel: 'Contact', stageName: 'Establish Uplink', altitude: 'Email · GitHub · LinkedIn' },
