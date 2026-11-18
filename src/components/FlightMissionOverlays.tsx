@@ -19,6 +19,12 @@ import { GithubIcon, LinkedinIcon, InstagramIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
 import { KANNADA_WRITINGS, PROJECTS, SKILL_GROUPS, type ProjectData } from '../data/portfolioData';
 
+const KANNADA_DIGITS = ['೦', '೧', '೨', '೩', '೪', '೫', '೬', '೭', '೮', '೯'] as const;
+const toKannadaNumber = (n: number) =>
+  String(n)
+    .padStart(2, '0')
+    .replace(/\d/g, (d) => KANNADA_DIGITS[Number(d)]);
+
 interface FlightMissionOverlaysProps {
   onLaunch: () => void;
   onSelectProject: (proj: ProjectData) => void;
@@ -259,16 +265,16 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   and English.
                 </p>
 
-                {/* Card-by-Card Kannada Writings Deck */}
+                {/* Card-by-Card Kannada Writings Deck (100% Kannada) */}
                 <div className="rounded-xl bg-black/85 border border-white/20 p-4 sm:p-5 space-y-3.5">
-                  <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400 uppercase tracking-[0.18em]">
-                    <span className="inline-flex items-center gap-1.5 text-zinc-200">
-                      <Feather className="w-3.5 h-3.5 text-white shrink-0" />
-                      <span>SELECTED WRITINGS · ಕನ್ನಡ</span>
+                  <div className="flex items-center justify-between gap-2 text-xs font-kannada text-zinc-400">
+                    <span className="inline-flex items-center gap-1.5 text-zinc-200 font-medium">
+                      <Feather className="w-3.5 h-3.5 text-white shrink-0 -translate-y-[1px]" />
+                      <span>ಆಯ್ದ ಬರಹಗಳು</span>
                     </span>
                     <span className="tabular-nums text-white font-semibold">
-                      {String(activeQuoteIndex + 1).padStart(2, '0')} /{' '}
-                      {String(KANNADA_WRITINGS.length).padStart(2, '0')}
+                      {toKannadaNumber(activeQuoteIndex + 1)} /{' '}
+                      {toKannadaNumber(KANNADA_WRITINGS.length)}
                     </span>
                   </div>
 
@@ -319,8 +325,8 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       <button
                         type="button"
                         onClick={showPrevQuote}
-                        aria-label="Previous writing"
-                        title="Previous writing"
+                        aria-label="ಹಿಂದಿನ ಬರಹ"
+                        title="ಹಿಂದಿನ ಬರಹ"
                         className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white hover:text-black border border-white/20 text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
                       >
                         <ChevronLeft className="w-4 h-4" />
@@ -328,8 +334,8 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       <button
                         type="button"
                         onClick={showNextQuote}
-                        aria-label="Next writing"
-                        title="Next writing"
+                        aria-label="ಮುಂದಿನ ಬರಹ"
+                        title="ಮುಂದಿನ ಬರಹ"
                         className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white hover:text-black border border-white/20 text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
                       >
                         <ChevronRight className="w-4 h-4" />
