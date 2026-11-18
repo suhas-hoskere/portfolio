@@ -17,6 +17,35 @@ interface MonoStar {
 
 let cachedStars: MonoStar[] | null = null;
 let cachedSunSprite: HTMLCanvasElement | null = null;
+let cachedMilkyWaySprite: HTMLCanvasElement | null = null;
+
+/** Lazily pre-renders a tiny whisper-faint monochrome Milky Way band ONCE (only when user reaches orbit sp >= 0.44!) */
+function getMilkyWaySprite(): HTMLCanvasElement {
+  if (cachedMilkyWaySprite) return cachedMilkyWaySprite;
+  const w = 240;
+  const h = 110;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const rand = mulberry32(88421);
+
+  for (let i = 0; i < 16; i++) {
+    const x = 24 + (i / 15) * (w - 48) + (rand() - 0.5) * 18;
+    const y = h * 0.5 + (rand() - 0.5) * 26;
+    const r = 22 + rand() * 34;
+    const g = ctx.createRadialGradient(x, y, 2, x, y, r);
+    g.addColorStop(0.0, 'rgba(235, 235, 245, 0.14)');
+    g.addColorStop(0.55, 'rgba(195, 195, 210, 0.05)');
+    g.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  cachedMilkyWaySprite = canvas;
+  return canvas;
+}
 
 function getStars(): MonoStar[] {
   if (cachedStars) return cachedStars;
@@ -136,6 +165,20 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
     hazeGrad.addColorStop(1.0, `rgba(230, 232, 242, ${0.085 * atmoHaze})`);
     ctx.fillStyle = hazeGrad;
     ctx.fillRect(0, horizonTop, w, horizonBot - horizonTop);
+  }
+
+  // Whisper-faint monochrome Milky Way dust band in deep orbit (lazily built only at sp >= 0.44!)
+  if (sp >= 0.44) {
+    const mwAlpha = smoothstep(0.44, 0.62, sp) * 0.52;
+    if (mwAlpha > 0.01) {
+      const mwImg = getMilkyWaySprite();
+      ctx.save();
+      ctx.globalAlpha = mwAlpha;
+      ctx.translate(w * 0.46 - mouseX * 4, h * 0.28 - mouseY * 3);
+      ctx.rotate(-0.28);
+      ctx.drawImage(mwImg, -w * 0.55, -h * 0.24, w * 1.10, h * 0.48);
+      ctx.restore();
+    }
   }
 
   // 2. Crisp monochrome starfield with gentle subtle twinkle (clean pinpoints, zero rain/warp streaks!)

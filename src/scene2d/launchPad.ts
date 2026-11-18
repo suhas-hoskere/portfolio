@@ -41,9 +41,32 @@ interface CryoMist {
 
 let cachedSmokeLightSprite: HTMLCanvasElement | null = null;
 let cachedSmokeDarkSprite: HTMLCanvasElement | null = null;
+let cachedIgnitionGlowSprite: HTMLCanvasElement | null = null;
 let steamPool: VolumetricSmokePuff[] | null = null;
 let sparkPool: LiveSpark[] | null = null;
 let cryoPool: CryoMist[] | null = null;
+
+/** Lazily pre-rendered soft monochrome ignition light-bounce sprite (built ONCE only when ignition begins!) */
+function getIgnitionGlowSprite(): HTMLCanvasElement {
+  if (cachedIgnitionGlowSprite) return cachedIgnitionGlowSprite;
+  const w = 220;
+  const h = 140;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const cx = w * 0.5;
+  const cy = h * 0.62;
+  const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, 108);
+  g.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
+  g.addColorStop(0.32, 'rgba(236, 236, 245, 0.22)');
+  g.addColorStop(0.68, 'rgba(205, 205, 220, 0.06)');
+  g.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  cachedIgnitionGlowSprite = canvas;
+  return canvas;
+}
 
 function getSmokeSprites(): {
   bright: HTMLCanvasElement;
@@ -251,7 +274,17 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
       : 0;
 
   if (fireRamp > 0.03) {
-    const flicker = reducedMotion ? 1 : 0.86 + Math.sin(t * 48) * 0.14;
+    const flicker = reducedMotion ? 1 : 0.88 + Math.sin(t * 48) * 0.12;
+    // Dynamic monochrome light bounce illuminating the ground pad, gantry base & lower sky
+    const glowImg = getIgnitionGlowSprite();
+    const glowW = unit * 4.4 * (0.94 + flicker * 0.08);
+    const glowH = unit * 2.8 * (0.94 + flicker * 0.08);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = clamp(fireRamp * flicker * 0.72 * alpha, 0, 0.8);
+    ctx.drawImage(glowImg, -glowW * 0.5, padTopY - glowH * 0.58, glowW, glowH);
+    ctx.restore();
+
     ctx.fillStyle = `rgba(255, 255, 255, ${0.26 * fireRamp * flicker})`;
     ctx.beginPath();
     ctx.moveTo(0, padTopY + unit * 0.04);

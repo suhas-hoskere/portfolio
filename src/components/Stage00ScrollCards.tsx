@@ -6,6 +6,7 @@ import { cosmicAudio } from './AudioEngine';
 interface Stage00ScrollCardsProps {
   scrollProgress: number;
   onLaunch: () => void;
+  entered?: boolean;
 }
 
 const MILESTONES = [
@@ -74,15 +75,17 @@ const MILESTONES = [
 export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
   scrollProgress,
   onLaunch,
+  entered = true,
 }) => {
   const activeMilestone = MILESTONES.find(
     (m) => scrollProgress >= m.min && scrollProgress < m.max
   );
 
   if (scrollProgress < 0.032) {
+    const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
     return (
-      <div key="step-00" className="animate-stage-in space-y-3.5 sm:space-y-5 text-left">
-        <div className="flex flex-wrap items-center gap-2">
+      <div key={entered ? 'step-00-in' : 'step-00-wait'} className="space-y-3.5 sm:space-y-5 text-left">
+        <div className={`flex flex-wrap items-center gap-2 ${enterCls}`} style={{ animationDelay: '0ms' }}>
           <span className="px-2.5 py-1 rounded-md bg-zinc-950/95 border border-white/25 text-white text-[11px] font-mono font-medium tracking-widest uppercase flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-zinc-300" />
             <span>INDIA LAUNCH COMPLEX // 00</span>
@@ -92,7 +95,7 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
           </span>
         </div>
 
-        <div className="space-y-1">
+        <div className={`space-y-1 ${enterCls}`} style={{ animationDelay: '75ms' }}>
           <h1 className="text-[clamp(2rem,5vw,4.75rem)] font-space font-bold text-white leading-[0.98] tracking-tight">
             Suhas Hoskere
           </h1>
@@ -101,11 +104,17 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
           </div>
         </div>
 
-        <p className="text-xs sm:text-base text-zinc-300 font-sans font-light leading-relaxed max-w-md">
+        <p
+          className={`text-xs sm:text-base text-zinc-300 font-sans font-light leading-relaxed max-w-md ${enterCls}`}
+          style={{ animationDelay: '140ms' }}
+        >
           B.Tech in Artificial Intelligence &amp; Machine Learning at PES University, Bangalore. Architecting intelligent systems, voice pipelines, and deep software.
         </p>
 
-        <div className="pt-1 flex flex-wrap items-center gap-2.5">
+        <div
+          className={`pt-1 flex flex-wrap items-center gap-2.5 ${enterCls}`}
+          style={{ animationDelay: '210ms' }}
+        >
           <button
             onClick={() => {
               cosmicAudio.playStagingSound();
@@ -131,7 +140,10 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
           </a>
         </div>
 
-        <div className="pt-1 flex items-center gap-2 text-[11px] font-mono text-zinc-400">
+        <div
+          className={`pt-1 flex items-center gap-2 text-[11px] font-mono text-zinc-400 ${enterCls}`}
+          style={{ animationDelay: '280ms' }}
+        >
           <span>▼</span>
           <span>SCROLL DOWN TO COMMENCE ENGINE IGNITION</span>
         </div>

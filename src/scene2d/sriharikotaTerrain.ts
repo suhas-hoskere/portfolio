@@ -472,5 +472,37 @@ export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
   ctx.fill();
   ctx.stroke();
 
+  // 4. Tiny distant coastal birds gliding calmly across the horizon (scatter gently away on engine ignition!)
+  if (sp < 0.095 && !reducedMotion) {
+    const scatter = smoothstep(0.032, 0.092, sp);
+    const birdFade = (1 - smoothstep(0.068, 0.095, sp)) * alpha;
+    if (birdFade > 0.02) {
+      const birds = [
+        { ox: -3.9, oy: -1.18, speed: 0.18, wingRate: 5.4, dir: -1, sz: 0.075 },
+        { ox: -3.45, oy: -1.32, speed: 0.16, wingRate: 6.1, dir: -1, sz: 0.062 },
+        { ox: -2.95, oy: -1.12, speed: 0.20, wingRate: 5.8, dir: -1, sz: 0.068 },
+        { ox: 2.85, oy: -1.26, speed: 0.15, wingRate: 5.2, dir: 1, sz: 0.064 },
+      ];
+      ctx.strokeStyle = `rgba(228, 228, 236, ${0.34 * birdFade})`;
+      ctx.lineWidth = 1.0;
+      ctx.lineCap = 'round';
+      for (let b = 0; b < birds.length; b++) {
+        const bd = birds[b];
+        const glideX = ((t * bd.speed + b * 0.9) % 4.5) - 2.25;
+        const scatterX = bd.dir * scatter * 2.6;
+        const scatterY = -scatter * (1.2 + b * 0.25);
+        const bx = (bd.ox + glideX * 0.35 + scatterX) * unit;
+        const by = (bd.oy + Math.sin(t * 1.4 + b) * 0.05 + scatterY) * unit;
+        const wing = bd.sz * unit;
+        const flap = Math.sin(t * (bd.wingRate + scatter * 7.5) + b * 1.7) * wing * 0.48;
+        ctx.beginPath();
+        ctx.moveTo(bx - wing, by - flap);
+        ctx.quadraticCurveTo(bx - wing * 0.4, by - wing * 0.32, bx, by);
+        ctx.quadraticCurveTo(bx + wing * 0.4, by - wing * 0.32, bx + wing, by - flap);
+        ctx.stroke();
+      }
+    }
+  }
+
   ctx.restore();
 }

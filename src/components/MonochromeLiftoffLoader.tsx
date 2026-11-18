@@ -182,44 +182,43 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
         const rx = cx;
         const ry = padY - 6 - liftPx;
 
-        // Roaring flickering monochrome supersonic flames
+        // Radiant soft monochrome exhaust plume (matches main launchpad plasma glow, zero hard triangles!)
         if (ignitionRamp > 0.02) {
-          const flick1 = 0.86 + Math.sin(tSec * 68) * 0.14 + Math.cos(tSec * 112) * 0.08;
-          const flick2 = 0.88 + Math.cos(tSec * 74) * 0.12;
-          const coreLen = (24 + liftoffFrac * 42) * ignitionRamp * flick1;
+          const flick1 = 0.88 + Math.sin(tSec * 64) * 0.12 + Math.cos(tSec * 108) * 0.06;
+          const flick2 = 0.90 + Math.cos(tSec * 70) * 0.10;
+          const coreLen = (26 + liftoffFrac * 44) * ignitionRamp * flick1;
           const sideLen = (20 + liftoffFrac * 34) * ignitionRamp * flick2;
 
-          // Outer translucent white exhaust cone
-          ctx.fillStyle = 'rgba(255,255,255,0.28)';
-          ctx.beginPath();
-          ctx.moveTo(rx - 14, ry + 2);
-          ctx.lineTo(rx, ry + coreLen * 1.35);
-          ctx.lineTo(rx + 14, ry + 2);
-          ctx.closePath();
-          ctx.fill();
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
 
-          // Core white-hot flame + twin booster flames
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.moveTo(rx - 5, ry + 2);
-          ctx.lineTo(rx, ry + coreLen);
-          ctx.lineTo(rx + 5, ry + 2);
-          ctx.closePath();
-          ctx.fill();
+          // Soft luminous ignition bounce glow on the launchpad floor
+          const floorGlow = ctx.createRadialGradient(rx, padY - 2, 2, rx, padY - 2, 46);
+          floorGlow.addColorStop(0.0, `rgba(255,255,255,${0.36 * ignitionRamp * (1 - liftoffFrac * 0.7)})`);
+          floorGlow.addColorStop(1.0, 'rgba(255,255,255,0)');
+          ctx.fillStyle = floorGlow;
+          ctx.fillRect(0, padY - 48, cw, 52);
 
-          ctx.beginPath();
-          ctx.moveTo(rx - 14, ry);
-          ctx.lineTo(rx - 11, ry + sideLen);
-          ctx.lineTo(rx - 8, ry);
-          ctx.closePath();
-          ctx.fill();
+          // Feathered glowing core & booster plumes
+          const drawSoftJet = (jx: number, jw: number, jl: number) => {
+            const g = ctx.createLinearGradient(jx, ry, jx, ry + jl);
+            g.addColorStop(0.0, `rgba(255,255,255,${0.95 * ignitionRamp})`);
+            g.addColorStop(0.45, `rgba(235,235,244,${0.38 * ignitionRamp})`);
+            g.addColorStop(1.0, 'rgba(255,255,255,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(jx - jw, ry);
+            ctx.quadraticCurveTo(jx - jw * 1.4, ry + jl * 0.5, jx, ry + jl);
+            ctx.quadraticCurveTo(jx + jw * 1.4, ry + jl * 0.5, jx + jw, ry);
+            ctx.closePath();
+            ctx.fill();
+          };
 
-          ctx.beginPath();
-          ctx.moveTo(rx + 8, ry);
-          ctx.lineTo(rx + 11, ry + sideLen);
-          ctx.lineTo(rx + 14, ry);
-          ctx.closePath();
-          ctx.fill();
+          drawSoftJet(rx, 8, coreLen * 1.25);
+          drawSoftJet(rx, 4, coreLen * 0.9);
+          drawSoftJet(rx - 8.5, 3.2, sideLen);
+          drawSoftJet(rx + 8.5, 3.2, sideLen);
+          ctx.restore();
         }
 
         // Draw crisp Black & White LVM3 rocket body (sleek taller & slimmer silhouette)
@@ -386,8 +385,8 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-[#050505] text-white flex flex-col items-center justify-center px-5 select-none transition-opacity duration-300 ${
-        isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      className={`fixed inset-0 z-50 bg-[#050505] text-white flex flex-col items-center justify-center px-5 select-none transition-all duration-400 ease-out ${
+        isFadingOut ? 'opacity-0 -translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0'
       }`}
     >
       {/* Top mission stamp */}

@@ -122,6 +122,7 @@ interface FlightMissionOverlaysProps {
   onSelectProject: (proj: ProjectData) => void;
   onNextStage?: () => void;
   isLiftoffActive?: boolean;
+  entered?: boolean;
 }
 
 export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React.memo(({
@@ -129,6 +130,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
   scrollProgress = 0,
   onLaunch,
   onSelectProject,
+  entered = true,
 }) => {
   return (
     <div className="fixed inset-0 pointer-events-none z-20 flex items-end md:items-center justify-start px-4 sm:px-8 md:px-12 lg:px-16 pb-16 md:pb-0 select-none">
@@ -138,6 +140,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
           <Stage00ScrollCards
             scrollProgress={scrollProgress}
             onLaunch={onLaunch}
+            entered={entered}
           />
         )}
 

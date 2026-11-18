@@ -91,22 +91,51 @@ function getEarthSprite(): HTMLCanvasElement {
     ctx.restore();
   }
 
-  // Soft spherical limb inner atmospheric scatter
+  // Soft spherical limb inner atmospheric scatter (brighter on upper-right side facing the Sun!)
   const innerRim = ctx.createRadialGradient(c, c, r * 0.80, c, c, r);
   innerRim.addColorStop(0.0, 'rgba(255, 255, 255, 0)');
-  innerRim.addColorStop(0.72, 'rgba(220, 220, 232, 0.06)');
-  innerRim.addColorStop(0.94, 'rgba(255, 255, 255, 0.26)');
-  innerRim.addColorStop(1.0, 'rgba(255, 255, 255, 0.58)');
+  innerRim.addColorStop(0.72, 'rgba(220, 220, 232, 0.05)');
+  innerRim.addColorStop(0.94, 'rgba(255, 255, 255, 0.22)');
+  innerRim.addColorStop(1.0, 'rgba(255, 255, 255, 0.52)');
   ctx.fillStyle = innerRim;
   ctx.beginPath();
   ctx.arc(c, c, r, 0, Math.PI * 2);
   ctx.fill();
 
+  // Directional Sun-facing specular horizon bloom on upper-right limb (ties Earth lighting to the Sun!)
+  const sunGlint = ctx.createRadialGradient(
+    c + r * 0.42,
+    c - r * 0.84,
+    4,
+    c + r * 0.42,
+    c - r * 0.84,
+    r * 0.52
+  );
+  sunGlint.addColorStop(0.0, 'rgba(255, 255, 255, 0.42)');
+  sunGlint.addColorStop(0.42, 'rgba(244, 244, 252, 0.14)');
+  sunGlint.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = sunGlint;
+  ctx.beginPath();
+  ctx.arc(c, c, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Subtle twilight shadow on far left limb opposite the Sun
+  const dusk = ctx.createLinearGradient(c - r, c - r * 0.5, c - r * 0.15, c - r * 0.5);
+  dusk.addColorStop(0.0, 'rgba(4, 4, 7, 0.58)');
+  dusk.addColorStop(1.0, 'rgba(4, 4, 7, 0)');
+  ctx.fillStyle = dusk;
+  ctx.fillRect(c - r, c - r, r, r * 2);
+
   ctx.restore(); // End globe clip
 
-  // Crisp 1.4px glowing atmospheric horizon line on top arc
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
-  ctx.lineWidth = 1.4;
+  // Crisp glowing atmospheric horizon line — brighter on the Sun-facing right arc, softer into twilight on left!
+  const rimGrad = ctx.createLinearGradient(c - r * 0.9, c - r * 0.5, c + r * 0.8, c - r * 0.8);
+  rimGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.28)');
+  rimGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.72)');
+  rimGrad.addColorStop(0.82, 'rgba(255, 255, 255, 0.98)');
+  rimGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.82)');
+  ctx.strokeStyle = rimGrad;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(c, c, r, Math.PI * 1.04, Math.PI * 1.96);
   ctx.stroke();

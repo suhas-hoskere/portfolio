@@ -296,6 +296,7 @@ export const App: React.FC = () => {
           scrollProgress={uiScrollProgress}
           onLaunch={handleLaunch}
           onSelectProject={setSelectedProject}
+          entered={!showLoader}
         />
       </div>
 
