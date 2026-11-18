@@ -44,11 +44,11 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         >
           <BrandLogo className="w-8 h-8 shrink-0 transition-transform duration-200 group-hover:scale-105" />
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-kannada text-sm sm:text-base font-bold text-white tracking-tight truncate">
+            <div className="flex items-baseline gap-2.5">
+              <span className="font-hubballi text-lg sm:text-xl text-white tracking-wide leading-none truncate">
                 ಸುಹಾಸ್ ಹೊಸಕೆರೆ
               </span>
-              <span className="hidden sm:inline font-space text-xs font-medium text-zinc-400">
+              <span className="hidden sm:inline font-signature italic text-sm sm:text-[15px] font-semibold text-zinc-400 tracking-wide leading-none">
                 Suhas Hoskere
               </span>
             </div>

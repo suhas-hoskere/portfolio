@@ -417,16 +417,10 @@ export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
     ctx.fillStyle = '#09090b';
     ctx.fillRect(0, horizonY + unit * 0.02, w, h - horizonY + 20);
 
-    // Whisper-light 1px coastal horizon datum line + subtle Bay of Bengal shimmer
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, horizonY + unit * 0.02);
-    ctx.lineTo(w, horizonY + unit * 0.02);
-    ctx.stroke();
-
+    // Subtle Bay of Bengal shimmer
     const seaX = w * 0.87 - mouseX * 5;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
     for (let r = 0; r < 4; r++) {
       const ry = horizonY + unit * 0.07 + r * 7;
       const pulse = reducedMotion ? 1 : 0.90 + 0.10 * Math.sin(t * 1.9 + r * 1.4);
