@@ -287,8 +287,8 @@ export const App: React.FC = () => {
       setActiveStageIndex(clampedIdx);
 
       const distFrac = Math.abs(targetFraction - scrollProgressRef.current);
-      const durationMs = Math.max(360, Math.min(680, Math.round(320 + distFrac * 420)));
-      animateScrollTo(targetY, durationMs, true);
+      const durationMs = Math.max(920, Math.min(1950, Math.round(820 + distFrac * 1150)));
+      animateScrollTo(targetY, durationMs, false);
     },
     [animateScrollTo]
   );
