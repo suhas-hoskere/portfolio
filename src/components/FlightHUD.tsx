@@ -45,10 +45,16 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
           <BrandLogo className="w-8 h-8 shrink-0 transition-transform duration-200 group-hover:scale-105" />
           <div className="min-w-0">
             <div className="flex items-baseline gap-2.5">
-              <span className="font-akaya text-lg sm:text-xl text-white tracking-wide leading-none truncate">
+              <span
+                className="font-akaya text-xl sm:text-[22px] text-white tracking-wide leading-none truncate"
+                style={{ fontFamily: '"Akaya Kanadaka", "Noto Sans Kannada", cursive' }}
+              >
                 ಸುಹಾಸ್ ಹೊಸಕೆರೆ
               </span>
-              <span className="hidden sm:inline font-signature italic text-sm sm:text-[15px] font-semibold text-zinc-400 tracking-wide leading-none">
+              <span
+                className="hidden sm:inline font-signature italic text-[15px] sm:text-base font-semibold text-zinc-400 tracking-wide leading-none"
+                style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}
+              >
                 Suhas Hoskere
               </span>
             </div>
