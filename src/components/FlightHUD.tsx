@@ -69,10 +69,10 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
                 onOpenTerminal();
               }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#09090b]/95 border border-white/20 hover:border-white/50 text-zinc-300 hover:text-white font-mono text-[11px] transition-colors cursor-pointer"
-              title="Open Mission Control Terminal (~ key)"
+              title="Ask Madhva — Offline Assistant CLI (~ key)"
             >
               <Terminal className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">CLI</span>
+              <span className="hidden sm:inline">MADHVA</span>
             </button>
           )}
 

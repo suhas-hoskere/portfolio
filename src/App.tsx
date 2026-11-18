@@ -280,6 +280,14 @@ export const App: React.FC = () => {
     setAudioActive(active);
   }, []);
 
+  const handleSetAudio = useCallback((enabled: boolean) => {
+    if (enabled && cosmicAudio.isMuted) {
+      setAudioActive(cosmicAudio.toggle());
+    } else if (!enabled && !cosmicAudio.isMuted) {
+      setAudioActive(cosmicAudio.toggle());
+    }
+  }, []);
+
   const stopAutoTour = useCallback(() => {
     if (scrollAnimRaf.current) {
       cancelAnimationFrame(scrollAnimRaf.current);
@@ -463,6 +471,11 @@ export const App: React.FC = () => {
             onSetCameraMode={setCameraMode}
             blueprintMode={blueprintMode}
             onToggleBlueprint={() => setBlueprintMode((prev) => !prev)}
+            audioActive={audioActive}
+            onSetAudio={handleSetAudio}
+            onJumpToStage={handleJumpToStage}
+            onSelectProject={handleSelectProject}
+            onStartTour={handleLaunch}
           />
         )}
 

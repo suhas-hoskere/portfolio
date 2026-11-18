@@ -1,6 +1,33 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, X, CornerDownLeft } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  Terminal,
+  X,
+  CornerDownLeft,
+  ArrowUpRight,
+  ExternalLink,
+  Copy,
+  Check,
+  Download,
+  Lock,
+  Sparkles,
+} from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
+import {
+  EDUCATION,
+  PROFILE,
+  PROJECTS,
+  SKILL_GROUPS,
+  SOCIAL_LINKS,
+  type ProjectData,
+} from '../data/portfolioData';
+import {
+  CLI_AUTOCOMPLETE_TERMS,
+  STARTER_PROMPTS,
+  getTelemetryStageName,
+  runMadhvaQuery,
+  type MadhvaReply,
+} from '../utils/madhvaEngine';
+import { GithubIcon, InstagramIcon, LinkedinIcon } from './Icons';
 
 interface MissionTerminalModalProps {
   isOpen: boolean;
@@ -11,14 +38,39 @@ interface MissionTerminalModalProps {
   onSetCameraMode: (mode: 'CINEMATIC' | 'BOOSTER' | 'CHASE') => void;
   blueprintMode: boolean;
   onToggleBlueprint: () => void;
+  audioActive: boolean;
+  onSetAudio: (enabled: boolean) => void;
+  onJumpToStage: (stageIndex: number) => void;
+  onSelectProject: (project: ProjectData) => void;
+  onStartTour: () => void;
 }
 
-interface CommandOutput {
+interface TerminalEntry {
   id: string;
-  command: string;
-  output: React.ReactNode;
+  query: string;
+  reply: MadhvaReply;
   time: string;
 }
+
+const VIRTUAL_FILES = [
+  { name: 'about.md', cmd: 'cat about.md', kind: 'file' },
+  { name: 'writing.md', cmd: 'cat writing.md', kind: 'file' },
+  { name: 'projects/', cmd: 'projects', kind: 'dir' },
+  { name: 'skills.json', cmd: 'cat skills.json', kind: 'file' },
+  { name: 'education.log', cmd: 'cat education.log', kind: 'file' },
+  { name: 'contact.txt', cmd: 'cat contact.txt', kind: 'file' },
+  { name: 'resume.pdf', cmd: 'resume', kind: 'file' },
+];
+
+const INITIAL_WELCOME: MadhvaReply = {
+  kind: 'greeting',
+  headline: 'MADHVA // OFFLINE ASSISTANT READY',
+  lines: [
+    `ನಮಸ್ಕಾರ! I'm Madhva — ${PROFILE.name}'s local portfolio bot (100% offline, zero API keys).`,
+    `Ask me any question in plain English or Kannada, or run CLI commands like "neofetch", "ls", "goto writing", "open dlives", or "help".`,
+  ],
+  suggestions: STARTER_PROMPTS,
+};
 
 export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
   isOpen,
@@ -29,230 +81,623 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
   onSetCameraMode,
   blueprintMode,
   onToggleBlueprint,
+  audioActive,
+  onSetAudio,
+  onJumpToStage,
+  onSelectProject,
+  onStartTour,
 }) => {
   const [inputVal, setInputVal] = useState('');
-  const [history, setHistory] = useState<CommandOutput[]>(() => [
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [cmdHistory, setCmdHistory] = useState<string[]>([]);
+  const [historyCursor, setHistoryCursor] = useState<number>(-1);
+  const [entries, setEntries] = useState<TerminalEntry[]>(() => [
     {
-      id: 'init-1',
-      command: 'sys.init --telemetry --secure',
-      output: (
-        <div className="space-y-1 text-zinc-300 font-mono text-xs">
-          <p className="text-white font-bold">
-            [OK] SDSC-SHAR ORBITAL TELEMETRY UPLINK ESTABLISHED.
-          </p>
-          <p className="text-zinc-400">Flight Computer v4.2 // Dual Core Vikas &amp; C25 Cryogenic Monitor</p>
-          <p className="text-zinc-300">
-            Type <span className="text-black font-bold bg-white px-1.5 rounded">help</span> for commands or <span className="text-black font-bold bg-white px-1.5 rounded">skills</span> to view technical stacks.
-          </p>
-        </div>
-      ),
-      time: new Date().toLocaleTimeString(),
+      id: 'madhva-init',
+      query: 'madhva --init --offline',
+      reply: INITIAL_WELCOME,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Lock background page scroll while Madhva CLI is open + focus input
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 80);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.clearTimeout(focusTimer);
+    };
   }, [isOpen]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [history]);
+  }, [entries]);
+
+  const triggerResumeDownload = useCallback(() => {
+    const a = document.createElement('a');
+    a.href = PROFILE.resumePath;
+    a.download = PROFILE.resumeFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, []);
+
+  const copyEmailToClipboard = useCallback(() => {
+    cosmicAudio.playTelemetryChirp(1320, 0.04);
+    navigator.clipboard?.writeText(PROFILE.email);
+    setCopiedEmail(true);
+    window.setTimeout(() => setCopiedEmail(false), 1800);
+  }, []);
+
+  const submitQuery = useCallback(
+    (raw: string) => {
+      const cleaned = raw.trim();
+      if (!cleaned) return;
+
+      cosmicAudio.playTelemetryChirp(1220, 0.04);
+      setCmdHistory((prev) => (prev[prev.length - 1] === cleaned ? prev : [...prev.slice(-30), cleaned]));
+      setHistoryCursor(-1);
+      setInputVal('');
+
+      const reply = runMadhvaQuery(cleaned, {
+        scrollProgress,
+        activeStageIndex,
+        cameraMode,
+        blueprintMode,
+        audioActive,
+      });
+
+      const effect = reply.sideEffect;
+      if (effect) {
+        switch (effect.type) {
+          case 'clear':
+            setEntries([]);
+            return;
+          case 'exit':
+            onClose();
+            return;
+          case 'copy-email':
+            copyEmailToClipboard();
+            break;
+          case 'resume':
+            triggerResumeDownload();
+            break;
+          case 'camera':
+            onSetCameraMode(effect.mode);
+            break;
+          case 'blueprint':
+            onToggleBlueprint();
+            break;
+          case 'audio':
+            if (effect.state === 'on') onSetAudio(true);
+            else if (effect.state === 'off') onSetAudio(false);
+            else onSetAudio(!audioActive);
+            break;
+          case 'goto':
+            onClose();
+            window.setTimeout(() => onJumpToStage(effect.stageIndex), 60);
+            return;
+          case 'open-project':
+            onClose();
+            window.setTimeout(() => onSelectProject(effect.project), 60);
+            return;
+          case 'tour':
+            onClose();
+            window.setTimeout(() => onStartTour(), 80);
+            return;
+        }
+      }
+
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setEntries((prev) => [
+        ...prev,
+        {
+          id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          query: cleaned,
+          reply,
+          time,
+        },
+      ]);
+    },
+    [
+      activeStageIndex,
+      audioActive,
+      blueprintMode,
+      cameraMode,
+      copyEmailToClipboard,
+      onClose,
+      onJumpToStage,
+      onSelectProject,
+      onSetAudio,
+      onSetCameraMode,
+      onStartTour,
+      onToggleBlueprint,
+      scrollProgress,
+      triggerResumeDownload,
+    ]
+  );
+
+  // Inline Tab autocomplete suggestion
+  const trimmedInput = inputVal.trimStart().toLowerCase();
+  const tabMatch =
+    trimmedInput.length >= 2
+      ? CLI_AUTOCOMPLETE_TERMS.find((t) => t.startsWith(trimmedInput) && t !== trimmedInput) ?? null
+      : null;
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' && tabMatch) {
+      e.preventDefault();
+      setInputVal(tabMatch);
+    } else if (e.key === 'ArrowUp') {
+      if (cmdHistory.length === 0) return;
+      e.preventDefault();
+      const nextIdx = historyCursor === -1 ? cmdHistory.length - 1 : Math.max(0, historyCursor - 1);
+      setHistoryCursor(nextIdx);
+      setInputVal(cmdHistory[nextIdx]);
+    } else if (e.key === 'ArrowDown') {
+      if (historyCursor === -1) return;
+      e.preventDefault();
+      if (historyCursor >= cmdHistory.length - 1) {
+        setHistoryCursor(-1);
+        setInputVal('');
+      } else {
+        const nextIdx = historyCursor + 1;
+        setHistoryCursor(nextIdx);
+        setInputVal(cmdHistory[nextIdx]);
+      }
+    }
+  };
 
   if (!isOpen) return null;
 
-  const handleCommand = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cmd = inputVal.trim();
-    if (!cmd) return;
-
-    cosmicAudio.playTelemetryChirp(1200, 0.04);
-    const time = new Date().toLocaleTimeString();
-    const lower = cmd.toLowerCase();
-
-    let output: React.ReactNode = null;
-
-    if (lower === 'help') {
-      output = (
-        <div className="space-y-1.5 text-xs font-mono">
-          <p className="text-white font-semibold">AVAILABLE MISSION CONTROL COMMANDS:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-zinc-400">
-            <div><span className="text-white font-bold">about</span> / <span className="text-white font-bold">whoami</span> - Engineer profile &amp; bio</div>
-            <div><span className="text-white font-bold">skills</span> - AI/ML, Speech, &amp; Systems breakdown</div>
-            <div><span className="text-white font-bold">projects</span> - Live project missions &amp; repos</div>
-            <div><span className="text-white font-bold">telemetry</span> - Real-time flight vector metrics</div>
-            <div><span className="text-white font-bold">camera [mode]</span> - Set: cinematic | booster | chase</div>
-            <div><span className="text-white font-bold">blueprint</span> - Toggle monochrome wireframe</div>
-            <div><span className="text-white font-bold">contact</span> - Direct comms &amp; links</div>
-            <div><span className="text-white font-bold">clear</span> - Flush terminal buffer</div>
-            <div><span className="text-white font-bold">exit</span> - Return to Flight Deck</div>
-          </div>
-        </div>
-      );
-    } else if (lower === 'about' || lower === 'whoami' || lower === 'bio') {
-      output = (
-        <div className="space-y-2 text-xs font-mono text-zinc-300">
-          <p className="text-white font-bold text-sm">
-            SUHAS HOSKERE // ಸುಹಾಸ್ ಹೊಸಕೆರೆ
-          </p>
-          <p className="text-zinc-200">
-            B.Tech in Artificial Intelligence &amp; Machine Learning at PES University, Bangalore.
-          </p>
-          <p className="text-zinc-400 leading-relaxed">
-            Architecting end-to-end voice and speech pipelines, deep neural systems, high-concurrency backend microservices, and high-performance visual computing.
-          </p>
-        </div>
-      );
-    } else if (lower === 'skills') {
-      output = (
-        <div className="space-y-3 text-xs font-mono">
-          <div>
-            <div className="text-white font-bold mb-1">MACHINE LEARNING &amp; VOICE PIPELINES</div>
-            <p className="text-zinc-400">PyTorch · HuggingFace Transformers · Whisper ASR · FastSpeech · Mel-Spectrogram DSP · Vector Databases (Chroma/FAISS)</p>
-          </div>
-          <div>
-            <div className="text-white font-bold mb-1">SYSTEMS, ARCHITECTURE &amp; CLOUD</div>
-            <p className="text-zinc-400">Python · TypeScript · C++ · Node.js / FastAPI · Docker · Kubernetes · Redis · PostgreSQL · WebSockets</p>
-          </div>
-          <div>
-            <div className="text-white font-bold mb-1">GRAPHICS &amp; WEB COMPUTING</div>
-            <p className="text-zinc-400">HTML5 Canvas 2D · React · TailwindCSS · TypeScript · Web Audio API</p>
-          </div>
-        </div>
-      );
-    } else if (lower === 'projects') {
-      output = (
-        <div className="space-y-2 text-xs font-mono">
-          <p className="text-white font-bold">ACTIVE EXPLORATION MISSIONS:</p>
-          <div className="space-y-2 text-zinc-300">
-            <div className="p-2 rounded bg-white/5 border border-white/15">
-              <span className="text-white font-bold">1. VoxStream AI</span> // Real-Time Hybrid Voice Pipeline
-              <p className="text-[11px] text-zinc-400">Streaming Vosk + Whisper ASR and Moonshine edge STT with neural TTS synthesis.</p>
-            </div>
-            <div className="p-2 rounded bg-white/5 border border-white/15">
-              <span className="text-white font-bold">2. OrbitStack Platform</span> // Full-Stack Distributed Web Platform
-              <p className="text-[11px] text-zinc-400">Next.js 15, React 19, MongoDB, and Dockerized real-time data pipelines.</p>
-            </div>
-            <div className="p-2 rounded bg-white/5 border border-white/15">
-              <span className="text-white font-bold">3. AeroPilot Desktop</span> // Native Asynchronous AI Workstation
-              <p className="text-[11px] text-zinc-400">Multi-threaded PyQt6 desktop client with QThread workers and live GPU telemetry.</p>
+  const renderReplyBody = (reply: MadhvaReply) => {
+    switch (reply.kind) {
+      case 'help':
+        return (
+          <div className="space-y-3 text-xs font-mono text-zinc-300">
+            <p className="text-zinc-200">
+              Ask any question naturally (e.g. &quot;Does he know Whisper?&quot;, &quot;Where does he study?&quot;,
+              &quot;Tell me about Dlives&quot;) or run a CLI command:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-zinc-400">
+              <div><span className="text-white font-semibold">about</span> — Writer &amp; AIML profile</div>
+              <div><span className="text-white font-semibold">writing</span> — Kannada Koota &amp; IG pages</div>
+              <div><span className="text-white font-semibold">projects</span> — Public repos + Private R&amp;D</div>
+              <div><span className="text-white font-semibold">open &lt;name&gt;</span> — Inspect project modal</div>
+              <div><span className="text-white font-semibold">skills</span> — Stack &amp; voice pipelines</div>
+              <div><span className="text-white font-semibold">education</span> — Diddige → PU → PESU</div>
+              <div><span className="text-white font-semibold">contact</span> — Gmail, GitHub, LinkedIn, IG</div>
+              <div><span className="text-white font-semibold">copy email</span> — Copy email to clipboard</div>
+              <div><span className="text-white font-semibold">goto &lt;section&gt;</span> — Jump to any stage</div>
+              <div><span className="text-white font-semibold">tour</span> — Hands-free auto-scroll journey</div>
+              <div><span className="text-white font-semibold">audio on|off</span> — Ambient soundtrack</div>
+              <div><span className="text-white font-semibold">neofetch</span> / <span className="text-white font-semibold">ls</span> — Profile card &amp; files</div>
+              <div><span className="text-white font-semibold">camera [mode]</span> — cinematic | booster | chase</div>
+              <div><span className="text-white font-semibold">blueprint</span> — Toggle wireframe overlay</div>
+              <div><span className="text-white font-semibold">resume</span> — Download resume PDF</div>
+              <div><span className="text-white font-semibold">clear</span> / <span className="text-white font-semibold">exit</span> — Clear or close CLI</div>
             </div>
           </div>
-        </div>
-      );
-    } else if (lower === 'telemetry') {
-      const phases = [
-        'GROUND ZERO',
-        'ATMOSPHERIC ASCENT',
-        'SATELLITE DEPLOY (LEO)',
-        'ORBITAL MISSIONS',
-        'KARNATAKA PASS',
-        'ORBITAL UPLINK',
-      ];
-      output = (
-        <div className="space-y-1 text-xs font-mono text-zinc-300">
-          <p className="text-white font-bold">LIVE ORBITAL TELEMETRY STATUS:</p>
-          <p>SCROLL PROGRESS: {(scrollProgress * 100).toFixed(2)}%</p>
-          <p>STAGE INDEX: {activeStageIndex} // {phases[activeStageIndex] ?? 'LEO'}</p>
-          <p>CAMERA MODE: {cameraMode}</p>
-          <p>WIREFRAME MODE: {blueprintMode ? 'ENABLED [MONOCHROME]' : 'DISABLED [STANDARD]'}</p>
-        </div>
-      );
-    } else if (lower.startsWith('camera')) {
-      const parts = lower.split(' ');
-      const mode = parts[1]?.toUpperCase();
-      if (mode === 'CINEMATIC' || mode === 'BOOSTER' || mode === 'CHASE') {
-        onSetCameraMode(mode as 'CINEMATIC' | 'BOOSTER' | 'CHASE');
-        output = <p className="text-white font-mono text-xs">CAMERA ANGLE SWITCHED TO: {mode}</p>;
-      } else {
-        output = <p className="text-zinc-400 font-mono text-xs">Usage: camera cinematic | camera booster | camera chase</p>;
-      }
-    } else if (lower === 'blueprint') {
-      onToggleBlueprint();
-      output = (
-        <p className="text-white font-mono text-xs">
-          Wireframe Blueprint mode toggled: {!blueprintMode ? 'ACTIVE' : 'INACTIVE'}
-        </p>
-      );
-    } else if (lower === 'contact') {
-      output = (
-        <div className="space-y-1 text-xs font-mono">
-          <p className="text-white font-bold">COMMUNICATION CHANNELS:</p>
-          <p className="text-zinc-300">Email: <a href="mailto:suhashoskere@gmail.com" className="text-white underline">suhashoskere@gmail.com</a></p>
-          <p className="text-zinc-300">GitHub: <a href="https://github.com/suhashoskere" target="_blank" rel="noreferrer" className="text-white underline">github.com/suhashoskere</a></p>
-          <p className="text-zinc-300">LinkedIn: <a href="https://linkedin.com/in/suhashoskere" target="_blank" rel="noreferrer" className="text-white underline">linkedin.com/in/suhashoskere</a></p>
-        </div>
-      );
-    } else if (lower === 'clear') {
-      setHistory([]);
-      setInputVal('');
-      return;
-    } else if (lower === 'exit' || lower === 'quit') {
-      onClose();
-      setInputVal('');
-      return;
-    } else {
-      output = (
-        <p className="text-zinc-300 font-mono text-xs">
-          Command not recognized: &quot;{cmd}&quot;. Type <span className="text-black font-bold bg-white px-1.5 rounded">help</span> for available commands.
-        </p>
-      );
+        );
+
+      case 'neofetch':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 items-center text-xs font-mono">
+            <pre className="text-[10px] leading-[1.2] text-white/90 select-none bg-black/70 border border-white/15 rounded-lg px-3 py-2.5">
+{`      /\\
+     /  \\    MADHVA
+    | () |   ------
+    | || |   OFFLINE
+   /| || |\\  BOT CLI
+  /_| || |_\\
+    /_||_\\
+     *  *`}
+            </pre>
+            <div className="space-y-1 text-[11px] text-zinc-300">
+              <p className="text-white font-bold font-kannada text-sm">
+                {PROFILE.kannadaName}{' '}
+                <span className="font-mono text-xs text-zinc-400 font-normal">({PROFILE.name})</span>
+              </p>
+              <p><span className="text-zinc-500">ROLE:</span> Writer · AIML Student · Open Source</p>
+              <p><span className="text-zinc-500">CAMPUS:</span> PES University, EC Campus (2025–2029)</p>
+              <p><span className="text-zinc-500">VOICE AI:</span> Neural TTS · Moonshine · Whisper</p>
+              <p><span className="text-zinc-500">WRITING:</span> Kannada Koota · @mugulnage_manasu_10</p>
+              <p><span className="text-zinc-500">STAGE:</span> 0{activeStageIndex} // {getTelemetryStageName(activeStageIndex)} ({(scrollProgress * 100).toFixed(0)}%)</p>
+              <p><span className="text-zinc-500">ENGINE:</span> Madhva Local NLU (0 API keys)</p>
+            </div>
+          </div>
+        );
+
+      case 'ls':
+        return (
+          <div className="flex flex-wrap gap-2 text-xs font-mono">
+            {VIRTUAL_FILES.map((f) => (
+              <button
+                key={f.name}
+                type="button"
+                onClick={() => submitQuery(f.cmd)}
+                className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white hover:text-black border border-white/15 text-zinc-200 transition-colors cursor-pointer"
+              >
+                {f.kind === 'dir' ? <span className="font-bold">{f.name}</span> : f.name}
+              </button>
+            ))}
+          </div>
+        );
+
+      case 'writing':
+        return (
+          <div className="space-y-3 text-xs font-mono text-zinc-300">
+            <p className="leading-relaxed">
+              Writing comes first for Suhas — he is a passionate creative writer in Kannada and English,
+              and a <span className="text-white font-semibold">Content Writer at Kannada Koota Club</span>{' '}
+              (PES University Electronic City Campus).
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <a
+                href={SOCIAL_LINKS.instagramKannada.url}
+                target="_blank"
+                rel="noreferrer"
+                className="p-2.5 rounded-lg bg-black border border-white/20 hover:border-white flex items-center justify-between gap-2 transition-colors cursor-pointer"
+              >
+                <div className="min-w-0">
+                  <div className="text-[10px] text-zinc-400 uppercase flex items-center gap-1.5">
+                    <InstagramIcon className="w-3 h-3 text-white" />
+                    <span>Kannada Writings</span>
+                  </div>
+                  <div className="text-white font-semibold truncate">{SOCIAL_LINKS.instagramKannada.label}</div>
+                </div>
+                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              </a>
+
+              <a
+                href={SOCIAL_LINKS.instagramEnglishTech.url}
+                target="_blank"
+                rel="noreferrer"
+                className="p-2.5 rounded-lg bg-black border border-white/20 hover:border-white flex items-center justify-between gap-2 transition-colors cursor-pointer"
+              >
+                <div className="min-w-0">
+                  <div className="text-[10px] text-zinc-400 uppercase flex items-center gap-1.5">
+                    <InstagramIcon className="w-3 h-3 text-white" />
+                    <span>English &amp; Tech</span>
+                  </div>
+                  <div className="text-white font-semibold truncate">{SOCIAL_LINKS.instagramEnglishTech.label}</div>
+                </div>
+                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              </a>
+            </div>
+          </div>
+        );
+
+      case 'projects':
+        return (
+          <div className="space-y-2.5 text-xs font-mono">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {PROJECTS.map((p) => (
+                <div
+                  key={p.id}
+                  className="p-2.5 rounded-lg bg-black border border-white/15 flex flex-col justify-between gap-2"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-white font-bold">{p.name}</span>
+                      <span className="text-[10px] text-zinc-400">{p.badge}</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 mt-0.5">{p.title}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => submitQuery(`open ${p.name.toLowerCase()}`)}
+                      className="px-2 py-0.5 rounded bg-white text-black font-bold text-[10px] hover:bg-zinc-200 transition-colors cursor-pointer"
+                    >
+                      Inspect
+                    </button>
+                    {p.demo && (
+                      <a
+                        href={p.demo}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 py-0.5 rounded border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[10px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <span>Website</span>
+                        <ArrowUpRight className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                    <a
+                      href={p.github}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2 py-0.5 rounded border border-white/20 hover:border-white text-zinc-300 hover:text-white text-[10px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <span>GitHub</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-2.5 rounded-lg bg-white/[0.04] border border-white/15 text-[11px] text-zinc-300 flex items-start gap-2">
+              <Lock className="w-3.5 h-3.5 text-white shrink-0 mt-0.5" />
+              <span>
+                <span className="text-white font-semibold">Private Repositories (Active R&amp;D):</span>{' '}
+                Voice pipelines using Neural TTS, Moonshine Voices &amp; Whisper engines plus unreleased AI/desktop builds. Walkthroughs available on request.
+              </span>
+            </div>
+          </div>
+        );
+
+      case 'project-detail':
+        if (!reply.project) return null;
+        return (
+          <div className="space-y-2.5 text-xs font-mono text-zinc-300">
+            <p className="leading-relaxed">{reply.project.description}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {reply.project.tech.map((t) => (
+                <span
+                  key={t}
+                  className="px-2 py-0.5 rounded bg-white/5 border border-white/15 text-[10px] text-zinc-200"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  window.setTimeout(() => onSelectProject(reply.project!), 60);
+                }}
+                className="px-2.5 py-1 rounded bg-white hover:bg-zinc-200 text-black font-bold text-[11px] transition-colors cursor-pointer"
+              >
+                Open Full Specs
+              </button>
+              {reply.project.demo && (
+                <a
+                  href={reply.project.demo}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-2.5 py-1 rounded border border-white/30 hover:border-white text-white text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <span>Visit Website</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </a>
+              )}
+              <a
+                href={reply.project.github}
+                target="_blank"
+                rel="noreferrer"
+                className="px-2.5 py-1 rounded border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <GithubIcon className="w-3 h-3" />
+                <span>GitHub</span>
+              </a>
+            </div>
+          </div>
+        );
+
+      case 'skills':
+        return (
+          <div className="space-y-2.5 text-xs font-mono">
+            {SKILL_GROUPS.map((group) => (
+              <div key={group.label} className="space-y-1">
+                <div className="text-[10px] text-zinc-400 tracking-wider">{group.label}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.items.map((item) => (
+                    <span
+                      key={item}
+                      className="px-2 py-0.5 rounded bg-black border border-white/15 text-[11px] text-zinc-200"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'education':
+        return (
+          <div className="space-y-2 text-xs font-mono">
+            {EDUCATION.map((edu) => (
+              <div key={edu.institution} className="p-2.5 rounded-lg bg-black border border-white/15 space-y-0.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-zinc-400">
+                  <span>{edu.period}</span>
+                  <span>{edu.level}</span>
+                </div>
+                <div className="text-white font-semibold">{edu.institution}</div>
+                <div className="text-[11px] text-zinc-400">{edu.location} — {edu.detail}</div>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'contact':
+        return (
+          <div className="space-y-2.5 text-xs font-mono text-zinc-300">
+            <p>Open to open-source collaborations, AI/ML &amp; software projects, and creative writing conversations.</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={PROFILE.gmailComposeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-md bg-white hover:bg-zinc-200 text-black font-bold text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>{PROFILE.email}</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <button
+                type="button"
+                onClick={copyEmailToClipboard}
+                className="px-2.5 py-1.5 rounded-md bg-black border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {copiedEmail ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedEmail ? 'Copied' : 'Copy Email'}</span>
+              </button>
+              <a
+                href={SOCIAL_LINKS.github.url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <GithubIcon className="w-3 h-3" />
+                <span>GitHub</span>
+              </a>
+              <a
+                href={SOCIAL_LINKS.linkedin.url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <LinkedinIcon className="w-3 h-3" />
+                <span>LinkedIn</span>
+              </a>
+              <a
+                href={SOCIAL_LINKS.instagramPersonal.url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <InstagramIcon className="w-3 h-3" />
+                <span>{SOCIAL_LINKS.instagramPersonal.label}</span>
+              </a>
+            </div>
+          </div>
+        );
+
+      case 'resume':
+        return (
+          <div className="space-y-2 text-xs font-mono text-zinc-300">
+            {reply.lines?.map((l, i) => (
+              <p key={i}>{l}</p>
+            ))}
+            <button
+              type="button"
+              onClick={triggerResumeDownload}
+              className="px-3 py-1.5 rounded-md bg-white hover:bg-zinc-200 text-black font-bold text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download {PROFILE.resumeFilename}</span>
+            </button>
+          </div>
+        );
+
+      case 'telemetry':
+        return (
+          <div className="space-y-1 text-xs font-mono text-zinc-300">
+            <p>SCROLL PROGRESS: <span className="text-white">{(scrollProgress * 100).toFixed(1)}%</span></p>
+            <p>ACTIVE STAGE: <span className="text-white">0{activeStageIndex} // {getTelemetryStageName(activeStageIndex)}</span></p>
+            <p>AUDIO ENGINE: <span className="text-white">{audioActive ? 'ACTIVE' : 'MUTED'}</span></p>
+            <p>CAMERA MODE: <span className="text-white">{cameraMode}</span></p>
+            <p>WIREFRAME MODE: <span className="text-white">{blueprintMode ? 'ENABLED' : 'DISABLED'}</span></p>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="space-y-1.5 text-xs font-mono text-zinc-300 leading-relaxed">
+            {reply.lines?.map((line, i) => (
+              <p key={i} className={i === 0 ? 'text-zinc-200' : 'text-zinc-400'}>
+                {line}
+              </p>
+            ))}
+          </div>
+        );
     }
-
-    setHistory((prev) => [
-      ...prev,
-      {
-        id: `cmd-${Date.now()}`,
-        command: cmd,
-        output,
-        time,
-      },
-    ]);
-    setInputVal('');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 select-none">
-      <div className="animate-modal-in w-full max-w-3xl h-[80vh] max-h-[640px] rounded-2xl bg-[#09090b] border border-white/25 flex flex-col overflow-hidden font-mono">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 pointer-events-auto"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="animate-modal-in w-full max-w-3xl h-[82vh] max-h-[660px] rounded-2xl bg-[#09090b] border border-white/25 flex flex-col overflow-hidden font-mono shadow-[0_24px_70px_rgba(0,0,0,0.95)]"
+      >
         {/* Terminal Header */}
-        <div className="px-4 py-3 bg-black border-b border-white/15 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-white">
-            <Terminal className="w-4 h-4 text-white" />
-            <span className="font-bold tracking-wider">SDSC-SHAR // MISSION CONTROL TERMINAL</span>
-            <span className="px-1.5 py-0.5 rounded bg-white text-[10px] text-black font-bold">
-              LIVE
+        <div className="px-4 py-3 bg-black border-b border-white/15 flex items-center justify-between gap-2 select-none">
+          <div className="flex items-center gap-2 text-xs text-white min-w-0">
+            <Terminal className="w-4 h-4 text-white shrink-0" />
+            <span className="font-bold tracking-wider truncate">MADHVA // ASSISTANT CLI</span>
+            <span className="px-1.5 py-0.5 rounded bg-white text-[10px] text-black font-bold shrink-0">
+              OFFLINE · 0 API
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-[10px] text-zinc-400 hidden sm:inline">
-              PRESS ESC OR TYPE EXIT
+              TAB COMPLETE · ↑↓ HISTORY · ESC
             </span>
             <button
+              type="button"
               onClick={onClose}
               className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/15 text-zinc-300 hover:text-white flex items-center justify-center border border-white/15 transition-colors cursor-pointer"
-              aria-label="Close terminal"
+              aria-label="Close Madhva CLI"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Terminal Screen Body */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3.5">
-          {history.map((h) => (
-            <div key={h.id} className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
-                <span className="text-zinc-300">visitor@flight-deck:~$</span>
-                <span className="text-white font-semibold">{h.command}</span>
-                <span className="text-[10px] text-zinc-500 ml-auto">{h.time}</span>
+        {/* Conversation & Command Stream */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 select-text">
+          {entries.length === 0 && (
+            <div className="space-y-3 py-4 text-xs text-zinc-400">
+              <p>Terminal cleared. Ask Madhva anything about {PROFILE.name} or pick a prompt:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {STARTER_PROMPTS.map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => submitQuery(q)}
+                    className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white hover:text-black border border-white/20 text-[11px] text-zinc-200 transition-colors cursor-pointer"
+                  >
+                    {q}
+                  </button>
+                ))}
               </div>
-              <div className="pl-4 border-l border-white/25 py-0.5">
-                {h.output}
+            </div>
+          )}
+
+          {entries.map((entry) => (
+            <div key={entry.id} className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-zinc-400">
+                <span className="text-zinc-500">visitor@madhva:~$</span>
+                <span className="text-white font-semibold break-words">{entry.query}</span>
+                <span className="text-[10px] text-zinc-500 ml-auto shrink-0">{entry.time}</span>
+              </div>
+
+              <div className="pl-3.5 border-l border-white/25 space-y-2.5 py-0.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-white tracking-wider">
+                  <Sparkles className="w-3 h-3 text-zinc-300 shrink-0" />
+                  <span>{entry.reply.headline}</span>
+                </div>
+
+                {renderReplyBody(entry.reply)}
+
+                {entry.reply.suggestions && entry.reply.suggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {entry.reply.suggestions.map((sug) => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => submitQuery(sug)}
+                        className="px-2.5 py-1 rounded-full bg-black hover:bg-white hover:text-black border border-white/20 text-[10px] text-zinc-300 transition-colors cursor-pointer"
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -261,25 +706,41 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
 
         {/* Input Prompt */}
         <form
-          onSubmit={handleCommand}
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitQuery(inputVal);
+          }}
           className="p-3 bg-black border-t border-white/15 flex items-center gap-2.5"
         >
-          <span className="text-white text-xs font-bold whitespace-nowrap">
-            visitor@flight-deck:~$
+          <span className="text-white text-xs font-bold whitespace-nowrap select-none">
+            visitor@madhva:~$
           </span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            placeholder="type 'help', 'skills', 'projects', 'camera', or 'exit'..."
-            className="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-zinc-500 font-mono"
-          />
+          <div className="relative flex-1 min-w-0">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputVal}
+              onChange={(e) => {
+                setInputVal(e.target.value);
+                setHistoryCursor(-1);
+              }}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Ask Madhva anything or type 'help'..."
+              className="w-full bg-transparent text-xs text-white outline-none placeholder:text-zinc-500 font-mono"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {tabMatch && (
+              <span className="hidden sm:inline absolute right-0 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 pointer-events-none">
+                Tab → {tabMatch}
+              </span>
+            )}
+          </div>
           <button
             type="submit"
-            className="px-2.5 py-1 rounded bg-white hover:bg-zinc-200 text-black font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2.5 py-1 rounded bg-white hover:bg-zinc-200 text-black font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0"
           >
-            <span>SEND</span>
+            <span>ASK</span>
             <CornerDownLeft className="w-3 h-3" />
           </button>
         </form>

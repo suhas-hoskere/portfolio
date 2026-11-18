@@ -1,3 +1,58 @@
+export const PROFILE = {
+  name: 'Suhas Hoskere',
+  kannadaName: 'ಸುಹಾಸ್ ಹೊಸಕೆರೆ',
+  location: 'Bangalore, Karnataka',
+  email: 'suhashoskere@gmail.com',
+  gmailComposeUrl:
+    'https://mail.google.com/mail/?view=cm&fs=1&to=suhashoskere@gmail.com&su=Hello%20Suhas',
+  resumePath: '/resume.pdf',
+  resumeFilename: 'Suhas_Hoskere_Resume.pdf',
+  roleLine: 'Passionate Writer · AI & ML Student at PES University · Open-Source Contributor',
+  summary:
+    'A passionate writer and B.Tech AI & Machine Learning student at PES University (Electronic City Campus, Bangalore). Open-source contributor building voice pipelines (Neural TTS, Moonshine Voices, Whisper engines), desktop utilities, multi-script web apps, and applied ML tools.',
+} as const;
+
+export const SOCIAL_LINKS = {
+  github: { label: 'suhas-hoskere', url: 'https://github.com/suhas-hoskere' },
+  linkedin: { label: 'suhas-hoskere', url: 'https://www.linkedin.com/in/suhas-hoskere/' },
+  instagramPersonal: { label: '@suhas__112123', url: 'https://www.instagram.com/suhas__112123/' },
+  instagramKannada: {
+    label: '@mugulnage_manasu_10',
+    title: 'Kannada Writings',
+    url: 'https://www.instagram.com/mugulnage_manasu_10/',
+  },
+  instagramEnglishTech: {
+    label: '@unofficial_overthinker_',
+    title: 'English & Tech',
+    url: 'https://www.instagram.com/unofficial_overthinker_/',
+  },
+} as const;
+
+export const EDUCATION = [
+  {
+    period: '2025 – 2029',
+    level: 'B.Tech AI & Machine Learning',
+    institution: 'PES University, Electronic City Campus',
+    location: 'Bangalore, Karnataka',
+    detail:
+      'Pursuing B.Tech in Artificial Intelligence & Machine Learning while building open-source tools, voice pipelines, and writing for Kannada Koota Club.',
+  },
+  {
+    period: '2023 – 2025',
+    level: 'Pre-University (PU)',
+    institution: 'Shree Siddaganga PU College',
+    location: 'Davanagere, Karnataka',
+    detail: 'Strengthened foundations in mathematics, physics, and computer science.',
+  },
+  {
+    period: '2012 – 2023',
+    level: 'UKG – SSLC',
+    institution: 'Rural Public School, Diddige',
+    location: 'Jagalur Taluk, Davanagere District, Karnataka',
+    detail: 'Passed out in 2023 — where early curiosity for engineering and writing began.',
+  },
+] as const;
+
 export interface StageWaypoint {
   id: string;
   code: string;
