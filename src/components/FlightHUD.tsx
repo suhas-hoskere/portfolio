@@ -31,7 +31,7 @@ interface FlightHUDProps {
   onOpenTerminal?: () => void;
 }
 
-export const FlightHUD: React.FC<FlightHUDProps> = ({
+export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
   scrollProgress,
   activeStageIndex,
   audioActive,
@@ -341,4 +341,4 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
       </div>
     </header>
   );
-};
+});

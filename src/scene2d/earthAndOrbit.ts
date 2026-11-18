@@ -61,8 +61,8 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const zoomOut = smoothstep(0.170, 0.480, sp);
   const earthFadeIn = smoothstep(0.162, 0.195, sp);
 
-  // Exponential curvature zoom-out: starts ~7.8x viewport (flat!) and smoothly tightens to 0.56x viewport (LEO)
-  const earthR = baseEarthR * Math.pow(14.0, Math.pow(1 - zoomOut, 1.25));
+  // Exponential curvature zoom-out: starts ~4.8x viewport (flat!) and smoothly tightens to 0.56x viewport (LEO)
+  const earthR = baseEarthR * Math.pow(8.6, Math.pow(1 - zoomOut, 1.25));
 
   // Pin Earth's upper horizon limb smoothly in the lower viewport at ALL times (never disappears!)
   const terminalDrop = smoothstep(0.84, 1.0, sp) * baseEarthR * 0.06;
@@ -117,24 +117,25 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  // 2. Soft Outer Atmosphere Halo Glow along Earth's curved limb (blooms as altitude climbs)
+  // 2. Soft Outer Atmosphere Halo Glow along Earth's curved limb (zero per-frame gradient allocation!)
   if (atmoGlow > 0.01) {
-    const haloThickness = lerp(24, 58, zoomOut);
-    const haloGrad = ctx.createRadialGradient(
-      centerX,
-      centerY,
-      Math.max(1, earthR - 2),
-      centerX,
-      centerY,
-      earthR + haloThickness
-    );
-    haloGrad.addColorStop(0.0, `rgba(255, 255, 255, ${0.28 * atmoGlow})`);
-    haloGrad.addColorStop(0.28, `rgba(228, 228, 234, ${0.11 * atmoGlow})`);
-    haloGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = haloGrad;
+    ctx.strokeStyle = `rgba(228, 228, 234, ${0.06 * atmoGlow})`;
+    ctx.lineWidth = lerp(18, 42, zoomOut);
     ctx.beginPath();
-    ctx.arc(centerX, centerY, earthR + haloThickness, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(centerX, centerY, earthR + lerp(8, 16, zoomOut), Math.PI * 1.05, Math.PI * 1.95);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(244, 244, 248, ${0.12 * atmoGlow})`;
+    ctx.lineWidth = lerp(8, 18, zoomOut);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, earthR + lerp(3, 6, zoomOut), Math.PI * 1.05, Math.PI * 1.95);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.22 * atmoGlow})`;
+    ctx.lineWidth = lerp(3, 6, zoomOut);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, earthR + 1.5, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.stroke();
   }
 
   // 3. Obsidian Earth Disc (matches ground #09090b seamlessly on liftoff!)

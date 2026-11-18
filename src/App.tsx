@@ -79,8 +79,12 @@ export const App: React.FC = () => {
   const rafThrottler = useRef<number | null>(null);
   const scrollAnimRaf = useRef<number | null>(null);
   const lastStageRef = useRef<number>(0);
+  const lastUiCommitTimeRef = useRef<number>(0);
+  const lastUiProgressRef = useRef<number>(0);
+  const trailingUiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Throttled UI State updater
+  // Throttled UI State updater: Canvas reads scrollProgressRef at native 60/120Hz with 0 React lag,
+  // while HUD & overlay DOM updates smoothly at ~18Hz (or immediately on stage transitions).
   const updateUI = useCallback((progress: number) => {
     scrollProgressRef.current = progress;
 
@@ -92,9 +96,11 @@ export const App: React.FC = () => {
     else if (progress >= 0.24) stage = 1;
     else stage = 0;
 
-    if (stage !== lastStageRef.current) {
+    const stageChanged = stage !== lastStageRef.current;
+    if (stageChanged) {
       cosmicAudio.playStagingSound();
       lastStageRef.current = stage;
+      setActiveStageIndex(stage);
     }
 
     // VHF Radio Voice Callouts & Acoustic Triggers across Earth-to-Orbit milestones
@@ -114,7 +120,7 @@ export const App: React.FC = () => {
     } else if (progress >= 0.170 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
       playedCallouts.current.add('liftoff');
       cosmicAudio.playRadioCallout('Vehicle has cleared the tower. Trajectory is nominal.');
-    } else if (progress >= 0.280 && progress < 0.340 && !playedCallouts.current.has('maxq')) {
+    } else if (progress >= 0.250 && progress < 0.312 && !playedCallouts.current.has('maxq')) {
       playedCallouts.current.add('maxq');
       cosmicAudio.playRadioCallout('Passing Max-Q. Aerodynamic pressures nominal.');
     } else if (progress >= 0.420 && progress < 0.480 && !playedCallouts.current.has('orbit')) {
@@ -125,9 +131,31 @@ export const App: React.FC = () => {
       cosmicAudio.playRadioCallout('Orbital uplink established. Carrier signal locked.');
     }
 
-    setActiveStageIndex(stage);
-    setUiScrollProgress(progress);
-    cosmicAudio.updateFallIntensity(progress);
+    const now = performance.now();
+    const boundaryHit = progress <= 0.001 || progress >= 0.999;
+    const commitUi = (p: number) => {
+      lastUiCommitTimeRef.current = performance.now();
+      lastUiProgressRef.current = p;
+      setUiScrollProgress(p);
+      cosmicAudio.updateFallIntensity(p);
+    };
+
+    if (
+      stageChanged ||
+      boundaryHit ||
+      (now - lastUiCommitTimeRef.current >= 55 && Math.abs(progress - lastUiProgressRef.current) >= 0.002)
+    ) {
+      if (trailingUiTimerRef.current) {
+        clearTimeout(trailingUiTimerRef.current);
+        trailingUiTimerRef.current = null;
+      }
+      commitUi(progress);
+    } else if (!trailingUiTimerRef.current) {
+      trailingUiTimerRef.current = setTimeout(() => {
+        trailingUiTimerRef.current = null;
+        commitUi(scrollProgressRef.current);
+      }, 60);
+    }
   }, []);
 
   // Lightweight native passive scroll listener (0% CPU when idle, no extra RAF loop)
@@ -171,6 +199,7 @@ export const App: React.FC = () => {
       window.removeEventListener('touchstart', cancelProgrammaticScroll);
       if (rafThrottler.current) cancelAnimationFrame(rafThrottler.current);
       if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
+      if (trailingUiTimerRef.current) clearTimeout(trailingUiTimerRef.current);
     };
   }, [updateUI]);
 

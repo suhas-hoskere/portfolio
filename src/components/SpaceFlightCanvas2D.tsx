@@ -75,8 +75,10 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
     let lastDraw = performance.now();
     let elapsedSec = 0;
     let smoothSp = scrollProgressRef.current;
+    let spVel = 0;
     let smoothSpeed = 0;
 
+    // 1:1 VSync-locked native refresh loop (zero artificial frame-skipping judder, 0% CPU when tab hidden)
     const renderLoop = (now: number) => {
       rafId = requestAnimationFrame(renderLoop);
 
@@ -86,25 +88,31 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       }
 
       const rawDt = (now - lastDraw) / 1000;
-      const targetSp = scrollProgressRef.current;
-      const isScrolling =
-        Math.abs(targetSp - smoothSp) > 0.0002 || scrollSpeedRef.current > 0.02;
-      const isLaunchActive = targetSp >= 0.035 && targetSp < 0.62;
-
-      const minInterval = isScrolling || isLaunchActive ? 1 / 62 : 1 / 36;
-      if (rawDt < minInterval) return;
-
       lastDraw = now;
-      const dt = Math.min(rawDt, 0.05);
+      // Guard against zero/spike dt so animations never stutter or teleport
+      if (rawDt <= 0) return;
+      const dt = Math.min(rawDt, 0.033);
       elapsedSec += dt;
 
-      // Smooth cinematic inertia so scroll transitions (boosters, fairing, satellite) glide gracefully
-      const spLerp = 1 - Math.exp(-8.5 * dt);
-      smoothSp += (targetSp - smoothSp) * spLerp;
+      // Critically-damped 2nd-order spring for scroll progress:
+      // Smoothly rounds off discrete mouse-wheel notches with silky acceleration & deceleration!
+      const targetSp = scrollProgressRef.current;
+      const omega = 12.5;
+      const delta = smoothSp - targetSp;
+      const exp = Math.exp(-omega * dt);
+      const nextSmoothSp = targetSp + (delta + (spVel + omega * delta) * dt) * exp;
+      spVel = (spVel - omega * (spVel + omega * delta) * dt) * exp;
+      if (Math.abs(nextSmoothSp - targetSp) < 0.00005 && Math.abs(spVel) < 0.0001) {
+        smoothSp = targetSp;
+        spVel = 0;
+      } else {
+        smoothSp = clamp(nextSmoothSp, 0, 1);
+      }
+
       smoothSpeed += (scrollSpeedRef.current - smoothSpeed) * (1 - Math.exp(-10 * dt));
       scrollSpeedRef.current *= Math.pow(0.05, dt);
 
-      const mLerp = 1 - Math.exp(-8 * dt);
+      const mLerp = 1 - Math.exp(-9 * dt);
       mouseX += (targetMouseX - mouseX) * mLerp;
       mouseY += (targetMouseY - mouseY) * mLerp;
 

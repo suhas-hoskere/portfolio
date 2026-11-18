@@ -124,7 +124,7 @@ interface FlightMissionOverlaysProps {
   isLiftoffActive?: boolean;
 }
 
-export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
+export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React.memo(({
   activeStageIndex,
   scrollProgress = 0,
   onLaunch,
@@ -351,4 +351,4 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = ({
       </div>
     </div>
   );
-};
+});
