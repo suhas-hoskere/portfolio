@@ -721,6 +721,31 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     };
   }
 
+  // Portfolio URL / domain query
+  if (
+    hasAnyKeyword(text, tokens, [
+      'website',
+      'portfolio link',
+      'portfolio url',
+      'domain',
+      'site link',
+      'web address',
+      'link to portfolio',
+      'custom domain',
+    ]) &&
+    !hasAnyKeyword(text, tokens, ['project', 'projects', 'dlives', 'santypes', 'ntools', 'wisewatt'])
+  ) {
+    return {
+      kind: 'about',
+      headline: 'PORTFOLIO // SUHAS.IS-A.DEV',
+      lines: [
+        `This portfolio lives at https://${PROFILE.domainDisplay}.`,
+        `It is an Earth-to-Orbit interactive journey showcasing Suhas's writings, AI & voice systems, open-source projects, and technical trajectory.`,
+      ],
+      suggestions: ['Who is Suhas?', 'Show projects', 'What does he write about?', 'Download resume'],
+    };
+  }
+
   // Bot self-identity ("who are you?", "why madhva?", "do you use api?")
   if (
     hasAnyKeyword(text, tokens, [

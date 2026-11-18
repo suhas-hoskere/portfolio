@@ -3,6 +3,8 @@ export const PROFILE = {
   kannadaName: 'ಸುಹಾಸ್ ಹೊಸಕೆರೆ',
   location: 'Bangalore, Karnataka',
   email: 'suhashoskere@gmail.com',
+  domain: 'https://suhas.is-a.dev',
+  domainDisplay: 'suhas.is-a.dev',
   gmailComposeUrl:
     'https://mail.google.com/mail/?view=cm&fs=1&to=suhashoskere@gmail.com&su=Hello%20Suhas',
   resumePath: '/resume.pdf',

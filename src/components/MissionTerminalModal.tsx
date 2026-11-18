@@ -481,6 +481,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
                 {PROFILE.kannadaName}{' '}
                 <span className="font-mono text-xs text-zinc-400 font-normal">({PROFILE.name})</span>
               </p>
+              <p><span className="text-zinc-500">HOST:</span> {PROFILE.domainDisplay}</p>
               <p><span className="text-zinc-500">ROLE:</span> Writer · AIML Student · Open Source</p>
               <p><span className="text-zinc-500">WRITING:</span> ಬರಹಗಳು · Love &amp; Pain (KN / EN)</p>
               <p><span className="text-zinc-500">GOAL:</span> Building a Startup</p>
