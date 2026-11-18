@@ -240,11 +240,11 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 </div>
 
                 <div className={`space-y-1.5 ${enterCls}`} style={{ animationDelay: '75ms' }}>
-                  <h1 className="text-[clamp(2.4rem,5.4vw,4.8rem)] font-space font-bold text-white leading-[0.96] tracking-tight">
-                    Suhas Hoskere
+                  <h1 className="text-[clamp(2.2rem,5vw,4.35rem)] font-kannada font-bold text-white leading-[1.15] tracking-tight">
+                    ಸುಹಾಸ್ ಹೊಸಕೆರೆ
                   </h1>
-                  <div className="font-kannada text-sm sm:text-base font-medium text-zinc-300 tracking-wide">
-                    ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
+                  <div className="font-space text-base sm:text-lg font-medium text-zinc-300 tracking-wide">
+                    Suhas Hoskere · Bangalore
                   </div>
                 </div>
 
