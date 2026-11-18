@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { VolumeX, ChevronDown, Rocket, Terminal } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
@@ -38,105 +38,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
   onOpenTerminal,
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
-  const telemetry = useMemo(() => {
-    const sp = scrollProgress;
-    if (sp < 0.032) {
-      return {
-        status: 'STANDBY // HOLD-DOWN ACTIVE',
-        altitude: '0.0 KM',
-        velocity: '0 M/S',
-        dynPressure: '101.3 KPA',
-        gForce: '1.00 G',
-      };
-    } else if (sp < 0.068) {
-      return {
-        status: 'STEP 01 // ENGINE IGNITION',
-        altitude: '0.0 KM',
-        velocity: '0 M/S',
-        dynPressure: '101.3 KPA',
-        gForce: '1.25 G',
-      };
-    } else if (sp < 0.104) {
-      return {
-        status: 'STEP 02 // CLAMPS RELEASE',
-        altitude: '0.0 KM',
-        velocity: '0 M/S',
-        dynPressure: '101.3 KPA',
-        gForce: '1.40 G',
-      };
-    } else if (sp < 0.140) {
-      return {
-        status: 'STEP 03 // WATER DELUGE',
-        altitude: '0.0 KM',
-        velocity: '0 M/S',
-        dynPressure: '101.3 KPA',
-        gForce: '1.50 G',
-      };
-    } else if (sp < 0.220) {
-      const climbFrac = (sp - 0.140) / 0.080;
-      return {
-        status: 'STEP 04 // LIFTOFF CLIMB',
-        altitude: `${(0.1 + climbFrac * 14.9).toFixed(1)} KM`,
-        velocity: `${Math.round(climbFrac * 460)} M/S`,
-        dynPressure: `${(101.3 - climbFrac * 48).toFixed(1)} KPA`,
-        gForce: `${(1.62 + climbFrac * 0.42).toFixed(2)} G`,
-      };
-    } else if (sp < 0.500) {
-      const ascFrac = (sp - 0.220) / 0.280;
-      const isBoosterSep = sp >= 0.280 && sp < 0.390;
-      const status = isBoosterSep
-        ? 'STAGE 01 // S200 BOOSTER SEP'
-        : sp < 0.280
-          ? 'STAGE 01 // STRATOSPHERE CLIMB'
-          : 'STAGE 01 // CORE ORBITAL INSERTION';
-      return {
-        status,
-        altitude: `${Math.round(15 + ascFrac * 405)} KM`,
-        velocity: `${(0.46 + ascFrac * 7.20).toFixed(2)} KM/S`,
-        dynPressure: `${(53.3 * Math.exp(-ascFrac * 5.2)).toFixed(2)} KPA`,
-        gForce: `${(2.05 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
-      };
-    } else if (sp < 0.680) {
-      const status =
-        sp < 0.555
-          ? 'STAGE 02 // FAIRING JETTISON & RELEASE'
-          : sp < 0.625
-            ? 'STAGE 02 // SOLAR ARRAY DEPLOY'
-            : 'STAGE 02 // SATELLITE DEPLOYED (LEO)';
-      return {
-        status,
-        altitude: '420 KM',
-        velocity: '7.66 KM/S',
-        dynPressure: '0.00 KPA',
-        gForce: '0.00 G',
-      };
-    } else if (sp < 0.800) {
-      return {
-        status: 'STAGE 03 // ORBITAL PAYLOAD OPS',
-        altitude: '420 KM',
-        velocity: '7.66 KM/S',
-        dynPressure: '0.00 KPA',
-        gForce: '0.00 G',
-      };
-    } else if (sp < 0.900) {
-      return {
-        status: 'STAGE 04 // BANGALORE GROUND PASS',
-        altitude: '420 KM',
-        velocity: '7.66 KM/S',
-        dynPressure: '0.00 KPA',
-        gForce: '0.00 G',
-      };
-    } else {
-      return {
-        status: 'STAGE 05 // ORBITAL UPLINK LOCKED',
-        altitude: '420 KM',
-        velocity: '7.66 KM/S',
-        dynPressure: '0.00 KPA',
-        gForce: '0.00 G',
-      };
-    }
-  }, [scrollProgress]);
 
   const jumpToIndex = (idx: number) => {
     const clamped = Math.min(Math.max(idx, 0), STAGES.length - 1);
@@ -341,33 +242,15 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         </div>
       </nav>
 
-      {/* ===== BOTTOM MONOCHROME TELEMETRY BAR ===== */}
-      <div className="absolute bottom-3.5 sm:bottom-5 left-0 right-0 flex justify-center pointer-events-none px-3">
-        {scrollProgress < 0.035 ? (
+      {/* ===== INITIAL SCROLL PROMPT (fades out cleanly once flight begins) ===== */}
+      {scrollProgress < 0.035 && (
+        <div className="absolute bottom-3.5 sm:bottom-5 left-0 right-0 flex justify-center pointer-events-none px-3">
           <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
             <span>SCROLL TO LAUNCH</span>
             <ChevronDown className="w-3.5 h-3.5 text-white" />
           </div>
-        ) : (
-          <div className="px-3.5 py-1.5 rounded-lg bg-[#09090b]/95 border border-white/20 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] font-mono">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-white" />
-              <span className="text-white font-semibold tracking-wider uppercase">
-                {telemetry.status}
-              </span>
-            </div>
-
-            <div className="h-3 w-[1px] bg-white/20 hidden sm:block" />
-
-            <div className="flex items-center gap-2.5 text-zinc-400">
-              <span>ALT <span className="text-white">{telemetry.altitude}</span></span>
-              <span>VEL <span className="text-white">{telemetry.velocity}</span></span>
-              <span className="hidden md:inline">Q <span className="text-white">{telemetry.dynPressure}</span></span>
-              <span className="hidden md:inline">G <span className="text-white">{telemetry.gForce}</span></span>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 });
