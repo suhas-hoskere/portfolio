@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowUpRight,
   Mail,
@@ -8,8 +8,9 @@ import {
   Rocket,
   Download,
   Code2,
-  BookOpen,
   Lock,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon, InstagramIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
@@ -197,7 +198,15 @@ interface FlightMissionOverlaysProps {
  */
 export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React.memo(
   ({ onLaunch, onSelectProject, entered = true }) => {
+    const [copiedEmail, setCopiedEmail] = useState(false);
     const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
+
+    const handleCopyEmail = () => {
+      cosmicAudio.playTelemetryChirp(1320, 0.04);
+      navigator.clipboard?.writeText('suhashoskere@gmail.com');
+      setCopiedEmail(true);
+      window.setTimeout(() => setCopiedEmail(false), 1800);
+    };
     const textWell =
       'bg-[#050505]/92 border border-white/15 rounded-2xl px-5 py-6 sm:px-8 sm:py-7 shadow-[0_14px_44px_rgba(0,0,0,0.85)]';
 
@@ -582,14 +591,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   </a>
                 </div>
 
-                <div className="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <div className="pt-3 border-t border-white/15 flex items-center">
                   <span className="font-kannada text-sm sm:text-base font-semibold text-white flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
                     <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider shrink-0">
-                    <BookOpen className="w-3 h-3" />
-                    <span>Published Pages</span>
                   </span>
                 </div>
               </div>
@@ -616,14 +621,40 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 </p>
 
                 <div className="space-y-2.5 pt-2 max-w-lg">
-                  <a
-                    href="mailto:suhashoskere@gmail.com"
-                    className="w-full py-3.5 px-5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                    style={{ textShadow: 'none' }}
-                  >
-                    <Mail className="w-4 h-4 text-black" />
-                    <span>suhashoskere@gmail.com</span>
-                  </a>
+                  <div className="flex items-stretch gap-2">
+                    <a
+                      href="https://mail.google.com/mail/?view=cm&fs=1&to=suhashoskere@gmail.com&su=Hello%20Suhas"
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => cosmicAudio.playTelemetryChirp(1260, 0.05)}
+                      className="flex-1 py-3.5 px-5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      style={{ textShadow: 'none' }}
+                    >
+                      <Mail className="w-4 h-4 text-black shrink-0" />
+                      <span className="truncate">suhashoskere@gmail.com</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-black/70 shrink-0" />
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyEmail}
+                      aria-label="Copy email address"
+                      title="Copy email address"
+                      className="px-3.5 rounded-lg bg-black/75 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-200 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      {copiedEmail ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-white" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <a
