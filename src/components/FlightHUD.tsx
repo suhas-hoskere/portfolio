@@ -15,8 +15,8 @@ export const STAGES: StageWaypoint[] = [
   { id: 'pad', code: '00', shortLabel: 'Home', stageName: 'Suhas Hoskere', altitude: 'Writer · AIML · OSS', scrollFraction: 0.0 },
   { id: 'ascent', code: '01', shortLabel: 'Origins', stageName: 'Davanagere Roots', altitude: '2012 – 2025 // School & PU', scrollFraction: 0.395 },
   { id: 'orbit', code: '02', shortLabel: 'PESU', stageName: 'PES University, BLR', altitude: '2025 – 2029 // B.Tech AIML', scrollFraction: 0.645 },
-  { id: 'missions', code: '03', shortLabel: 'Projects', stageName: 'Open-Source & Private R&D', altitude: 'Dlives · santypes · ntools', scrollFraction: 0.745 },
-  { id: 'heritage', code: '04', shortLabel: 'Writing', stageName: 'Kannada Koota & Writing', altitude: 'PESU EC Campus', scrollFraction: 0.850 },
+  { id: 'heritage', code: '03', shortLabel: 'Writing', stageName: 'Kannada Koota & Writing', altitude: 'PESU EC Campus', scrollFraction: 0.745 },
+  { id: 'missions', code: '04', shortLabel: 'Projects', stageName: 'Open-Source & Private R&D', altitude: 'Dlives · santypes · ntools', scrollFraction: 0.850 },
   { id: 'signal', code: '05', shortLabel: 'Contact', stageName: 'Establish Uplink', altitude: 'Email · GitHub · LinkedIn', scrollFraction: 0.985 },
 ];
 

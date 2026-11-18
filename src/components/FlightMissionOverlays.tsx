@@ -449,7 +449,83 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </section>
 
-            {/* ===== SECTION 03: REAL OPEN-SOURCE PROJECTS ===== */}
+            {/* ===== SECTION 03: KANNADA KOOTA & WRITINGS ===== */}
+            <section
+              id="section-heritage"
+              className="min-h-[85vh] flex flex-col justify-center py-20 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-4 text-left`}>
+                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
+                  <span>STAGE 03 // WRITING &amp; CULTURE</span>
+                  <span className="text-white">PESU EC CAMPUS</span>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="font-kannada text-3xl sm:text-4xl font-bold text-white block">
+                    ಕನ್ನಡ ಕೂಟ
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-space text-zinc-200 font-bold leading-tight tracking-tight">
+                    Kannada Koota Club · Content Writer
+                  </h2>
+                </div>
+
+                <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
+                  Content writer at Kannada Koota Club, PES University Electronic City Campus.
+                  Passionate about expressing ideas through creative Kannada and English writing —
+                  bringing together cultural storytelling and engineering curiosity.
+                </p>
+
+                {/* Writing Instagram Pages */}
+                <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <a
+                    href="https://www.instagram.com/mugulnage_manasu_10/"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => cosmicAudio.playTelemetryChirp(1240, 0.05)}
+                    className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                        <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
+                        <span>Kannada Writings</span>
+                      </div>
+                      <div className="text-sm font-mono font-semibold text-white truncate">
+                        @mugulnage_manasu_10
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white shrink-0 mt-0.5" />
+                  </a>
+
+                  <a
+                    href="https://www.instagram.com/unofficial_overthinker_/"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => cosmicAudio.playTelemetryChirp(1280, 0.05)}
+                    className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                        <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
+                        <span>English &amp; Tech</span>
+                      </div>
+                      <div className="text-sm font-mono font-semibold text-white truncate">
+                        @unofficial_overthinker_
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white shrink-0 mt-0.5" />
+                  </a>
+                </div>
+
+                <div className="pt-3 border-t border-white/15 flex items-center">
+                  <span className="font-kannada text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
+                    <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* ===== SECTION 04: REAL OPEN-SOURCE PROJECTS ===== */}
             <section
               id="section-missions"
               className="min-h-[95vh] flex flex-col justify-center py-20 pointer-events-auto"
@@ -458,7 +534,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 <div className="flex items-end justify-between gap-2">
                   <div>
                     <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                      STAGE 03 // SELECTED WORK
+                      STAGE 04 // SELECTED WORK
                     </span>
                     <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight mt-1">
                       Projects
@@ -532,82 +608,6 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     <span className="text-white">Whisper engines</span>, along with unreleased AI
                     &amp; desktop experiments. Available for live walkthroughs upon request.
                   </p>
-                </div>
-              </div>
-            </section>
-
-            {/* ===== SECTION 04: KANNADA KOOTA & WRITINGS ===== */}
-            <section
-              id="section-heritage"
-              className="min-h-[80vh] flex flex-col justify-center py-20 pointer-events-auto"
-            >
-              <div className={`${textWell} space-y-4 text-left`}>
-                <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
-                  <span>STAGE 04 // WRITING &amp; CULTURE</span>
-                  <span className="text-white">PESU EC CAMPUS</span>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="font-kannada text-3xl sm:text-4xl font-bold text-white block">
-                    ಕನ್ನಡ ಕೂಟ
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-space text-zinc-200 font-bold leading-tight tracking-tight">
-                    Kannada Koota Club · Content Writer
-                  </h2>
-                </div>
-
-                <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed">
-                  Content writer at Kannada Koota Club, PES University Electronic City Campus.
-                  Passionate about expressing ideas through creative Kannada and English writing —
-                  bringing together cultural storytelling and engineering curiosity.
-                </p>
-
-                {/* Writing Instagram Pages */}
-                <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <a
-                    href="https://www.instagram.com/mugulnage_manasu_10/"
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => cosmicAudio.playTelemetryChirp(1240, 0.05)}
-                    className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
-                  >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
-                        <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
-                        <span>Kannada Writings</span>
-                      </div>
-                      <div className="text-sm font-mono font-semibold text-white truncate">
-                        @mugulnage_manasu_10
-                      </div>
-                    </div>
-                    <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white shrink-0 mt-0.5" />
-                  </a>
-
-                  <a
-                    href="https://www.instagram.com/unofficial_overthinker_/"
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => cosmicAudio.playTelemetryChirp(1280, 0.05)}
-                    className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
-                  >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
-                        <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
-                        <span>English &amp; Tech</span>
-                      </div>
-                      <div className="text-sm font-mono font-semibold text-white truncate">
-                        @unofficial_overthinker_
-                      </div>
-                    </div>
-                    <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white shrink-0 mt-0.5" />
-                  </a>
-                </div>
-
-                <div className="pt-3 border-t border-white/15 flex items-center">
-                  <span className="font-kannada text-sm sm:text-base font-semibold text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
-                    <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
-                  </span>
                 </div>
               </div>
             </section>
