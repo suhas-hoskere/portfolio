@@ -127,30 +127,28 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
         smoothSp = targetSp;
         spVel = 0;
         if (programmaticJumpTargetRef) programmaticJumpTargetRef.current = null;
-      } else if (Math.abs(diff) < 0.00008 && Math.abs(spVel) < 0.0002) {
+      } else if (Math.abs(diff) < 0.00002 && Math.abs(spVel) < 0.00008) {
         smoothSp = targetSp;
         spVel = 0;
-        if (isJumping && Math.abs(smoothSp - jumpTarget) < 0.003 && programmaticJumpTargetRef) {
+        if (isJumping && Math.abs(smoothSp - jumpTarget) < 0.004 && programmaticJumpTargetRef) {
           programmaticJumpTargetRef.current = null;
         }
       } else {
         const baseMaxRate = getCinematicMaxRate(smoothSp);
         const dirMultiplier = diff < 0 ? 1.65 : 1.0;
         const effectiveMaxRate = isJumping ? 2.4 : baseMaxRate * dirMultiplier;
-        const gain = isJumping ? 15.0 : 8.5;
-        const accelRate = isJumping ? 22.0 : 11.0;
 
-        const desiredVel = clamp(diff * gain, -effectiveMaxRate, effectiveMaxRate);
+        // Critically-damped (zeta ~ 1.05) soft-saturated velocity controller:
+        // - Slow discrete wheel notches / gentle drags feather with silky inertia & ZERO overshoot/snap
+        // - Fast continuous scrolling smoothly saturates at effectiveMaxRate via tanh (C-infinity smooth)
+        // - Sidebar clicks glide swiftly at 2.4/s with zero bounce
+        const omega = isJumping ? 14.0 : 5.8;
+        const desiredVel = effectiveMaxRate * Math.tanh((diff * omega) / effectiveMaxRate);
+        const accelRate = omega * 4.4;
         const accelLerp = 1 - Math.exp(-accelRate * dt);
         spVel += (desiredVel - spVel) * accelLerp;
 
-        const step = spVel * dt;
-        if (Math.abs(diff) <= Math.abs(step) && Math.abs(diff) < 0.004) {
-          smoothSp = targetSp;
-          spVel = 0;
-        } else {
-          smoothSp = clamp(smoothSp + step, 0, 1);
-        }
+        smoothSp = clamp(smoothSp + spVel * dt, 0, 1);
 
         if (isJumping && Math.abs(smoothSp - jumpTarget) < 0.004 && programmaticJumpTargetRef) {
           programmaticJumpTargetRef.current = null;
