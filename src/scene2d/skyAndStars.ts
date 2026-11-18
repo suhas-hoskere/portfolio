@@ -315,21 +315,21 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   ctx.drawImage(sunImg, sunX - sunSize * 0.5, sunY - sunSize * 0.5, sunSize, sunSize);
   ctx.restore();
 
-  // 4. CONTINUOUSLY MOVING MONOCHROME MOON (glides smoothly across full screen & beyond borders,
-  //    riding a clean elevated arc well separated from the Sun so they never collide awkwardly!)
+  // 4. DISTANT CELESTIAL MOON (moves independently & calmly right-to-left, opposite the wind-blown clouds,
+  //    so clouds clearly pass in front of the distant Moon while it glides on its own celestial arc!)
   const moonImg = getMoonSprite();
-  const moonSize = Math.min(w, h) * 0.125;
-  const moonSpan = w + moonSize * 2.6;
-  const moonTravel = reducedMotion ? 0.36 : ((0.14 + t * 0.0085 + sp * 0.34) % 1 + 1) % 1;
-  const moonX = moonTravel * moonSpan - moonSize * 1.3 - mouseX * 6;
-  // Keeps Moon gracefully separated vertically when crossing the right side near the Sun
+  const moonSize = Math.min(w, h) * 0.115;
+  const moonSpan = w + moonSize * 2.4;
+  const moonTravel = reducedMotion ? 0.42 : ((0.44 - t * 0.0024 - sp * 0.22) % 1 + 1) % 1;
+  const moonX = moonTravel * moonSpan - moonSize * 1.2 - mouseX * 4;
+  // Smooth high celestial arc well clear of the upper-right Sun
   const nearSunFactor = Math.exp(-Math.pow((moonX - sunX) / (w * 0.18), 2));
-  const arcOffset = Math.sin(moonTravel * Math.PI) * h * 0.09;
+  const arcOffset = Math.sin(moonTravel * Math.PI) * h * 0.08;
   const moonY =
-    lerp(h * 0.31, h * 0.26, spaceBlend) -
+    lerp(h * 0.27, h * 0.22, spaceBlend) -
     arcOffset +
     nearSunFactor * h * 0.14 -
-    mouseY * 3.5;
+    mouseY * 2.5;
 
   ctx.save();
   ctx.globalAlpha = lerp(0.84, 0.96, spaceBlend);
