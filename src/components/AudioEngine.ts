@@ -1,54 +1,63 @@
 /**
- * Continuous Satisfying Ambient Space Soundtrack + Subtle Flight Acoustics Engine (Web Audio API):
- * - Zero external audio file downloads (0 KB bundle bloat, infinite seamless playback!)
- * - Lush, warm evolving harmonic space pads (Cadd9 -> Am9 -> Fmaj7#11 -> G6sus4)
- * - Gentle, deeply satisfying felt-piano / celesta arpeggio notes drifting through warm stereo space echo
- * - Subtle low-end engine warmth during liftoff that blends cleanly under the music without overpowering it
+ * Deep Space Cinema Swells Engine (Interstellar-Inspired Pipe Organ & Orbital Drone — Web Audio API):
+ * - Zero external audio files (0 KB download bloat, seamless infinite playback)
+ * - Majestic slow-breathing pipe-organ harmonic swells (Am9 -> Fmaj7 -> Cadd9 -> Em7/G, 11.5s per chord)
+ * - Zero repetitive melody or plucky arpeggio — pure warm cathedral organ, sub-pedal & ethereal space shimmer
+ * - Altitude-reactive filter bloom & gentle sub-bass engine warmth during liftoff/ascent
  */
 class CosmicAudio {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private musicBus: GainNode | null = null;
   private echoInput: GainNode | null = null;
-  private noiseGain: GainNode | null = null;
-  private noiseFilter: BiquadFilterNode | null = null;
+
+  // Pipe-organ & drone nodes
+  private organOscs: OscillatorNode[] = [];
+  private pedalOsc: OscillatorNode | null = null;
+  private shimmerOsc: OscillatorNode | null = null;
+  private shimmerGain: GainNode | null = null;
+  private organFilter: BiquadFilterNode | null = null;
+  private organGain: GainNode | null = null;
+  private lfoOsc: OscillatorNode | null = null;
+  private swellLfoOsc: OscillatorNode | null = null;
+  private chordTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Subtle liftoff engine warmth layers
+  private noiseBuffer: AudioBuffer | null = null;
   private noiseSource: AudioBufferSourceNode | null = null;
+  private noiseFilter: BiquadFilterNode | null = null;
+  private noiseGain: GainNode | null = null;
   private subOsc: OscillatorNode | null = null;
   private subGain: GainNode | null = null;
-  private padOscs: OscillatorNode[] = [];
-  private padFilter: BiquadFilterNode | null = null;
-  private padGain: GainNode | null = null;
-  private lfoOsc: OscillatorNode | null = null;
-  private musicTimer: ReturnType<typeof setInterval> | null = null;
-  private noiseBuffer: AudioBuffer | null = null;
+
   private isRunning = false;
   private chordIndex = 0;
-  private arpStep = 0;
+  private visibilityBound = false;
   public isMuted = true;
   public userExplicitlyMuted = false;
 
-  // Lush, deeply calming space-cinema chord progression (Interstellar / Brian Eno inspired):
-  // Cadd9 -> Am9 -> Fmaj7#11 -> G6sus4 (warm, peaceful, uplifting, infinitely loopable!)
-  private readonly CHORDS: { pad: number[]; arp: number[] }[] = [
+  // Slow cinematic minor-key pipe-organ swells (Interstellar / Hans Zimmer inspired)
+  // Am(add9) -> Fmaj7 -> C(add9) -> Em7/G
+  private readonly CHORDS: { pedal: number; voices: number[]; shimmer: number }[] = [
     {
-      // Cadd9 (C3, G3, D4, E4)
-      pad: [130.81, 196.0, 293.66, 329.63],
-      arp: [261.63, 329.63, 392.0, 587.33, 523.25, 392.0, 659.25, 587.33],
+      pedal: 55.0, // A1
+      voices: [110.0, 164.81, 246.94, 261.63, 329.63], // A2 E3 B3 C4 E4
+      shimmer: 659.25, // E5
     },
     {
-      // Am9 (A2, E3, B3, C4)
-      pad: [110.0, 164.81, 246.94, 261.63],
-      arp: [220.0, 329.63, 392.0, 493.88, 523.25, 493.88, 659.25, 392.0],
+      pedal: 43.65, // F1
+      voices: [87.31, 130.81, 174.61, 220.0, 329.63], // F2 C3 F3 A3 E4
+      shimmer: 523.25, // C5
     },
     {
-      // Fmaj7#11 (F2, C3, E3, A3, B3)
-      pad: [87.31, 130.81, 196.0, 220.0],
-      arp: [174.61, 261.63, 329.63, 440.0, 493.88, 523.25, 440.0, 329.63],
+      pedal: 65.41, // C2
+      voices: [130.81, 196.0, 261.63, 293.66, 329.63], // C3 G3 C4 D4 E4
+      shimmer: 587.33, // D5
     },
     {
-      // G6sus4 (G2, D3, A3, B3)
-      pad: [98.0, 146.83, 220.0, 246.94],
-      arp: [196.0, 293.66, 392.0, 440.0, 493.88, 587.33, 493.88, 392.0],
+      pedal: 49.0, // G1
+      voices: [98.0, 146.83, 196.0, 246.94, 329.63], // G2 D3 G3 B3 E4
+      shimmer: 493.88, // B4
     },
   ];
 
@@ -63,41 +72,59 @@ class CosmicAudio {
         this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 1, this.ctx.currentTime);
         this.masterGain.connect(this.ctx.destination);
         this.createNoiseBuffer();
-        this.buildMusicEchoBus();
+        this.buildSpaceReverbBus();
+        this.bindVisibilityHandler();
       }
     }
   }
 
-  /** Warm stereo space-echo reverb bus so every ambient note blooms softly */
-  private buildMusicEchoBus() {
+  /** Gently ducks audio when user switches tabs and swells back smoothly on return */
+  private bindVisibilityHandler() {
+    if (this.visibilityBound || typeof document === 'undefined') return;
+    this.visibilityBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (!this.ctx || !this.masterGain || this.isMuted) return;
+      const t = this.ctx.currentTime;
+      this.masterGain.gain.cancelScheduledValues(t);
+      if (document.hidden) {
+        this.masterGain.gain.setTargetAtTime(0.0001, t, 0.35);
+      } else {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.masterGain.gain.setTargetAtTime(1.0, t, 0.65);
+      }
+    });
+  }
+
+  /** Wide damped cathedral/space stereo echo bus for weightless cinematic depth */
+  private buildSpaceReverbBus() {
     if (!this.ctx || !this.masterGain) return;
 
     const musicBus = this.ctx.createGain();
-    musicBus.gain.setValueAtTime(0.85, this.ctx.currentTime);
+    musicBus.gain.setValueAtTime(0.92, this.ctx.currentTime);
     musicBus.connect(this.masterGain);
     this.musicBus = musicBus;
 
     const echoIn = this.ctx.createGain();
-    echoIn.gain.setValueAtTime(0.45, this.ctx.currentTime);
+    echoIn.gain.setValueAtTime(0.55, this.ctx.currentTime);
 
-    const delayL = this.ctx.createDelay(1.0);
-    delayL.delayTime.setValueAtTime(0.42, this.ctx.currentTime);
-    const delayR = this.ctx.createDelay(1.0);
-    delayR.delayTime.setValueAtTime(0.63, this.ctx.currentTime);
+    const delayL = this.ctx.createDelay(1.5);
+    delayL.delayTime.setValueAtTime(0.58, this.ctx.currentTime);
+    const delayR = this.ctx.createDelay(1.5);
+    delayR.delayTime.setValueAtTime(0.87, this.ctx.currentTime);
 
     const echoFilter = this.ctx.createBiquadFilter();
     echoFilter.type = 'lowpass';
-    echoFilter.frequency.setValueAtTime(1450, this.ctx.currentTime);
+    echoFilter.frequency.setValueAtTime(1120, this.ctx.currentTime);
 
     const fbL = this.ctx.createGain();
-    fbL.gain.setValueAtTime(0.38, this.ctx.currentTime);
+    fbL.gain.setValueAtTime(0.46, this.ctx.currentTime);
     const fbR = this.ctx.createGain();
-    fbR.gain.setValueAtTime(0.35, this.ctx.currentTime);
+    fbR.gain.setValueAtTime(0.44, this.ctx.currentTime);
 
     const panL = this.ctx.createStereoPanner ? this.ctx.createStereoPanner() : null;
     const panR = this.ctx.createStereoPanner ? this.ctx.createStereoPanner() : null;
-    if (panL) panL.pan.setValueAtTime(-0.55, this.ctx.currentTime);
-    if (panR) panR.pan.setValueAtTime(0.55, this.ctx.currentTime);
+    if (panL) panL.pan.setValueAtTime(-0.65, this.ctx.currentTime);
+    if (panR) panR.pan.setValueAtTime(0.65, this.ctx.currentTime);
 
     echoIn.connect(echoFilter);
     echoFilter.connect(delayL);
@@ -157,15 +184,15 @@ class CosmicAudio {
     if (!this.isMuted) {
       this.masterGain.gain.cancelScheduledValues(t);
       this.masterGain.gain.setValueAtTime(0.001, t);
-      this.masterGain.gain.linearRampToValueAtTime(1.0, t + 0.9);
+      this.masterGain.gain.linearRampToValueAtTime(1.0, t + 1.4);
       this.startSynthesizer();
     } else {
       this.masterGain.gain.cancelScheduledValues(t);
       this.masterGain.gain.setValueAtTime(Math.max(this.masterGain.gain.value, 0.001), t);
-      this.masterGain.gain.linearRampToValueAtTime(0.0001, t + 0.45);
+      this.masterGain.gain.linearRampToValueAtTime(0.0001, t + 0.55);
       setTimeout(() => {
         if (this.isMuted) this.stopSynthesizer();
-      }, 500);
+      }, 620);
     }
     return !this.isMuted;
   }
@@ -181,179 +208,200 @@ class CosmicAudio {
     const t = this.ctx.currentTime;
     this.masterGain.gain.cancelScheduledValues(t);
     this.masterGain.gain.setValueAtTime(Math.max(this.masterGain.gain.value, 0.001), t);
-    this.masterGain.gain.linearRampToValueAtTime(1.0, t + 1.1);
+    this.masterGain.gain.linearRampToValueAtTime(1.0, t + 1.8);
     this.startSynthesizer();
     return true;
   }
 
   private stopSynthesizer() {
     if (!this.isRunning) return;
-    if (this.musicTimer) {
-      clearInterval(this.musicTimer);
-      this.musicTimer = null;
+    if (this.chordTimer) {
+      clearInterval(this.chordTimer);
+      this.chordTimer = null;
     }
     try {
+      this.pedalOsc?.stop();
+      this.pedalOsc?.disconnect();
+      this.shimmerOsc?.stop();
+      this.shimmerOsc?.disconnect();
       this.subOsc?.stop();
       this.subOsc?.disconnect();
       this.noiseSource?.stop();
       this.noiseSource?.disconnect();
       this.lfoOsc?.stop();
       this.lfoOsc?.disconnect();
-      for (const osc of this.padOscs) {
+      this.swellLfoOsc?.stop();
+      this.swellLfoOsc?.disconnect();
+      for (const osc of this.organOscs) {
         osc.stop();
         osc.disconnect();
       }
     } catch {
       // Safe cleanup
     }
+    this.pedalOsc = null;
+    this.shimmerOsc = null;
+    this.shimmerGain = null;
     this.subOsc = null;
     this.noiseSource = null;
     this.lfoOsc = null;
-    this.padOscs = [];
+    this.swellLfoOsc = null;
+    this.organOscs = [];
     this.isRunning = false;
   }
 
-  /** Plays a single silky felt-piano / soft celestial bell note into the stereo echo bus */
-  private triggerFeltPianoNote(freq: number, velocity = 0.065, duration = 3.2) {
+  /** Smoothly glides the pipe-organ & pedal harmonics into the next cinema chord over ~2.6s */
+  private glideOrganToChord(chordIdx: number) {
+    if (!this.ctx || this.organOscs.length === 0) return;
+    const t = this.ctx.currentTime;
+    const chord = this.CHORDS[chordIdx];
+
+    if (this.pedalOsc) {
+      this.pedalOsc.frequency.setTargetAtTime(chord.pedal, t, 1.8);
+    }
+    if (this.shimmerOsc) {
+      this.shimmerOsc.frequency.setTargetAtTime(chord.shimmer, t, 2.2);
+    }
+
+    for (let i = 0; i < chord.voices.length; i++) {
+      const f = chord.voices[i];
+      const oscA = this.organOscs[i * 2];
+      const oscB = this.organOscs[i * 2 + 1];
+      if (oscA) oscA.frequency.setTargetAtTime(f - 0.28, t, 1.9);
+      if (oscB) oscB.frequency.setTargetAtTime(f + 0.28, t, 1.9);
+    }
+  }
+
+  /** Whisper-soft warm organ harmonic chime for subtle UI interactions (never harsh or plucky) */
+  private triggerSoftSwellChime(freq: number, velocity = 0.024, duration = 1.6) {
     if (!this.ctx || !this.musicBus || !this.echoInput || this.isMuted) return;
     const t = this.ctx.currentTime;
 
-    const noteGain = this.ctx.createGain();
-    noteGain.gain.setValueAtTime(0.0001, t);
-    // Silky soft felt-hammer attack (no harsh click!) + long warm decay
-    noteGain.gain.linearRampToValueAtTime(velocity, t + 0.032);
-    noteGain.gain.exponentialRampToValueAtTime(velocity * 0.28, t + duration * 0.35);
-    noteGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(velocity, t + 0.09);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
 
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(Math.min(freq * 4.2, 2400), t);
-    lp.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.4, 480), t + duration * 0.8);
+    lp.frequency.setValueAtTime(Math.min(freq * 2.2, 1300), t);
 
-    // Warm fundamental sine + gentle octave triangle harmonic for rich acoustic felt-piano timbre
-    const osc1 = this.ctx.createOscillator();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(freq, t);
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t);
 
-    const osc2 = this.ctx.createOscillator();
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(freq * 2, t);
-    const harmGain = this.ctx.createGain();
-    harmGain.gain.setValueAtTime(0.14, t);
+    osc.connect(lp);
+    lp.connect(gain);
+    gain.connect(this.musicBus);
+    gain.connect(this.echoInput);
 
-    osc1.connect(lp);
-    osc2.connect(harmGain);
-    harmGain.connect(lp);
-    lp.connect(noteGain);
-
-    noteGain.connect(this.musicBus);
-    noteGain.connect(this.echoInput);
-
-    osc1.start(t);
-    osc2.start(t);
-    osc1.stop(t + duration + 0.05);
-    osc2.stop(t + duration + 0.05);
-  }
-
-  /** Smoothly glides the 4 lush space-pad oscillators to the next harmonic chord */
-  private glidePadToChord(chordIdx: number) {
-    if (!this.ctx || this.padOscs.length === 0) return;
-    const t = this.ctx.currentTime;
-    const freqs = this.CHORDS[chordIdx].pad;
-    for (let i = 0; i < freqs.length; i++) {
-      const f = freqs[i];
-      // Paired slightly detuned voices (+/- 0.35Hz) for lush wide chorus warmth
-      const oscA = this.padOscs[i * 2];
-      const oscB = this.padOscs[i * 2 + 1];
-      if (oscA) oscA.frequency.setTargetAtTime(f - 0.32, t, 1.35);
-      if (oscB) oscB.frequency.setTargetAtTime(f + 0.32, t, 1.35);
-    }
+    osc.start(t);
+    osc.stop(t + duration + 0.08);
   }
 
   private startSynthesizer() {
     if (!this.ctx || !this.masterGain || !this.musicBus || this.isRunning) return;
     this.isRunning = true;
     const t = this.ctx.currentTime;
+    const initial = this.CHORDS[this.chordIndex];
 
-    // 1. WARM BREATHING SPACE HARMONIC PAD (8 silky detuned voices through breathing low-pass filter)
-    const padFilter = this.ctx.createBiquadFilter();
-    padFilter.type = 'lowpass';
-    padFilter.frequency.setValueAtTime(520, t);
-    padFilter.Q.setValueAtTime(0.8, t);
+    // 1. WARM BREATHING SPACE PIPE-ORGAN FILTER & AMPLITUDE SWELL
+    const organFilter = this.ctx.createBiquadFilter();
+    organFilter.type = 'lowpass';
+    organFilter.frequency.setValueAtTime(420, t);
+    organFilter.Q.setValueAtTime(0.7, t);
 
-    // Gentle 0.09Hz slow breathing LFO on the pad warmth filter
+    // Ultra-slow 18-second filter breath LFO (0.055 Hz)
     const lfoOsc = this.ctx.createOscillator();
     lfoOsc.type = 'sine';
-    lfoOsc.frequency.setValueAtTime(0.09, t);
+    lfoOsc.frequency.setValueAtTime(0.055, t);
     const lfoDepth = this.ctx.createGain();
-    lfoDepth.gain.setValueAtTime(160, t);
+    lfoDepth.gain.setValueAtTime(165, t);
     lfoOsc.connect(lfoDepth);
-    lfoDepth.connect(padFilter.frequency);
+    lfoDepth.connect(organFilter.frequency);
     lfoOsc.start(t);
     this.lfoOsc = lfoOsc;
 
-    const padGain = this.ctx.createGain();
-    padGain.gain.setValueAtTime(0.001, t);
-    padGain.gain.linearRampToValueAtTime(0.062, t + 2.2);
+    const organGain = this.ctx.createGain();
+    organGain.gain.setValueAtTime(0.001, t);
+    organGain.gain.linearRampToValueAtTime(0.082, t + 2.8);
 
-    padFilter.connect(padGain);
-    padGain.connect(this.musicBus);
-    if (this.echoInput) padGain.connect(this.echoInput);
-    this.padFilter = padFilter;
-    this.padGain = padGain;
+    // Gentle secondary breathing swell on amplitude (13-second ocean-like swell)
+    const swellLfoOsc = this.ctx.createOscillator();
+    swellLfoOsc.type = 'sine';
+    swellLfoOsc.frequency.setValueAtTime(0.075, t);
+    const swellDepth = this.ctx.createGain();
+    swellDepth.gain.setValueAtTime(0.018, t);
+    swellLfoOsc.connect(swellDepth);
+    swellDepth.connect(organGain.gain);
+    swellLfoOsc.start(t);
+    this.swellLfoOsc = swellLfoOsc;
 
-    this.padOscs = [];
-    const initialPad = this.CHORDS[this.chordIndex].pad;
-    for (let i = 0; i < initialPad.length; i++) {
-      const f = initialPad[i];
-      for (const detuneHz of [-0.32, 0.32]) {
+    organFilter.connect(organGain);
+    organGain.connect(this.musicBus);
+    if (this.echoInput) organGain.connect(this.echoInput);
+    this.organFilter = organFilter;
+    this.organGain = organGain;
+
+    // 2. DEEP 16' CATHEDRAL PEDAL DRONE (warm felt sub-harmonic foundation)
+    const pedalOsc = this.ctx.createOscillator();
+    pedalOsc.type = 'sine';
+    pedalOsc.frequency.setValueAtTime(initial.pedal, t);
+    const pedalGain = this.ctx.createGain();
+    pedalGain.gain.setValueAtTime(0.052, t);
+    pedalOsc.connect(pedalGain);
+    pedalGain.connect(this.musicBus);
+    pedalOsc.start(t);
+    this.pedalOsc = pedalOsc;
+
+    // 3. 10 DETUNED PIPE-ORGAN VOICES (warm sawtooth + triangle pairs for Interstellar reed-pipe texture)
+    this.organOscs = [];
+    for (let i = 0; i < initial.voices.length; i++) {
+      const f = initial.voices[i];
+      const weight = i === 0 ? 0.24 : i === 1 ? 0.18 : 0.12;
+      for (let dIdx = 0; dIdx < 2; dIdx++) {
+        const detuneHz = dIdx === 0 ? -0.28 : 0.28;
         const osc = this.ctx.createOscillator();
-        osc.type = i === 0 ? 'sine' : 'triangle';
+        // Mix mellow triangle & filtered sawtooth for rich analog organ pipes
+        osc.type = dIdx === 0 ? 'sawtooth' : 'triangle';
         osc.frequency.setValueAtTime(f + detuneHz, t);
+
         const voiceGain = this.ctx.createGain();
-        voiceGain.gain.setValueAtTime(i === 0 ? 0.36 : 0.18, t);
+        voiceGain.gain.setValueAtTime(dIdx === 0 ? weight * 0.55 : weight, t);
+
         osc.connect(voiceGain);
-        voiceGain.connect(padFilter);
+        voiceGain.connect(organFilter);
         osc.start(t);
-        this.padOscs.push(osc);
+        this.organOscs.push(osc);
       }
     }
 
-    // 2. CONTINUOUS SATISFYING AMBIENT FELT-PIANO ARPEGGIO SEQUENCER (smooth 920ms pulse!)
-    const playNextBeat = () => {
+    // 4. WEIGHTLESS ORBITAL SHIMMER HARMONIC (floats gently through stereo space reverb)
+    const shimmerOsc = this.ctx.createOscillator();
+    shimmerOsc.type = 'sine';
+    shimmerOsc.frequency.setValueAtTime(initial.shimmer, t);
+    const shimmerGain = this.ctx.createGain();
+    shimmerGain.gain.setValueAtTime(0.0001, t);
+    shimmerGain.gain.linearRampToValueAtTime(0.011, t + 4.0);
+    shimmerOsc.connect(shimmerGain);
+    if (this.echoInput) shimmerGain.connect(this.echoInput);
+    shimmerGain.connect(this.musicBus);
+    shimmerOsc.start(t);
+    this.shimmerOsc = shimmerOsc;
+    this.shimmerGain = shimmerGain;
+
+    // 5. SLOW MAJESTIC CHORD EVOLUTION (every 11.5s — zero repetitive melody!)
+    this.chordTimer = setInterval(() => {
       if (!this.isRunning || this.isMuted) return;
       if (typeof document !== 'undefined' && document.hidden) return;
+      this.chordIndex = (this.chordIndex + 1) % this.CHORDS.length;
+      this.glideOrganToChord(this.chordIndex);
+    }, 11500);
 
-      const chord = this.CHORDS[this.chordIndex];
-      const noteIdx = this.arpStep % chord.arp.length;
-      const freq = chord.arp[noteIdx];
-
-      // Accent root & fifth gently; occasional sparkling upper-octave harmonic
-      const vel = noteIdx === 0 ? 0.068 : noteIdx % 2 === 0 ? 0.052 : 0.038;
-      this.triggerFeltPianoNote(freq, vel, 3.4);
-
-      if (noteIdx === 4) {
-        // Gentle high crystalline shimmer fifth every bar
-        this.triggerFeltPianoNote(freq * 2, 0.018, 2.8);
-      }
-
-      this.arpStep += 1;
-      if (this.arpStep >= chord.arp.length) {
-        this.arpStep = 0;
-        this.chordIndex = (this.chordIndex + 1) % this.CHORDS.length;
-        this.glidePadToChord(this.chordIndex);
-      }
-    };
-
-    // Play opening gentle note immediately, then flow seamlessly every 920ms
-    playNextBeat();
-    this.musicTimer = setInterval(playNextBeat, 920);
-
-    // 3. SUBTLE SUB-BASS ENGINE WARMTH (only rises softly during liftoff/ascent, silent on standby/orbit)
+    // 6. SUBTLE SUB-BASS ENGINE WARMTH (only rises softly during liftoff/ascent, silent in orbit)
     const subOsc = this.ctx.createOscillator();
     subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(44, t);
-
+    subOsc.frequency.setValueAtTime(42, t);
     const subGain = this.ctx.createGain();
     subGain.gain.setValueAtTime(0.0001, t);
     subOsc.connect(subGain);
@@ -362,7 +410,7 @@ class CosmicAudio {
     this.subOsc = subOsc;
     this.subGain = subGain;
 
-    // 4. SOFT FILTERED THRUST RUMBLE LAYER (subtle under the music during ignition & climb)
+    // 7. SOFT FILTERED ATMOSPHERIC THRUST RUMBLE
     if (this.noiseBuffer) {
       const noiseSource = this.ctx.createBufferSource();
       noiseSource.buffer = this.noiseBuffer;
@@ -370,8 +418,8 @@ class CosmicAudio {
 
       const noiseFilter = this.ctx.createBiquadFilter();
       noiseFilter.type = 'lowpass';
-      noiseFilter.frequency.setValueAtTime(110, t);
-      noiseFilter.Q.setValueAtTime(1.4, t);
+      noiseFilter.frequency.setValueAtTime(100, t);
+      noiseFilter.Q.setValueAtTime(1.2, t);
 
       const noiseGain = this.ctx.createGain();
       noiseGain.gain.setValueAtTime(0.0001, t);
@@ -387,53 +435,56 @@ class CosmicAudio {
     }
   }
 
-  // Smoothly blends subtle engine acoustics & space-pad brightness with flight altitude
+  // Smoothly blooms the space pipe-organ warmth & orbital shimmer as the rocket climbs into orbit
   public updateFallIntensity(flightProgress: number) {
     if (!this.ctx || !this.isRunning) return;
     const t = this.ctx.currentTime;
 
     if (flightProgress < 0.032) {
-      this.subGain?.gain.setTargetAtTime(0.0001, t, 0.12);
-      this.noiseGain?.gain.setTargetAtTime(0.0001, t, 0.12);
-      this.padFilter?.frequency.setTargetAtTime(520, t, 0.4);
-      this.padGain?.gain.setTargetAtTime(0.062, t, 0.4);
+      this.subGain?.gain.setTargetAtTime(0.0001, t, 0.15);
+      this.noiseGain?.gain.setTargetAtTime(0.0001, t, 0.15);
+      this.organFilter?.frequency.setTargetAtTime(380, t, 0.6);
+      this.organGain?.gain.setTargetAtTime(0.075, t, 0.6);
+      this.shimmerGain?.gain.setTargetAtTime(0.008, t, 0.8);
     } else if (flightProgress < 0.140) {
       const r = (flightProgress - 0.032) / 0.108;
-      this.subGain?.gain.setTargetAtTime(lerpNum(0.008, 0.026, r), t, 0.12);
-      this.noiseFilter?.frequency.setTargetAtTime(lerpNum(110, 190, r), t, 0.12);
-      this.noiseGain?.gain.setTargetAtTime(lerpNum(0.006, 0.022, r), t, 0.12);
-      this.padFilter?.frequency.setTargetAtTime(lerpNum(520, 680, r), t, 0.4);
+      this.subGain?.gain.setTargetAtTime(lerpNum(0.008, 0.026, r), t, 0.15);
+      this.noiseFilter?.frequency.setTargetAtTime(lerpNum(100, 175, r), t, 0.15);
+      this.noiseGain?.gain.setTargetAtTime(lerpNum(0.005, 0.018, r), t, 0.15);
+      this.organFilter?.frequency.setTargetAtTime(lerpNum(380, 560, r), t, 0.5);
+      this.organGain?.gain.setTargetAtTime(lerpNum(0.075, 0.095, r), t, 0.5);
     } else if (flightProgress < 0.510) {
       const r = (flightProgress - 0.140) / 0.370;
       const bell = Math.sin(r * Math.PI);
-      this.subGain?.gain.setTargetAtTime(lerpNum(0.014, 0.032, bell), t, 0.12);
-      this.noiseFilter?.frequency.setTargetAtTime(lerpNum(140, 230, bell), t, 0.12);
-      this.noiseGain?.gain.setTargetAtTime(lerpNum(0.008, 0.024, bell), t, 0.12);
-      this.padFilter?.frequency.setTargetAtTime(lerpNum(680, 880, r), t, 0.5);
-      this.padGain?.gain.setTargetAtTime(0.070, t, 0.4);
+      this.subGain?.gain.setTargetAtTime(lerpNum(0.012, 0.030, bell), t, 0.15);
+      this.noiseFilter?.frequency.setTargetAtTime(lerpNum(125, 210, bell), t, 0.15);
+      this.noiseGain?.gain.setTargetAtTime(lerpNum(0.006, 0.020, bell), t, 0.15);
+      this.organFilter?.frequency.setTargetAtTime(lerpNum(560, 780, r), t, 0.6);
+      this.organGain?.gain.setTargetAtTime(0.098, t, 0.5);
+      this.shimmerGain?.gain.setTargetAtTime(lerpNum(0.010, 0.018, r), t, 0.8);
     } else {
-      // Serene orbital vacuum: engines silent, lush glowing space soundtrack blooms!
-      this.subGain?.gain.setTargetAtTime(0.0001, t, 0.25);
-      this.noiseGain?.gain.setTargetAtTime(0.0001, t, 0.25);
-      this.padFilter?.frequency.setTargetAtTime(920, t, 0.6);
-      this.padGain?.gain.setTargetAtTime(0.075, t, 0.5);
+      // Serene orbital vacuum: engines silent, deep Interstellar organ & orbital shimmer bloom wide
+      this.subGain?.gain.setTargetAtTime(0.0001, t, 0.35);
+      this.noiseGain?.gain.setTargetAtTime(0.0001, t, 0.35);
+      this.organFilter?.frequency.setTargetAtTime(840, t, 0.8);
+      this.organGain?.gain.setTargetAtTime(0.092, t, 0.6);
+      this.shimmerGain?.gain.setTargetAtTime(0.020, t, 0.9);
     }
   }
 
   public playCountdownBeep(isTZero = false) {
     if (this.isMuted) return;
-    this.triggerFeltPianoNote(isTZero ? 523.25 : 392.0, isTZero ? 0.06 : 0.03, 1.4);
+    this.triggerSoftSwellChime(isTZero ? 440.0 : 329.63, 0.024, 1.4);
   }
 
   public playStagingSound() {
     if (this.isMuted) return;
-    // Soft harmonious chime on stage milestone (never harsh!)
-    this.triggerFeltPianoNote(587.33, 0.045, 2.4);
+    this.triggerSoftSwellChime(440.0, 0.022, 1.9);
   }
 
   public playClampRelease() {
     if (this.isMuted) return;
-    this.triggerFeltPianoNote(440.0, 0.035, 1.8);
+    this.triggerSoftSwellChime(329.63, 0.020, 1.5);
   }
 
   public playDelugeSound() {
@@ -447,20 +498,20 @@ class CosmicAudio {
 
       const filter = this.ctx.createBiquadFilter();
       filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(320, t);
-      filter.frequency.exponentialRampToValueAtTime(520, t + 0.5);
-      filter.Q.setValueAtTime(1.4, t);
+      filter.frequency.setValueAtTime(260, t);
+      filter.frequency.exponentialRampToValueAtTime(440, t + 0.55);
+      filter.Q.setValueAtTime(1.2, t);
 
       const gain = this.ctx.createGain();
       gain.gain.setValueAtTime(0.001, t);
-      gain.gain.linearRampToValueAtTime(0.022, t + 0.2);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+      gain.gain.linearRampToValueAtTime(0.018, t + 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
 
       src.connect(filter);
       filter.connect(gain);
       gain.connect(this.masterGain);
       src.start(t);
-      src.stop(t + 1.15);
+      src.stop(t + 1.25);
     } catch {
       // Safe fallback
     }
@@ -468,21 +519,22 @@ class CosmicAudio {
 
   public playThrusterPulse() {
     if (this.isMuted) return;
-    this.triggerFeltPianoNote(329.63, 0.03, 1.5);
+    this.triggerSoftSwellChime(293.66, 0.018, 1.4);
   }
 
-  public playTelemetryChirp(freq = 880, _duration = 0.08) {
+  public playTelemetryChirp(freq = 660, _duration = 0.08) {
     if (this.isMuted) return;
-    // Soft musical harmonic ping instead of harsh electronic beep
-    this.triggerFeltPianoNote(Math.min(freq, 784), 0.028, 0.9);
+    // Map clicks softly into a gentle organ harmonic range (330..587 Hz)
+    const mellowFreq = 330 + ((Math.max(freq, 440) - 440) % 260);
+    this.triggerSoftSwellChime(mellowFreq, 0.016, 0.9);
   }
 
   public playQuindarTone(_isIntro = true) {
-    // Keep silent so continuous music flows peacefully uninterrupted
+    // Silent so deep space swells flow uninterrupted
   }
 
   public playRadioCallout(_calloutText: string) {
-    // Keep robotic browser TTS silent so the continuous ambient music stays serene & satisfying
+    // Silent so cinema organ swells remain serene
   }
 }
 
