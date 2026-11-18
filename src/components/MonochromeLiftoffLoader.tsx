@@ -7,10 +7,10 @@ interface MonochromeLiftoffLoaderProps {
 }
 
 const PREFLIGHT_CHECKS = [
-  { at: 15, code: 'SYS-01', label: 'AVIONICS & TELEMETRY BUS', status: 'NOMINAL' },
-  { at: 42, code: 'CRYO-02', label: 'LOX / LH2 PROPELLANT LOAD', status: '100%' },
-  { at: 68, code: 'PAD-03', label: 'UMBILICALS & CLAMPS', status: 'RELEASED' },
-  { at: 86, code: 'ENG-04', label: 'DUAL VIKAS + S200 THRUST', status: 'LIFTOFF' },
+  { at: 15, code: '01', label: 'WRITING · ಕನ್ನಡ & ENGLISH', status: 'ACTIVE' },
+  { at: 42, code: '02', label: 'AI & MACHINE LEARNING', status: 'ONLINE' },
+  { at: 68, code: '03', label: 'OPEN-SOURCE SYSTEMS', status: 'SYNCED' },
+  { at: 86, code: '04', label: 'PORTFOLIO TRAJECTORY', status: 'LIFTOFF' },
 ];
 
 interface LoaderSmoke {

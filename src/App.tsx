@@ -6,6 +6,7 @@ import type { ProjectData } from './data/portfolioData';
 import { CustomCursor } from './components/CustomCursor';
 import { MonochromeLiftoffLoader } from './components/MonochromeLiftoffLoader';
 import { cosmicAudio } from './components/AudioEngine';
+import { logVisitorToSheets } from './utils/visitorLogger';
 
 // Lazy-load modals so their heavy DOM and icon sets are never loaded until opened
 const FlightMissionModal = lazy(() =>
@@ -65,6 +66,11 @@ export const App: React.FC = () => {
 
   const handleLoaderComplete = useCallback(() => {
     setShowLoader(false);
+  }, []);
+
+  // Log passive visitor device/location metadata to Google Sheets once per session (when configured)
+  useEffect(() => {
+    void logVisitorToSheets();
   }, []);
 
   // Gently auto-start ambient soundtrack on first user gesture
