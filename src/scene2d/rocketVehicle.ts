@@ -438,10 +438,10 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const isBurning = sp >= 0.032 && sp < 0.538;
   const fireRamp = isBurning ? clamp((sp - 0.032) / 0.022, 0, 1) * coreCutoff : 0;
 
-  // Booster solid motors burn out smoothly right before detaching (0.365 -> 0.390)
+  // Booster solid motors burn out right after clearing the clouds (~45 km altitude, 0.268 -> 0.288)
   const boosterFireRamp =
-    isBurning && sp < 0.394
-      ? clamp((sp - 0.032) / 0.022, 0, 1) * (1 - smoothstep(0.365, 0.390, sp))
+    isBurning && sp < 0.292
+      ? clamp((sp - 0.032) / 0.022, 0, 1) * (1 - smoothstep(0.268, 0.288, sp))
       : 0;
 
   // Slow, graceful multi-step separation across spacious orbital insertion window:
@@ -615,10 +615,10 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     }
   }
 
-  // Twin S200 Solid Boosters — slow, gradual separation & gentle fade-out (sp 0.380 -> 0.515)
-  if (sp < 0.520) {
-    const sepProg = sp >= 0.380 ? smoothstep(0.380, 0.515, sp) : 0;
-    const boosterFade = 1 - smoothstep(0.465, 0.515, sp);
+  // Twin S200 Solid Boosters — realistic stratosphere separation right after clearing clouds (sp 0.282 -> 0.390)
+  if (sp < 0.395) {
+    const sepProg = sp >= 0.282 ? smoothstep(0.282, 0.390, sp) : 0;
+    const boosterFade = 1 - smoothstep(0.345, 0.392, sp);
     const baseBoosterX = coreR + u * 0.17;
     if (boosterFade > 0.01) {
       for (const side of [-1, 1] as const) {

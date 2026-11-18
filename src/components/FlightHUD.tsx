@@ -90,13 +90,15 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
       };
     } else if (sp < 0.560) {
       const ascFrac = (sp - 0.220) / 0.340;
-      const isBoosterSep = sp >= 0.380 && sp < 0.485;
+      const isBoosterSep = sp >= 0.280 && sp < 0.385;
       const isFairingSep = sp >= 0.485;
       const status = isFairingSep
         ? 'STAGE 01 // FAIRING JETTISON'
         : isBoosterSep
           ? 'STAGE 01 // S200 BOOSTER SEP'
-          : 'STAGE 01 // OUTER ATMOSPHERE';
+          : sp < 0.280
+            ? 'STAGE 01 // STRATOSPHERE CLIMB'
+            : 'STAGE 01 // CORE ORBITAL INSERTION';
       return {
         status,
         altitude: `${Math.round(15 + ascFrac * 405)} KM`,
