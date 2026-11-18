@@ -318,12 +318,14 @@ function getTreePlacements(): TreePlacement[] {
 }
 
 /**
- * Shared realistic camera zoom-out transform for ground pad, gantry & coastal flora:
- * On liftoff (sp >= 0.170), the pad & trees shrink cleanly onto Earth's receding horizon!
+ * Camera-tracking launchpad transform:
+ * - On liftoff (0.170 -> 0.220): Pad stays natural scale on the ground while the rocket physically climbs past the gantry!
+ * - During climb (0.210 -> 0.305): Camera pans up following the ascending rocket so the pad & trees glide cleanly downward
+ *   while Earth's curved horizon remains visible beneath the rocket (no toy shrinking-background illusion!).
  */
 export function getPadZoomTransform(
   sp: number,
-  w: number,
+  _w: number,
   h: number,
   groundY: number,
   unit: number
@@ -333,18 +335,15 @@ export function getPadZoomTransform(
     return { scale: 1, anchorY: groundY, alpha: 1, horizonY: baseHorizonY };
   }
 
-  const baseEarthR = Math.max(w, h) * 0.56;
-  const leoTopY = Math.max(h * 0.62, h - baseEarthR * 0.44);
-  const zoomOut = smoothstep(0.170, 0.480, sp);
-  const earthTopY = baseHorizonY + (leoTopY - baseHorizonY) * zoomOut;
+  // Gentle natural parallax drop as the camera pans up tracking the rising rocket
+  const panUp = smoothstep(0.175, 0.305, sp);
+  const dropPx = Math.pow(panUp, 1.55) * (h * 0.58 + unit * 1.4);
+  const scale = 1 - panUp * 0.22; // very subtle natural distance perspective only
+  const anchorY = groundY + dropPx;
+  const horizonY = baseHorizonY + dropPx * 0.65;
+  const alpha = 1 - smoothstep(0.235, 0.295, sp);
 
-  // Pad shrinks smoothly onto Earth's receding horizon and fades before curvature lifts outer edges
-  const padZ = smoothstep(0.170, 0.295, sp);
-  const scale = Math.max(0.06, 1 - Math.pow(padZ, 0.78) * 0.94);
-  const anchorY = earthTopY + unit * 0.24 * scale;
-  const alpha = 1 - smoothstep(0.215, 0.285, sp);
-
-  return { scale, anchorY, alpha, horizonY: earthTopY };
+  return { scale, anchorY, alpha, horizonY };
 }
 
 /** Legacy drop offset retained for compatibility */

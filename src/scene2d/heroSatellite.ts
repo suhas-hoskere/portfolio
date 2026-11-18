@@ -4,6 +4,7 @@ import {
   lerp,
   smoothstep,
 } from './types';
+import { getRocketPose } from './rocketVehicle';
 
 function drawMonoSolarSegment(
   ctx: CanvasRenderingContext2D,
@@ -88,24 +89,27 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const floatOut = smoothstep(0.420, 0.555, sp);
   const floatEase = easeOutCubic(floatOut);
 
-  // Match exact rocket fairing cavity world position so satellite physically emerges from inside the rocket!
-  const camZoom =
-    cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
-  const u = unit * camZoom;
-  let rocketBaseY = groundY - unit * 0.14 - unit * 0.32;
-  if (cameraMode === 'BOOSTER') rocketBaseY += unit * 0.32;
-  else if (cameraMode === 'CHASE') rocketBaseY -= unit * 0.22;
-  const pitchRad = 0.14;
+  // Match exact rocket fairing cavity world position using shared getRocketPose so satellite
+  // physically emerges from inside the splitting nose cone!
+  const rocketPose = getRocketPose(
+    Math.min(sp, 0.425),
+    mouseX,
+    vehicleAnchorX,
+    groundY,
+    unit,
+    cameraMode
+  );
   // Fairing cavity center sits at local y = -(l110H + interstageH + c25H + 0.55 * fairingCylH) = -3.43u
-  const localCavityY = -u * 3.43;
-  const startX = vehicleAnchorX - mouseX * 10 - Math.sin(pitchRad) * localCavityY;
-  const startY = rocketBaseY + Math.cos(pitchRad) * localCavityY;
+  const localCavityY = -rocketPose.u * 3.43;
+  const startX = rocketPose.x - Math.sin(rocketPose.pitchRad) * localCavityY;
+  const startY = rocketPose.y + Math.cos(rocketPose.pitchRad) * localCavityY;
+  const pitchRad = rocketPose.pitchRad;
 
-  // Emerges smoothly from stowed fairing scale (0.30) -> full LEO showcase (1.02) -> terminal uplink zoom (1.38)
-  let satScale = lerp(0.30, 1.02, floatEase);
+  // Emerges smoothly from stowed fairing scale (0.24) -> full LEO showcase (0.98) -> terminal uplink zoom (1.32)
+  let satScale = lerp(0.24, 0.98, floatEase);
   if (sp >= 0.87) {
     const terminalZoom = easeOutCubic((sp - 0.87) / 0.10);
-    satScale = lerp(1.02, 1.38, terminalZoom);
+    satScale = lerp(0.98, 1.32, terminalZoom);
   }
   if (cameraMode === 'BOOSTER') satScale *= 1.18;
   else if (cameraMode === 'CHASE') satScale *= 1.10;
@@ -114,7 +118,7 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.032 * floatEase;
   const targetX =
     vehicleAnchorX - mouseX * 10 - (sp >= 0.87 ? smoothstep(0.87, 0.96, sp) * unit * 0.18 : 0);
-  const targetY = h * 0.43 + bobY - mouseY * 6;
+  const targetY = h * 0.40 + bobY - mouseY * 6;
 
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);

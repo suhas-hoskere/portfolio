@@ -120,27 +120,11 @@ function getSunSprite(): HTMLCanvasElement {
 export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, scrollSpeed, mouseX, mouseY, reducedMotion } = frame;
 
-  // 1. Crisp monochrome background (subtle dark charcoal at ground zero -> pure obsidian in space)
+  // 1. Crisp monochrome background (subtle dark charcoal at ground zero -> pure obsidian in space, zero grid)
   const spaceBlend = smoothstep(0.16, 0.36, sp);
   const bgLum = Math.round(lerp(13, 5, spaceBlend));
   ctx.fillStyle = `rgb(${bgLum},${bgLum},${bgLum + 1})`;
   ctx.fillRect(0, 0, w, h);
-
-  // Subtle architectural grid lines in deep background
-  const gridAlpha = lerp(0.036, 0.018, spaceBlend);
-  const gridStep = Math.max(64, Math.round(Math.min(w, h) * 0.11));
-  ctx.strokeStyle = `rgba(255,255,255,${gridAlpha})`;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let gx = gridStep; gx < w; gx += gridStep) {
-    ctx.moveTo(gx, 0);
-    ctx.lineTo(gx, h);
-  }
-  for (let gy = gridStep; gy < h; gy += gridStep) {
-    ctx.moveTo(0, gy);
-    ctx.lineTo(w, gy);
-  }
-  ctx.stroke();
 
   // 2. Crisp monochrome starfield with gentle subtle atmospheric twinkle
   const starVis = lerp(0.24, 1.0, smoothstep(0.14, 0.34, sp));

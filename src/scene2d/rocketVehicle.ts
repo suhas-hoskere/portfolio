@@ -358,9 +358,47 @@ function drawMonoS200Booster(
 }
 
 /**
+ * Shared physical rocket trajectory pose (used by both rocketVehicle & heroSatellite):
+ * - On liftoff (0.170+): Rocket genuinely accelerates UPWARD off the pad, clears the gantry,
+ *   scales slightly smaller with altitude (1.0 -> 0.72), and curves along a realistic gravity turn!
+ */
+export function getRocketPose(
+  sp: number,
+  mouseX: number,
+  vehicleAnchorX: number,
+  groundY: number,
+  unit: number,
+  cameraMode: Scene2DFrameContext['cameraMode']
+): { x: number; y: number; u: number; pitchRad: number } {
+  const camZoom =
+    cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
+
+  // Vehicle naturally recedes slightly in scale as it climbs into outer atmosphere (1.0 -> 0.72)
+  const altitudeScale = 1 - smoothstep(0.180, 0.420, sp) * 0.28;
+  const u = unit * camZoom * altitudeScale;
+
+  // Realistic gravity-turn lateral arc + pitch eastward into LEO
+  const turnProg = smoothstep(0.215, 0.420, sp);
+  const pitchRad = turnProg * 0.24;
+  const x = vehicleAnchorX - mouseX * 10 + turnProg * unit * 0.18;
+
+  // Rocket physically blasts UPWARD off the pad during liftoff (0.170 -> 0.280), clearing the gantry!
+  let baseY = groundY - unit * 0.14;
+  if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
+  else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
+
+  const liftoffRise = sp >= 0.170 ? Math.pow(smoothstep(0.170, 0.290, sp), 1.15) * unit * 1.45 : 0;
+  // Settles slightly into clean orbital staging altitude above glowing Earth limb
+  const orbitalSettle = sp >= 0.290 ? smoothstep(0.290, 0.420, sp) * unit * 0.35 : 0;
+  const y = baseY - liftoffRise + orbitalSettle;
+
+  return { x, y, u, pitchRad };
+}
+
+/**
  * Pure monochrome Black & White LIVE 2.5D LVM3 Launch Vehicle:
  * Taller, slimmer sleek silhouette, radiant volumetric fire plumes (zero hard outlines),
- * zero shaking, smooth multi-phase booster sep & fairing clamshell split!
+ * zero shaking, realistic upward liftoff + gravity turn + smooth multi-phase staging!
  */
 export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const {
@@ -382,20 +420,14 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
 
   if (sp >= 0.550) return;
 
-  const camZoom =
-    cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
-  const u = unit * camZoom;
-
-  const basePadX = vehicleAnchorX - mouseX * 10;
-  let baseY = groundY - unit * 0.14;
-  if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
-  else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
-
-  // Smooth upward ascent glide with generous headroom below top HUD bar (zero shaking!)
-  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.380, sp) * unit * 0.32 : 0;
-  baseY -= climbLift;
-
-  const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.410, sp) * 0.14 : 0;
+  const { x: basePadX, y: baseY, u, pitchRad } = getRocketPose(
+    sp,
+    mouseX,
+    vehicleAnchorX,
+    groundY,
+    unit,
+    cameraMode
+  );
 
   // Core engines throttle down smoothly before stage separation (0.415 -> 0.445)
   const coreCutoff = 1 - smoothstep(0.415, 0.445, sp);
