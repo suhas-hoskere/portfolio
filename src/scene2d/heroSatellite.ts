@@ -116,17 +116,23 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
 
   const s = unit * satScale;
   const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.028 * floatEase;
+  const uplinkLift = smoothstep(0.840, 0.920, sp) * h * 0.04;
   const targetX =
-    vehicleAnchorX - mouseX * 10 - (sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.16 : 0);
-  const targetY = h * 0.37 + bobY - mouseY * 6;
+    vehicleAnchorX - mouseX * 10 - (sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.14 : 0);
+  const targetY = h * 0.37 - uplinkLift + bobY - mouseY * 6;
 
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);
 
-  // Stays HORIZONTAL (~90°, parallel to Earth's orbital path & matching the horizontal rocket!)
+  // Realistic orbital attitude sequence:
+  // 1) Cruises HORIZONTAL (~88°, parallel to orbit) straight out of the horizontal rocket nose
+  // 2) Smoothly slews NADIR-DOWNWARD (180°, Math.PI) on Karnataka Pass -> Orbital Uplink (0.84 -> 0.915)
+  //    so the parabolic dish faces directly toward Earth & beams RF downlink signals straight to Bangalore!
   const orbitalHorizRad = Math.PI * 0.49;
+  const nadirSlew = easeOutCubic(smoothstep(0.840, 0.915, sp));
+  const targetAttitude = lerp(orbitalHorizRad, Math.PI, nadirSlew);
   const bankRad =
-    lerp(pitchRad, orbitalHorizRad, floatEase) +
+    lerp(pitchRad, targetAttitude, floatEase) +
     (reducedMotion ? 0 : Math.sin(t * 0.45) * 0.018 * floatEase);
 
   ctx.save();
