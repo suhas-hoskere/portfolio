@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, ArrowUpRight, Cpu, ExternalLink } from 'lucide-react';
+import { X, ArrowUpRight, ExternalLink } from 'lucide-react';
 import { GithubIcon } from './Icons';
 import type { ProjectData } from './FlightMissionOverlays';
 import { cosmicAudio } from './AudioEngine';
@@ -11,13 +11,16 @@ interface FlightMissionModalProps {
 
 export const FlightMissionModal: React.FC<FlightMissionModalProps> = ({ project, onClose }) => {
   useEffect(() => {
+    if (!project) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    if (project) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
+      document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [project, onClose]);
@@ -25,98 +28,91 @@ export const FlightMissionModal: React.FC<FlightMissionModalProps> = ({ project,
   if (!project) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 pointer-events-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 pointer-events-auto">
       <div onClick={onClose} className="absolute inset-0 bg-black/85" />
 
-      <div className="animate-modal-in relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#09090b] border border-white/25 p-6 sm:p-8 space-y-6 text-left selection:bg-white selection:text-black">
+      {/* Compact single-screen modal: fits comfortably without scrolling, with Visit Website & GitHub immediately visible */}
+      <div className="animate-modal-in relative w-full max-w-2xl overflow-hidden rounded-2xl bg-[#09090b] border border-white/25 p-5 sm:p-6 space-y-4 text-left selection:bg-white selection:text-black shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
         {/* Top Bar */}
-        <div className="flex items-center justify-between border-b border-white/15 pb-4">
+        <div className="flex items-center justify-between border-b border-white/15 pb-3">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="px-3 py-1 rounded-md bg-white text-black text-xs font-mono font-bold tracking-wide">
+            <span className="px-2.5 py-0.5 rounded-md bg-white text-black text-xs font-mono font-bold tracking-wide">
               {project.name}
             </span>
-            <span className="text-xs font-mono text-zinc-400 uppercase">{project.category}</span>
+            <span className="text-[11px] font-mono text-zinc-400 uppercase">{project.category}</span>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer"
             aria-label="Close project modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Heading & Summary */}
-        <div className="space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-space font-bold text-white leading-tight tracking-tight">
+        {/* Title & Concise Summary */}
+        <div className="space-y-1.5">
+          <h2 className="text-xl sm:text-2xl font-space font-bold text-white leading-tight tracking-tight">
             {project.title}
           </h2>
-          <p className="text-sm text-zinc-300 font-sans font-light leading-relaxed">
+          <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed">
             {project.description}
           </p>
         </div>
 
-        {/* Key Highlights Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        {/* Compact Highlights Row */}
+        <div className="grid grid-cols-3 gap-2">
           {project.metrics.map((m) => (
-            <div key={m.label} className="p-3 rounded-xl bg-black border border-white/15">
-              <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+            <div key={m.label} className="px-3 py-2 rounded-lg bg-black border border-white/15">
+              <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
                 {m.label}
               </div>
-              <div className="text-sm font-mono font-semibold text-white mt-0.5">{m.value}</div>
+              <div className="text-xs font-mono font-semibold text-white mt-0.5 truncate">
+                {m.value}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Architecture & Features */}
-        <div className="p-5 sm:p-6 rounded-xl bg-black border border-white/15 space-y-4">
-          <div className="flex items-center gap-2 text-xs font-mono font-semibold text-white uppercase tracking-wider">
-            <Cpu className="w-4 h-4" />
-            <span>Key Capabilities &amp; Architecture</span>
-          </div>
-
-          <ul className="space-y-2.5">
+        {/* Concise Architecture & Tech Stack */}
+        <div className="p-4 rounded-xl bg-black border border-white/15 space-y-3">
+          <ul className="space-y-1.5">
             {project.architecture.map((bullet, idx) => (
               <li
                 key={idx}
-                className="flex items-start gap-3 text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed"
+                className="flex items-start gap-2.5 text-xs text-zinc-300 font-sans font-light leading-snug"
               >
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-white shrink-0" />
+                <span className="mt-1.5 w-1 h-1 rounded-full bg-white shrink-0" />
                 <span>{bullet}</span>
               </li>
             ))}
           </ul>
 
-          <div className="pt-3 border-t border-white/10 space-y-2">
-            <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
-              Technologies &amp; Modules
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {project.tech.map((t) => (
-                <span
-                  key={t}
-                  className="px-2.5 py-1 rounded-md bg-white/5 border border-white/15 text-[11px] font-mono text-zinc-200"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
+          <div className="pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5">
+            {project.tech.map((t) => (
+              <span
+                key={t}
+                className="px-2 py-0.5 rounded bg-white/5 border border-white/15 text-[10px] font-mono text-zinc-200"
+              >
+                {t}
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* Action Links */}
-        <div className="flex flex-wrap items-center gap-3 pt-1">
+        {/* Immediate Action Buttons: Visit Website & GitHub */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
           {project.demo && (
             <a
               href={project.demo}
               target="_blank"
               rel="noreferrer"
               onClick={() => cosmicAudio.playTelemetryChirp(1320, 0.05)}
-              className="px-5 py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2 transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <span>Open Live App</span>
+              <span>Visit Website</span>
               <ArrowUpRight className="w-4 h-4" />
             </a>
           )}
@@ -126,11 +122,15 @@ export const FlightMissionModal: React.FC<FlightMissionModalProps> = ({ project,
             target="_blank"
             rel="noreferrer"
             onClick={() => cosmicAudio.playTelemetryChirp(1180, 0.05)}
-            className="px-5 py-2.5 rounded-lg bg-black hover:bg-white/10 border border-white/25 hover:border-white text-white font-mono text-xs inline-flex items-center gap-2 transition-colors cursor-pointer"
+            className={`px-4 py-2.5 rounded-lg font-mono text-xs inline-flex items-center gap-2 transition-colors cursor-pointer ${
+              project.demo
+                ? 'bg-black hover:bg-white/10 border border-white/25 hover:border-white text-white'
+                : 'bg-white hover:bg-zinc-200 text-black font-space font-bold uppercase tracking-wider'
+            }`}
           >
             <GithubIcon className="w-4 h-4" />
-            <span>View Source on GitHub</span>
-            <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+            <span>View on GitHub</span>
+            <ExternalLink className={`w-3.5 h-3.5 ${project.demo ? 'text-zinc-400' : 'text-black'}`} />
           </a>
         </div>
       </div>
