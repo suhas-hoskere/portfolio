@@ -144,6 +144,11 @@ function getEarthSprite(): HTMLCanvasElement {
   return canvas;
 }
 
+/** Pre-warms the offscreen Earth globe sprite during idle time so Stage 01 entry has 0ms frame hitch */
+export function warmEarthSprite(): void {
+  getEarthSprite();
+}
+
 function drawMonoMiniSat(
   ctx: CanvasRenderingContext2D,
   x: number,

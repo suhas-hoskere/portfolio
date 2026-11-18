@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, Suspense, lazy } from 'react';
+import React, { useEffect, useState, useRef, useCallback, startTransition, Suspense, lazy } from 'react';
 import { SpaceFlightCanvas2D } from './components/SpaceFlightCanvas2D';
 import { FlightHUD } from './components/FlightHUD';
 import { FlightMissionOverlays } from './components/FlightMissionOverlays';
@@ -16,6 +16,23 @@ const MissionTerminalModal = lazy(() =>
 );
 // STAGE_CONFIG removed
 
+function stageForProgress(p: number): number {
+  if (p >= 0.90) return 5;
+  if (p >= 0.81) return 4;
+  if (p >= 0.70) return 3;
+  if (p >= 0.56) return 2;
+  if (p >= 0.22) return 1;
+  return 0;
+}
+
+function stepForProgress(p: number): number {
+  if (p >= 0.140) return 3;
+  if (p >= 0.104) return 2;
+  if (p >= 0.068) return 1;
+  if (p >= 0.032) return 0;
+  return -1;
+}
+
 export const App: React.FC = () => {
   // Guarantee clean startup at Ground Zero (0 km, Stage 0) with zero accidental scroll restoration
   useEffect(() => {
@@ -25,9 +42,10 @@ export const App: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Discrete Stage State (Choreographed flight stage 0 to 5)
+  // Discrete Stage State (Choreographed flight stage 0 to 5 + Stage 00 launch step -1..3)
   const [showLoader, setShowLoader] = useState(true);
   const [activeStageIndex, setActiveStageIndex] = useState(0);
+  const [launchStep, setLaunchStep] = useState(-1);
   const [uiScrollProgress, setUiScrollProgress] = useState(0);
   const [audioActive, setAudioActive] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
@@ -99,46 +117,56 @@ export const App: React.FC = () => {
   const lastScrollTime = useRef(0);
   const scrollAnimRaf = useRef<number | null>(null);
   const lastStageRef = useRef<number>(0);
+  const lastLaunchStepRef = useRef<number>(-1);
   const lastUiCommitTimeRef = useRef<number>(0);
   const lastUiProgressRef = useRef<number>(0);
   const trailingUiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Throttled UI State updater driven by the Canvas's velocity-paced cinematic flight timeline:
   // Keeps HUD telemetry, stage cards, sidebar active state & acoustics 100% locked to the rocket
-  // even when a visitor scrolls rapidly, while committing React DOM updates cleanly at ~18Hz.
+  // using React 19 non-blocking startTransition so canvas frames NEVER hitch at station boundaries.
   const updateUI = useCallback((progress: number) => {
     flightProgressRef.current = progress;
+    const isSidebarJump = programmaticJumpTargetRef.current !== null;
 
-    let stage = 0;
-    if (progress >= 0.90) stage = 5;
-    else if (progress >= 0.81) stage = 4;
-    else if (progress >= 0.70) stage = 3;
-    else if (progress >= 0.56) stage = 2;
-    else if (progress >= 0.22) stage = 1;
-    else stage = 0;
+    let stageChanged = false;
+    if (!isSidebarJump) {
+      const stage = stageForProgress(progress);
+      const step = stepForProgress(progress);
 
-    const stageChanged = stage !== lastStageRef.current;
-    if (stageChanged) {
-      cosmicAudio.playStagingSound();
-      lastStageRef.current = stage;
-      setActiveStageIndex(stage);
-    }
+      stageChanged = stage !== lastStageRef.current;
+      const stepChanged = step !== lastLaunchStepRef.current;
 
-    // Acoustic triggers across expanded launch-to-orbit timeline
-    if (progress < 0.02) {
-      playedCallouts.current.clear();
-    } else if (progress >= 0.032 && progress < 0.068 && !playedCallouts.current.has('ignition')) {
-      playedCallouts.current.add('ignition');
-    } else if (progress >= 0.068 && progress < 0.104 && !playedCallouts.current.has('umbilical')) {
-      playedCallouts.current.add('umbilical');
-      cosmicAudio.playClampRelease();
-    } else if (progress >= 0.104 && progress < 0.140 && !playedCallouts.current.has('deluge')) {
-      playedCallouts.current.add('deluge');
-      cosmicAudio.playDelugeSound();
-    } else if (progress >= 0.140 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
-      playedCallouts.current.add('liftoff');
-    } else if (progress >= 0.560 && !playedCallouts.current.has('orbit')) {
-      playedCallouts.current.add('orbit');
+      if (stageChanged || stepChanged) {
+        if (stageChanged) {
+          cosmicAudio.playStagingSound();
+          lastStageRef.current = stage;
+        }
+        if (stepChanged) {
+          lastLaunchStepRef.current = step;
+        }
+        startTransition(() => {
+          if (stageChanged) setActiveStageIndex(stage);
+          if (stepChanged) setLaunchStep(step);
+        });
+      }
+
+      // Acoustic triggers across expanded launch-to-orbit timeline
+      if (progress < 0.02) {
+        playedCallouts.current.clear();
+      } else if (progress >= 0.032 && progress < 0.068 && !playedCallouts.current.has('ignition')) {
+        playedCallouts.current.add('ignition');
+      } else if (progress >= 0.068 && progress < 0.104 && !playedCallouts.current.has('umbilical')) {
+        playedCallouts.current.add('umbilical');
+        cosmicAudio.playClampRelease();
+      } else if (progress >= 0.104 && progress < 0.140 && !playedCallouts.current.has('deluge')) {
+        playedCallouts.current.add('deluge');
+        cosmicAudio.playDelugeSound();
+      } else if (progress >= 0.140 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
+        playedCallouts.current.add('liftoff');
+      } else if (progress >= 0.560 && !playedCallouts.current.has('orbit')) {
+        playedCallouts.current.add('orbit');
+      }
     }
 
     const now = performance.now();
@@ -146,8 +174,10 @@ export const App: React.FC = () => {
     const commitUi = (p: number) => {
       lastUiCommitTimeRef.current = performance.now();
       lastUiProgressRef.current = p;
-      setUiScrollProgress(p);
       cosmicAudio.updateFallIntensity(p);
+      startTransition(() => {
+        setUiScrollProgress(p);
+      });
     };
 
     if (
@@ -226,25 +256,42 @@ export const App: React.FC = () => {
     scrollAnimRaf.current = requestAnimationFrame(step);
   }, []);
 
-  const handleToggleAudio = () => {
+  const handleToggleAudio = useCallback(() => {
     const active = cosmicAudio.toggle();
     setAudioActive(active);
-  };
+  }, []);
 
-  const handleJumpToStage = (fraction: number) => {
+  const handleOpenTerminal = useCallback(() => {
+    setIsTerminalOpen(true);
+  }, []);
+
+  // Instant-response sidebar navigation: highlights destination & cross-fades card on frame 0
+  // while smoothly sweeping the 2D canvas flight there in ~200-520ms (zero double-damping delay!)
+  const handleJumpToStage = useCallback((fraction: number) => {
     if (!trackRef.current) return;
-    programmaticJumpTargetRef.current = fraction;
-    const maxScroll = Math.max(trackRef.current.scrollHeight - window.innerHeight, 1);
-    const currentFraction = (window.scrollY || window.pageYOffset || 0) / maxScroll;
-    const distance = Math.abs(fraction - currentFraction);
-    const durationMs = Math.max(420, Math.min(950, Math.round(380 + distance * 580)));
-    animateScrollTo(fraction * maxScroll, durationMs);
-  };
+    if (scrollAnimRaf.current) {
+      cancelAnimationFrame(scrollAnimRaf.current);
+      scrollAnimRaf.current = null;
+    }
 
-  const handleLaunch = () => {
+    const maxScroll = Math.max(trackRef.current.scrollHeight - window.innerHeight, 1);
+    const targetStage = stageForProgress(fraction);
+    const targetStep = stepForProgress(fraction);
+
+    programmaticJumpTargetRef.current = fraction;
+    scrollProgressRef.current = fraction;
+    lastStageRef.current = targetStage;
+    lastLaunchStepRef.current = targetStep;
+    setActiveStageIndex(targetStage);
+    setLaunchStep(targetStep);
+
+    window.scrollTo({ top: fraction * maxScroll, behavior: 'instant' as ScrollBehavior });
+  }, []);
+
+  const handleLaunch = useCallback(() => {
     if (!trackRef.current) return;
     programmaticJumpTargetRef.current = null;
-    if (!audioActive) {
+    if (cosmicAudio.isMuted && !cosmicAudio.userExplicitlyMuted) {
       cosmicAudio.unmute();
       setAudioActive(true);
     }
@@ -253,7 +300,7 @@ export const App: React.FC = () => {
 
     const maxScroll = trackRef.current.scrollHeight - window.innerHeight;
     animateScrollTo(0.24 * maxScroll, 3200);
-  };
+  }, [animateScrollTo]);
 
   return (
     <div
@@ -278,24 +325,20 @@ export const App: React.FC = () => {
 
       {/* Immediate Dashboard & Flight HUD Overlays (Instant Zero-Delay Paint) */}
       <div className="opacity-100 pointer-events-auto">
-        {/* Minimalist Flight HUD & Trajectory Pips */}
+        {/* Minimalist Flight HUD & Clickable Sidebar */}
         <FlightHUD
           scrollProgress={uiScrollProgress}
           activeStageIndex={activeStageIndex}
           audioActive={audioActive}
           onToggleAudio={handleToggleAudio}
           onJumpToStage={handleJumpToStage}
-          cameraMode={cameraMode}
-          onSetCameraMode={setCameraMode}
-          blueprintMode={blueprintMode}
-          onToggleBlueprint={() => setBlueprintMode((prev) => !prev)}
-          onOpenTerminal={() => setIsTerminalOpen(true)}
+          onOpenTerminal={handleOpenTerminal}
         />
 
-        {/* Cinematic Pinned Narrative Storyboard on the Left */}
+        {/* Cinematic Pinned Narrative Storyboard on the Left (Zero scroll-tick re-renders!) */}
         <FlightMissionOverlays
           activeStageIndex={activeStageIndex}
-          scrollProgress={uiScrollProgress}
+          launchStep={launchStep}
           onLaunch={handleLaunch}
           onSelectProject={setSelectedProject}
           entered={!showLoader}

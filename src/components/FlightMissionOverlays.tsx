@@ -117,7 +117,7 @@ export const PROJECTS: ProjectData[] = [
 
 interface FlightMissionOverlaysProps {
   activeStageIndex: number;
-  scrollProgress?: number;
+  launchStep?: number;
   onLaunch: () => void;
   onSelectProject: (proj: ProjectData) => void;
   onNextStage?: () => void;
@@ -125,28 +125,43 @@ interface FlightMissionOverlaysProps {
   entered?: boolean;
 }
 
+const stageSlotClass = (isActive: boolean) =>
+  `col-start-1 row-start-1 transition-[opacity,transform] duration-300 ease-out will-change-[opacity,transform] ${
+    isActive
+      ? 'opacity-100 translate-y-0 pointer-events-auto z-10'
+      : 'opacity-0 translate-y-2 pointer-events-none z-0'
+  }`;
+
 export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React.memo(({
   activeStageIndex,
-  scrollProgress = 0,
+  launchStep = -1,
   onLaunch,
   onSelectProject,
   entered = true,
 }) => {
   return (
     <div className="fixed inset-0 pointer-events-none z-20 flex items-end md:items-center justify-start px-4 sm:px-8 md:px-12 lg:px-16 pb-16 md:pb-0 select-none">
-      <div className="w-full max-w-[96vw] sm:max-w-[460px] lg:max-w-[500px] pointer-events-auto">
+      {/* Stacked GPU-composited stage grid: all 6 stations remain pre-mounted so scrolling across
+          Origins, Bangalore, Projects, Heritage & Uplink has 0 DOM mount/layout hitching! */}
+      <div className="w-full max-w-[96vw] sm:max-w-[460px] lg:max-w-[500px] grid grid-cols-1 grid-rows-1 items-end md:items-center">
         {/* STAGE 0: GROUND ZERO — INDIA LAUNCH COMPLEX */}
-        {activeStageIndex === 0 && (
+        <div
+          aria-hidden={activeStageIndex !== 0}
+          className={stageSlotClass(activeStageIndex === 0)}
+        >
           <Stage00ScrollCards
-            scrollProgress={scrollProgress}
+            launchStep={launchStep}
             onLaunch={onLaunch}
             entered={entered}
           />
-        )}
+        </div>
 
         {/* STAGE 1: ATMOSPHERIC ASCENT & DAVANAGERE */}
-        {activeStageIndex === 1 && (
-          <div key="stage-1" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+        <div
+          aria-hidden={activeStageIndex !== 1}
+          className={stageSlotClass(activeStageIndex === 1)}
+        >
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
               <span>STAGE 01 // ASCENT</span>
               <span className="text-white">2020 ERA</span>
@@ -172,11 +187,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </span>
             </div>
           </div>
-        )}
+        </div>
 
         {/* STAGE 2: LOW EARTH ORBIT & BANGALORE */}
-        {activeStageIndex === 2 && (
-          <div key="stage-2" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+        <div
+          aria-hidden={activeStageIndex !== 2}
+          className={stageSlotClass(activeStageIndex === 2)}
+        >
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
               <span>STAGE 02 // ORBIT</span>
               <span className="text-white">420 KM LEO</span>
@@ -205,11 +223,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* STAGE 3: ORBITAL PAYLOAD & THE 4 EXPLORATION MISSIONS */}
-        {activeStageIndex === 3 && (
-          <div key="stage-3" className="animate-stage-in space-y-2.5 text-left max-h-[68vh] md:max-h-[78vh] overflow-y-auto pr-1">
+        <div
+          aria-hidden={activeStageIndex !== 3}
+          className={stageSlotClass(activeStageIndex === 3)}
+        >
+          <div className="space-y-2.5 text-left max-h-[68vh] md:max-h-[78vh] overflow-y-auto pr-1">
             <div className="flex items-center justify-between border-b border-white/15 pb-2">
               <div>
                 <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
@@ -261,11 +282,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               ))}
             </div>
           </div>
-        )}
+        </div>
 
         {/* STAGE 4: KARNATAKA GROUND PASS & KANNADA HERITAGE */}
-        {activeStageIndex === 4 && (
-          <div key="stage-4" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+        <div
+          aria-hidden={activeStageIndex !== 4}
+          className={stageSlotClass(activeStageIndex === 4)}
+        >
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
               <span>STAGE 04 // KARNATAKA PASS</span>
               <span className="text-white">420 KM LEO</span>
@@ -294,11 +318,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </span>
             </div>
           </div>
-        )}
+        </div>
 
         {/* STAGE 5: DEEP SPACE UPLINK & CONTACT */}
-        {activeStageIndex === 5 && (
-          <div key="stage-5" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/25 space-y-3.5 text-left">
+        <div
+          aria-hidden={activeStageIndex !== 5}
+          className={stageSlotClass(activeStageIndex === 5)}
+        >
+          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/25 space-y-3.5 text-left">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-[11px] font-mono font-medium text-white uppercase tracking-widest">
               <div className="w-1.5 h-1.5 rounded-full bg-white" />
               <span>TERMINAL VECTOR // 05</span>
@@ -350,7 +377,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

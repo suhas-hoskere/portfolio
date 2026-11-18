@@ -47,6 +47,13 @@ function getMilkyWaySprite(): HTMLCanvasElement {
   return canvas;
 }
 
+/** Pre-warms offscreen orbital sprites during idle time so crossing into Stage 02 has 0ms frame hitch */
+export function warmSkySprites(): void {
+  getStars();
+  getSunSprite();
+  getMilkyWaySprite();
+}
+
 function getStars(): MonoStar[] {
   if (cachedStars) return cachedStars;
   const rand = mulberry32(20260420);

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { VolumeX, ChevronUp, ChevronDown, Rocket, Terminal, Layers, Camera } from 'lucide-react';
+import { VolumeX, ChevronUp, ChevronDown, Rocket, Terminal } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
 export interface StageWaypoint {
@@ -26,10 +26,6 @@ interface FlightHUDProps {
   audioActive: boolean;
   onToggleAudio: () => void;
   onJumpToStage: (fraction: number) => void;
-  cameraMode?: 'CINEMATIC' | 'BOOSTER' | 'CHASE';
-  onSetCameraMode?: (mode: 'CINEMATIC' | 'BOOSTER' | 'CHASE') => void;
-  blueprintMode?: boolean;
-  onToggleBlueprint?: () => void;
   onOpenTerminal?: () => void;
 }
 
@@ -39,10 +35,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
   audioActive,
   onToggleAudio,
   onJumpToStage,
-  cameraMode = 'CINEMATIC',
-  onSetCameraMode,
-  blueprintMode = false,
-  onToggleBlueprint,
   onOpenTerminal,
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -186,55 +178,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
 
         {/* Flight Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
-          {onSetCameraMode && (
-            <div className="hidden md:flex items-center p-0.5 rounded-md bg-[#09090b]/95 border border-white/20 gap-0.5">
-              <Camera className="w-3 h-3 text-zinc-400 mx-1.5" />
-              {(
-                [
-                  { id: 'CINEMATIC', label: 'MISSION' },
-                  { id: 'BOOSTER', label: 'BOOSTER' },
-                  { id: 'CHASE', label: 'CHASE' },
-                ] as const
-              ).map((cam) => {
-                const isActive = cameraMode === cam.id;
-                return (
-                  <button
-                    key={cam.id}
-                    onClick={() => {
-                      cosmicAudio.playTelemetryChirp(1180, 0.04);
-                      onSetCameraMode(cam.id);
-                    }}
-                    className={`px-2 py-1 rounded text-[10px] font-mono transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-white text-black font-semibold'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    {cam.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {onToggleBlueprint && (
-            <button
-              onClick={() => {
-                cosmicAudio.playTelemetryChirp(1380, 0.04);
-                onToggleBlueprint();
-              }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border font-mono text-[11px] transition-colors cursor-pointer ${
-                blueprintMode
-                  ? 'bg-white border-white text-black font-semibold'
-                  : 'bg-[#09090b]/95 border-white/20 hover:border-white/50 text-zinc-300 hover:text-white'
-              }`}
-              title="Toggle Structural Wireframe Mode"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">WIREFRAME</span>
-            </button>
-          )}
-
           {onOpenTerminal && (
             <button
               onClick={() => {

@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import type { CameraMode, Scene2DFrameContext } from '../scene2d/types';
 import { clamp, lerp, smoothstep } from '../scene2d/types';
-import { renderSkyAndStars } from '../scene2d/skyAndStars';
+import { renderSkyAndStars, warmSkySprites } from '../scene2d/skyAndStars';
 import { renderSriharikotaTerrain } from '../scene2d/sriharikotaTerrain';
 import { renderLaunchPadBack, renderLaunchPadFront } from '../scene2d/launchPad';
 import { renderRocketVehicle } from '../scene2d/rocketVehicle';
 import { renderAtmosphericClouds } from '../scene2d/clouds';
-import { renderEarthAndOrbit } from '../scene2d/earthAndOrbit';
+import { renderEarthAndOrbit, warmEarthSprite } from '../scene2d/earthAndOrbit';
 import { renderHeroSatellite } from '../scene2d/heroSatellite';
 
 interface SpaceFlightCanvas2DProps {
@@ -19,29 +19,13 @@ interface SpaceFlightCanvas2DProps {
 }
 
 /**
- * Returns a continuous maximum forward progression rate (scroll-fraction / sec) at phase `sp`.
- * Paces critical aerospace milestones so even rapid flick-scrolling never skips a sequence:
- * - 0.02..0.22: Ignition, Clamps Release, Water Deluge & Tower Liftoff
- * - 0.27..0.41: Twin S200 Booster Separation & Tumble
- * - 0.48..0.70: Fairing Jettison, Core Drop & Satellite Solar Wing Deployment
- * - 0.86..1.00: Final Satellite Enlargement & Nadir Lock onto Bangalore
+ * Single silky monotonic speed curve (scroll-fraction / sec) with ZERO braking dips at stations:
+ * - Smoothly rises from 0.145/s during launch & staging to 0.215/s in open LEO orbit
+ * - Prevents rapid flick-scrolling from skipping ignition, liftoff, booster sep, fairing split, or satellite deploy
+ * - Never feels sticky or slow at Origins, Bangalore, Projects, Heritage, or Uplink
  */
 function getCinematicMaxRate(sp: number): number {
-  let rate = 0.24;
-
-  const padWeight = smoothstep(0.005, 0.030, sp) * (1 - smoothstep(0.215, 0.255, sp));
-  rate = lerp(rate, 0.095, padWeight);
-
-  const boosterWeight = smoothstep(0.255, 0.285, sp) * (1 - smoothstep(0.390, 0.430, sp));
-  rate = lerp(rate, 0.105, boosterWeight);
-
-  const deployWeight = smoothstep(0.465, 0.495, sp) * (1 - smoothstep(0.685, 0.725, sp));
-  rate = lerp(rate, 0.125, deployWeight);
-
-  const uplinkWeight = smoothstep(0.845, 0.880, sp);
-  rate = lerp(rate, 0.145, uplinkWeight);
-
-  return rate;
+  return lerp(0.145, 0.215, smoothstep(0.0, 0.72, sp));
 }
 
 /**
@@ -151,12 +135,13 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
         }
       } else {
         const baseMaxRate = getCinematicMaxRate(smoothSp);
-        const dirMultiplier = diff < 0 ? 1.75 : 1.0;
-        const jumpMultiplier = isJumping ? 2.6 : 1.0;
-        const effectiveMaxRate = baseMaxRate * dirMultiplier * jumpMultiplier;
+        const dirMultiplier = diff < 0 ? 1.65 : 1.0;
+        const effectiveMaxRate = isJumping ? 2.4 : baseMaxRate * dirMultiplier;
+        const gain = isJumping ? 15.0 : 8.5;
+        const accelRate = isJumping ? 22.0 : 11.0;
 
-        const desiredVel = clamp(diff * 9.5, -effectiveMaxRate, effectiveMaxRate);
-        const accelLerp = 1 - Math.exp(-14 * dt);
+        const desiredVel = clamp(diff * gain, -effectiveMaxRate, effectiveMaxRate);
+        const accelLerp = 1 - Math.exp(-accelRate * dt);
         spVel += (desiredVel - spVel) * accelLerp;
 
         const step = spVel * dt;
@@ -167,19 +152,9 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
           smoothSp = clamp(smoothSp + step, 0, 1);
         }
 
-        if (isJumping && Math.abs(smoothSp - jumpTarget) < 0.003 && programmaticJumpTargetRef) {
+        if (isJumping && Math.abs(smoothSp - jumpTarget) < 0.004 && programmaticJumpTargetRef) {
           programmaticJumpTargetRef.current = null;
         }
-      }
-
-      // Sync HUD, stage cards, sidebar & acoustics to the exact cinematic flight position
-      if (
-        onFlightProgressRef.current &&
-        (Math.abs(smoothSp - lastReportedSp) >= 0.00025 ||
-          (smoothSp === targetSp && lastReportedSp !== smoothSp))
-      ) {
-        lastReportedSp = smoothSp;
-        onFlightProgressRef.current(smoothSp);
       }
 
       const activeMotionSpeed = Math.max(scrollSpeedRef.current, Math.min(Math.abs(spVel) * 7.5, 2.0));
@@ -215,7 +190,7 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
         reducedMotion,
       };
 
-      // Clean steady camera — zero viewport shake!
+      // Clean steady camera — paint entire 2D canvas frame BEFORE notifying React HUD!
       renderSkyAndStars(frame);
       renderEarthAndOrbit(frame);
       renderAtmosphericClouds(frame);
@@ -224,11 +199,29 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       renderRocketVehicle(frame);
       renderHeroSatellite(frame);
       renderLaunchPadFront(frame);
+
+      // Sync HUD, stage cards, sidebar & acoustics AFTER canvas frame is submitted
+      if (
+        onFlightProgressRef.current &&
+        (Math.abs(smoothSp - lastReportedSp) >= 0.00025 ||
+          (smoothSp === targetSp && lastReportedSp !== smoothSp))
+      ) {
+        lastReportedSp = smoothSp;
+        onFlightProgressRef.current(smoothSp);
+      }
     };
+
+    // Pre-warm offscreen Earth & Milky Way sprites while the intro loader runs so crossing into
+    // Origins (0.255) & Bangalore (0.44) never pauses the main thread for offscreen canvas painting.
+    const warmTimer = window.setTimeout(() => {
+      warmSkySprites();
+      warmEarthSprite();
+    }, 220);
 
     rafId = requestAnimationFrame(renderLoop);
 
     return () => {
+      window.clearTimeout(warmTimer);
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', onMouseMove);

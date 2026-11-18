@@ -4,7 +4,7 @@ import { GithubIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
 
 interface Stage00ScrollCardsProps {
-  scrollProgress: number;
+  launchStep: number;
   onLaunch: () => void;
   entered?: boolean;
 }
@@ -72,16 +72,14 @@ const MILESTONES = [
   },
 ];
 
-export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
-  scrollProgress,
+export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = React.memo(({
+  launchStep,
   onLaunch,
   entered = true,
 }) => {
-  const activeMilestone = MILESTONES.find(
-    (m) => scrollProgress >= m.min && scrollProgress < m.max
-  );
+  const activeMilestone = launchStep >= 0 ? MILESTONES[launchStep] : undefined;
 
-  if (scrollProgress < 0.032) {
+  if (launchStep < 0) {
     const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
     return (
       <div key={entered ? 'step-00-in' : 'step-00-wait'} className="space-y-3.5 sm:space-y-5 text-left">
@@ -191,4 +189,4 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
       </div>
     </div>
   );
-};
+});
