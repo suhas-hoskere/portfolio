@@ -1,14 +1,14 @@
 import { type Scene2DFrameContext, clamp, smoothstep, mulberry32 } from './types';
 
 interface CloudLayerItem {
-  layer: 0 | 1 | 2 | 3; // 0: low coastal cumulus, 1: dense troposphere punch deck, 2: high cirrus, 3: cloud sea below
+  layer: 0 | 1 | 2 | 3; // 0: low coastal cumulus, 1: troposphere deck, 2: high cirrus, 3: cloud sea below
   sprite: 'cumulus' | 'cirrus';
-  nx: number;
+  nx: number; // initial phase 0..1 across full wrapped span (-cw .. w + cw)
   baseY: number;
   wU: number;
   hU: number;
   alpha: number;
-  driftRate: number;
+  speedPx: number; // horizontal drift px/sec across full screen & beyond borders
   flipX: boolean;
 }
 
@@ -20,9 +20,9 @@ interface CloudSpriteCache {
 let cachedCloudSprites: CloudSpriteCache | null = null;
 
 /**
- * Pre-renders 2 crisp monochrome photographic cloud sprites ONCE (< 120 KB RAM total):
- * - Cumulus: volumetric multi-lobed cauliflower top (bright white) + shaded graphite underside
- * - Cirrus: delicate wind-sheared high-altitude monochrome ice-crystal wisps
+ * Pre-renders 2 airy monochrome cloud sprites ONCE (< 120 KB RAM total):
+ * - Cumulus: volumetric multi-lobed white crown + soft graphite underside
+ * - Cirrus: delicate wind-sheared high-altitude monochrome wisps
  */
 function getCloudSprites(): CloudSpriteCache {
   if (cachedCloudSprites) return cachedCloudSprites;
@@ -35,7 +35,6 @@ function getCloudSprites(): CloudSpriteCache {
   cCanvas.height = 120;
   const cctx = cCanvas.getContext('2d')!;
 
-  // Soft dark-graphite shadowed cloud underside for realistic 3D volume
   const underLobes = [
     { x: 75, y: 80, r: 34 },
     { x: 120, y: 82, r: 40 },
@@ -43,8 +42,8 @@ function getCloudSprites(): CloudSpriteCache {
   ];
   for (const u of underLobes) {
     const g = cctx.createRadialGradient(u.x, u.y, 4, u.x, u.y, u.r);
-    g.addColorStop(0.0, 'rgba(39, 39, 46, 0.55)');
-    g.addColorStop(0.6, 'rgba(63, 63, 72, 0.25)');
+    g.addColorStop(0.0, 'rgba(39, 39, 46, 0.45)');
+    g.addColorStop(0.6, 'rgba(63, 63, 72, 0.20)');
     g.addColorStop(1.0, 'rgba(63, 63, 72, 0)');
     cctx.fillStyle = g;
     cctx.beginPath();
@@ -52,7 +51,6 @@ function getCloudSprites(): CloudSpriteCache {
     cctx.fill();
   }
 
-  // Soft silver mid-cloud body lobes
   const midLobes = [
     { x: 54, y: 74, r: 32 },
     { x: 90, y: 62, r: 42 },
@@ -62,8 +60,8 @@ function getCloudSprites(): CloudSpriteCache {
   ];
   for (const m of midLobes) {
     const g = cctx.createRadialGradient(m.x + m.r * 0.15, m.y - m.r * 0.25, 3, m.x, m.y, m.r);
-    g.addColorStop(0.0, 'rgba(244, 244, 248, 0.72)');
-    g.addColorStop(0.50, 'rgba(180, 180, 190, 0.34)');
+    g.addColorStop(0.0, 'rgba(244, 244, 248, 0.66)');
+    g.addColorStop(0.50, 'rgba(180, 180, 190, 0.30)');
     g.addColorStop(1.0, 'rgba(160, 160, 170, 0)');
     cctx.fillStyle = g;
     cctx.beginPath();
@@ -71,7 +69,6 @@ function getCloudSprites(): CloudSpriteCache {
     cctx.fill();
   }
 
-  // Bright pure-white sunlit upper cauliflower crowns
   const crownLobes = [
     { x: 96, y: 48, r: 28 },
     { x: 130, y: 42, r: 34 },
@@ -80,8 +77,8 @@ function getCloudSprites(): CloudSpriteCache {
   ];
   for (const cr of crownLobes) {
     const g = cctx.createRadialGradient(cr.x + 5, cr.y - 6, 2, cr.x, cr.y, cr.r);
-    g.addColorStop(0.0, 'rgba(255, 255, 255, 0.85)');
-    g.addColorStop(0.45, 'rgba(228, 228, 232, 0.38)');
+    g.addColorStop(0.0, 'rgba(255, 255, 255, 0.80)');
+    g.addColorStop(0.45, 'rgba(228, 228, 232, 0.34)');
     g.addColorStop(1.0, 'rgba(228, 228, 232, 0)');
     cctx.fillStyle = g;
     cctx.beginPath();
@@ -101,8 +98,8 @@ function getCloudSprites(): CloudSpriteCache {
     const rw = 28 + rand() * 52;
     const rh = 4 + rand() * 9;
     const g = sctx.createRadialGradient(sx, sy, 1, sx, sy, rw);
-    g.addColorStop(0.0, 'rgba(255, 255, 255, 0.42)');
-    g.addColorStop(0.55, 'rgba(212, 212, 218, 0.16)');
+    g.addColorStop(0.0, 'rgba(255, 255, 255, 0.40)');
+    g.addColorStop(0.55, 'rgba(212, 212, 218, 0.14)');
     g.addColorStop(1.0, 'rgba(212, 212, 218, 0)');
     sctx.save();
     sctx.translate(sx, sy);
@@ -118,30 +115,43 @@ function getCloudSprites(): CloudSpriteCache {
   return cachedCloudSprites;
 }
 
+/**
+ * Clouds wrap continuously across the ENTIRE viewport width PLUS off-screen margins (-cw .. w + cw),
+ * so new clouds constantly enter from beyond the left & right borders and exit cleanly past the other side!
+ */
 const CLOUD_LAYERS: CloudLayerItem[] = [
-  // Layer 0: Light airy coastal cumulus floating gently above horizon
-  { layer: 0, sprite: 'cumulus', nx: 0.18, baseY: 0.20, wU: 3.4, hU: 1.50, alpha: 0.26, driftRate: 0.016, flipX: false },
-  { layer: 0, sprite: 'cumulus', nx: 0.56, baseY: 0.14, wU: 4.0, hU: 1.72, alpha: 0.30, driftRate: 0.012, flipX: true },
-  { layer: 0, sprite: 'cumulus', nx: 0.88, baseY: 0.24, wU: 3.5, hU: 1.55, alpha: 0.24, driftRate: 0.014, flipX: false },
+  // Layer 0: 6 airy coastal cumulus clouds continuously drifting in from off-screen left -> right
+  { layer: 0, sprite: 'cumulus', nx: 0.04, baseY: 0.22, wU: 3.3, hU: 1.45, alpha: 0.25, speedPx: 14, flipX: false },
+  { layer: 0, sprite: 'cumulus', nx: 0.24, baseY: 0.15, wU: 3.9, hU: 1.70, alpha: 0.29, speedPx: 11, flipX: true },
+  { layer: 0, sprite: 'cumulus', nx: 0.44, baseY: 0.27, wU: 3.2, hU: 1.40, alpha: 0.23, speedPx: 16, flipX: false },
+  { layer: 0, sprite: 'cumulus', nx: 0.64, baseY: 0.18, wU: 4.1, hU: 1.75, alpha: 0.28, speedPx: 12, flipX: true },
+  { layer: 0, sprite: 'cumulus', nx: 0.82, baseY: 0.25, wU: 3.5, hU: 1.52, alpha: 0.24, speedPx: 15, flipX: false },
+  { layer: 0, sprite: 'cumulus', nx: 0.96, baseY: 0.13, wU: 3.7, hU: 1.60, alpha: 0.26, speedPx: 13, flipX: true },
 
-  // Layer 1: Soft mid-troposphere cloud punch deck (peaks during Stage 01 climb sp 0.24-0.34)
-  { layer: 1, sprite: 'cumulus', nx: 0.14, baseY: -0.34, wU: 5.4, hU: 2.45, alpha: 0.44, driftRate: -0.018, flipX: true },
-  { layer: 1, sprite: 'cumulus', nx: 0.44, baseY: -0.40, wU: 6.2, hU: 2.80, alpha: 0.48, driftRate: -0.014, flipX: false },
-  { layer: 1, sprite: 'cumulus', nx: 0.74, baseY: -0.30, wU: 5.8, hU: 2.65, alpha: 0.52, driftRate: -0.020, flipX: true },
-  { layer: 1, sprite: 'cumulus', nx: 0.96, baseY: -0.44, wU: 4.8, hU: 2.20, alpha: 0.42, driftRate: -0.016, flipX: false },
+  // Layer 1: 6 mid-troposphere clouds drifting continuously from right -> left (peaks sp 0.23 -> 0.34)
+  { layer: 1, sprite: 'cumulus', nx: 0.06, baseY: -0.32, wU: 5.2, hU: 2.35, alpha: 0.42, speedPx: -24, flipX: true },
+  { layer: 1, sprite: 'cumulus', nx: 0.25, baseY: -0.40, wU: 6.0, hU: 2.70, alpha: 0.46, speedPx: -20, flipX: false },
+  { layer: 1, sprite: 'cumulus', nx: 0.46, baseY: -0.28, wU: 5.6, hU: 2.55, alpha: 0.48, speedPx: -26, flipX: true },
+  { layer: 1, sprite: 'cumulus', nx: 0.66, baseY: -0.42, wU: 5.0, hU: 2.25, alpha: 0.40, speedPx: -22, flipX: false },
+  { layer: 1, sprite: 'cumulus', nx: 0.84, baseY: -0.34, wU: 5.8, hU: 2.60, alpha: 0.45, speedPx: -25, flipX: true },
+  { layer: 1, sprite: 'cumulus', nx: 0.97, baseY: -0.38, wU: 4.8, hU: 2.15, alpha: 0.38, speedPx: -19, flipX: false },
 
-  // Layer 2: High stratospheric ice-crystal cirrus wisps
-  { layer: 2, sprite: 'cirrus', nx: 0.28, baseY: -0.92, wU: 6.4, hU: 1.50, alpha: 0.38, driftRate: 0.024, flipX: false },
-  { layer: 2, sprite: 'cirrus', nx: 0.72, baseY: -1.04, wU: 7.2, hU: 1.70, alpha: 0.42, driftRate: 0.022, flipX: true },
+  // Layer 2: 4 high stratospheric cirrus wisps sweeping across full borders
+  { layer: 2, sprite: 'cirrus', nx: 0.12, baseY: -0.90, wU: 6.2, hU: 1.45, alpha: 0.36, speedPx: 28, flipX: false },
+  { layer: 2, sprite: 'cirrus', nx: 0.42, baseY: -1.02, wU: 7.0, hU: 1.65, alpha: 0.40, speedPx: 24, flipX: true },
+  { layer: 2, sprite: 'cirrus', nx: 0.72, baseY: -0.86, wU: 6.5, hU: 1.50, alpha: 0.35, speedPx: 30, flipX: false },
+  { layer: 2, sprite: 'cirrus', nx: 0.94, baseY: -0.98, wU: 6.8, hU: 1.60, alpha: 0.38, speedPx: 26, flipX: true },
 
-  // Layer 3: Stratospheric cloud sea horizon receding below vehicle (sp 0.235 -> 0.385)
-  { layer: 3, sprite: 'cumulus', nx: 0.20, baseY: 0.88, wU: 6.8, hU: 2.60, alpha: 0.40, driftRate: 0.008, flipX: false },
-  { layer: 3, sprite: 'cumulus', nx: 0.55, baseY: 0.85, wU: 7.6, hU: 2.90, alpha: 0.46, driftRate: 0.006, flipX: true },
-  { layer: 3, sprite: 'cumulus', nx: 0.88, baseY: 0.89, wU: 6.6, hU: 2.55, alpha: 0.38, driftRate: 0.009, flipX: false },
+  // Layer 3: Stratospheric cloud band drifting steadily across lower horizon during ascent
+  { layer: 3, sprite: 'cumulus', nx: 0.10, baseY: 0.82, wU: 6.4, hU: 2.40, alpha: 0.34, speedPx: 10, flipX: false },
+  { layer: 3, sprite: 'cumulus', nx: 0.38, baseY: 0.79, wU: 7.2, hU: 2.65, alpha: 0.38, speedPx: 8, flipX: true },
+  { layer: 3, sprite: 'cumulus', nx: 0.68, baseY: 0.83, wU: 6.6, hU: 2.45, alpha: 0.36, speedPx: 11, flipX: false },
+  { layer: 3, sprite: 'cumulus', nx: 0.94, baseY: 0.80, wU: 6.2, hU: 2.35, alpha: 0.32, speedPx: 9, flipX: true },
 ];
 
 /**
- * Volumetric pure monochrome Black & White cloud strata (<0.15ms/frame via pre-rendered sprites).
+ * Volumetric pure monochrome Black & White cloud strata (<0.18ms/frame via pre-rendered sprites).
+ * Clouds continuously travel from outside screen borders across the entire viewport and exit cleanly.
  */
 export function renderAtmosphericClouds(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, unit, reducedMotion } = frame;
@@ -152,7 +162,6 @@ export function renderAtmosphericClouds(frame: Scene2DFrameContext): void {
   const climbProg = clamp((sp - 0.165) / (0.395 - 0.165), 0, 1);
   const fadeOut = 1 - smoothstep(0.330, 0.395, sp);
 
-  // Soft misty monochrome veil right as the rocket pierces through the dense troposphere deck
   const punchPeak =
     sp >= 0.245 && sp <= 0.315
       ? Math.sin(((sp - 0.245) / 0.070) * Math.PI)
@@ -166,17 +175,17 @@ export function renderAtmosphericClouds(frame: Scene2DFrameContext): void {
     let alpha = c.alpha * fadeOut;
 
     if (c.layer === 0) {
-      y = c.baseY * h + climbProg * h * 1.55;
+      y = c.baseY * h + climbProg * h * 1.45;
       alpha *= 1 - smoothstep(0.24, 0.32, sp);
     } else if (c.layer === 1) {
-      y = c.baseY * h + climbProg * h * 2.25;
-      alpha *= 1 + punchPeak * 0.32;
+      y = c.baseY * h + climbProg * h * 2.15;
+      alpha *= 1 + punchPeak * 0.28;
     } else if (c.layer === 2) {
-      y = c.baseY * h + climbProg * h * 2.85;
+      y = c.baseY * h + climbProg * h * 2.75;
     } else {
       if (sp < 0.235) continue;
       const seaIn = smoothstep(0.235, 0.280, sp);
-      y = c.baseY * h + smoothstep(0.235, 0.395, sp) * h * 0.36;
+      y = c.baseY * h + smoothstep(0.235, 0.395, sp) * h * 0.24;
       alpha = c.alpha * seaIn * fadeOut;
     }
 
@@ -186,11 +195,14 @@ export function renderAtmosphericClouds(frame: Scene2DFrameContext): void {
     const ch = c.hU * unit;
     if (y - ch > h || y + ch < -ch) continue;
 
-    const drift = reducedMotion ? 0 : Math.sin(t * 0.25 + i * 1.9) * unit * 0.55;
-    const x = c.nx * w + drift - mouseX * (c.layer === 1 ? 16 : 8);
+    // Continuous seamless border-to-border horizontal travel (enters from -cw, exits past w + cw)
+    const span = w + cw * 1.8;
+    const rawX = c.nx * span + (reducedMotion ? 0 : t * c.speedPx);
+    const wrappedX = ((rawX % span) + span) % span - cw * 0.9;
+    const x = wrappedX - mouseX * (c.layer === 1 ? 14 : 7);
     const img = sprites[c.sprite];
 
-    ctx.globalAlpha = clamp(alpha, 0, 0.88);
+    ctx.globalAlpha = clamp(alpha, 0, 0.78);
     ctx.save();
     ctx.translate(x, y);
     if (c.flipX) ctx.scale(-1, 1);
@@ -198,10 +210,10 @@ export function renderAtmosphericClouds(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  // Subtle misty white atmospheric pass-through veil at cloud punch
+  // Subtle misty white atmospheric veil at cloud punch
   if (punchPeak > 0.02) {
     ctx.globalAlpha = 1;
-    ctx.fillStyle = `rgba(255, 255, 255, ${punchPeak * 0.075})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${punchPeak * 0.055})`;
     ctx.fillRect(0, 0, w, h);
   }
 

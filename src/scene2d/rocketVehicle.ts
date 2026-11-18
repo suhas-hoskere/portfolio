@@ -125,13 +125,13 @@ function drawMonoS200Booster(
   blueprintMode: boolean,
   reducedMotion: boolean
 ): void {
-  const bw = u * 0.22;
-  const bodyH = u * 1.46;
-  const noseH = u * 0.45;
+  const bw = u * 0.145;
+  const bodyH = u * 1.86;
+  const noseH = u * 0.54;
   const topY = -bodyH;
 
   if (isBurning && sepProgress === 0) {
-    drawLiveMonoPlume(ctx, 0, u * 0.20, bw * 1.45, u * 2.25, fireRamp, t, false, reducedMotion);
+    drawLiveMonoPlume(ctx, 0, u * 0.20, bw * 1.55, u * 2.25, fireRamp, t, false, reducedMotion);
   }
 
   // Animated post-separation residual burnout smoke rings drifting behind tumbling boosters
@@ -303,12 +303,12 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const u = unit * camZoom;
 
   const basePadX = vehicleAnchorX - mouseX * 10;
-  let baseY = groundY - unit * 0.28;
+  let baseY = groundY - unit * 0.20;
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
-  else if (cameraMode === 'CHASE') baseY -= unit * 0.26;
+  else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
-  // Dynamic upward ascent shift during liftoff & climb so vehicle physically rises!
-  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.340, sp) * unit * 0.65 : 0;
+  // Smooth upward ascent glide during liftoff & climb (zero vibration/shaking anywhere!)
+  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.360, sp) * unit * 0.52 : 0;
   baseY -= climbLift;
 
   const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.380, sp) * 0.14 : 0;
@@ -316,20 +316,11 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const isBurning = sp >= 0.035 && sp < 0.415;
   const fireRamp = isBurning ? clamp((sp - 0.035) / 0.025, 0, 1) : 0;
 
-  // Very subtle, gentle engine hum on pad only (no jarring shake!)
-  let vibeX = 0;
-  let vibeY = 0;
-  if (isBurning && sp < 0.20 && !reducedMotion) {
-    const amp = 0.42 * fireRamp;
-    vibeX = Math.sin(t * 72) * amp;
-    vibeY = Math.cos(t * 84) * amp * 0.6;
-  }
-
   // High-speed atmospheric climb streamlines rushing downward past rocket (Step 04 -> Stage 01)
   if (sp >= 0.175 && sp < 0.395 && !reducedMotion) {
     const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.340, 0.395, sp));
     ctx.save();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.22 * speedIntensity})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.20 * speedIntensity})`;
     ctx.lineWidth = 1;
     for (let i = 0; i < 12; i++) {
       const sx = basePadX + ((i - 5.5) * u * 0.62);
@@ -351,15 +342,16 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const coreDropRot = deployFrac * 0.18;
 
   ctx.save();
-  ctx.translate(basePadX + vibeX, baseY + vibeY);
+  ctx.translate(basePadX, baseY);
   ctx.rotate(pitchRad);
 
-  const coreR = u * 0.26;
-  const l110H = u * 1.42;
-  const interstageH = u * 0.20;
-  const c25H = u * 0.86;
-  const fairingCylH = u * 0.42;
-  const fairingNoseH = u * 0.72;
+  // Taller, slimmer sleek launch vehicle proportions
+  const coreR = u * 0.185;
+  const l110H = u * 1.82;
+  const interstageH = u * 0.22;
+  const c25H = u * 1.10;
+  const fairingCylH = u * 0.52;
+  const fairingNoseH = u * 0.90;
 
   const l110TopY = -l110H;
   const interTopY = l110TopY - interstageH;
@@ -499,10 +491,10 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       const vx = side * vikasSpread;
       ctx.fillStyle = '#2e2e34';
       ctx.beginPath();
-      ctx.moveTo(vx - u * 0.048, u * 0.06);
-      ctx.lineTo(vx - u * 0.082, u * 0.19);
-      ctx.lineTo(vx + u * 0.082, u * 0.19);
-      ctx.lineTo(vx + u * 0.048, u * 0.06);
+      ctx.moveTo(vx - u * 0.036, u * 0.06);
+      ctx.lineTo(vx - u * 0.062, u * 0.19);
+      ctx.lineTo(vx + u * 0.062, u * 0.19);
+      ctx.lineTo(vx + u * 0.036, u * 0.06);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
@@ -512,7 +504,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   // Twin S200 Solid Boosters (separate cleanly at sp 0.340 -> 0.380)
   if (sp < 0.382) {
     const sepProg = sp >= 0.340 ? easeOutCubic((sp - 0.340) / 0.040) : 0;
-    const baseBoosterX = coreR + u * 0.26;
+    const baseBoosterX = coreR + u * 0.17;
     for (const side of [-1, 1] as const) {
       ctx.save();
       ctx.translate(side * (baseBoosterX + sepProg * u * 2.1), sepProg * u * 1.9);

@@ -178,9 +178,8 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
         const liftoffFrac = Math.min(Math.max((norm - 0.64) / 0.36, 0), 1);
         const liftPx = Math.pow(liftoffFrac, 2.5) * 210;
 
-        // Gentle engine hum on pad before clearing (no excessive shaking)
-        const rumble = ignitionRamp * (1 - liftoffFrac * 0.6);
-        const rx = cx + Math.sin(tSec * 85) * 0.55 * rumble;
+        // Smooth rock-steady liftoff ascent (zero shaking!)
+        const rx = cx;
         const ry = padY - 6 - liftPx;
 
         // Roaring flickering monochrome supersonic flames
@@ -223,53 +222,52 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
           ctx.fill();
         }
 
-        // Draw crisp Black & White LVM3 rocket body
+        // Draw crisp Black & White LVM3 rocket body (sleek taller & slimmer silhouette)
         ctx.save();
         ctx.translate(rx, ry);
 
         // Left & Right S200 Boosters
         for (const side of [-1, 1]) {
-          const bx = side * 11;
-          ctx.fillStyle = side > 0 ? '#ffffff' : '#d4d4d8';
-          ctx.strokeStyle = '#09090b';
-          ctx.lineWidth = 1;
+          const bx = side * 8.5;
+          ctx.fillStyle = side > 0 ? '#e4e4e7' : '#c4c4cc';
+          ctx.strokeStyle = 'rgba(24,24,27,0.5)';
+          ctx.lineWidth = 0.85;
           ctx.beginPath();
-          ctx.moveTo(bx - 3.5, -36);
-          ctx.lineTo(bx, -48);
-          ctx.lineTo(bx + 3.5, -36);
+          ctx.moveTo(bx - 2.6, -44);
+          ctx.lineTo(bx, -58);
+          ctx.lineTo(bx + 2.6, -44);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
 
-          ctx.fillRect(bx - 3.5, -36, 7, 34);
-          ctx.fillStyle = '#09090b';
-          ctx.fillRect(bx - 3.5, -33, 7, 3.5);
-          ctx.fillRect(bx - 3.5, -16, 7, 3);
-          ctx.strokeRect(bx - 3.5, -36, 7, 34);
+          ctx.fillRect(bx - 2.6, -44, 5.2, 42);
+          ctx.fillStyle = '#27272a';
+          ctx.fillRect(bx - 2.6, -41, 5.2, 2.5);
+          ctx.fillRect(bx - 2.6, -20, 5.2, 2.2);
+          ctx.strokeRect(bx - 2.6, -44, 5.2, 42);
         }
 
         // Core Stack: Ogive Fairing + C25 + Interstage + L110
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#09090b';
-        ctx.lineWidth = 1.1;
+        ctx.fillStyle = '#ececef';
+        ctx.strokeStyle = 'rgba(24,24,27,0.5)';
+        ctx.lineWidth = 0.9;
         ctx.beginPath();
-        ctx.moveTo(-7, -56);
-        ctx.quadraticCurveTo(-6.5, -72, 0, -82);
-        ctx.quadraticCurveTo(6.5, -72, 7, -56);
+        ctx.moveTo(-5.2, -68);
+        ctx.quadraticCurveTo(-4.8, -88, 0, -100);
+        ctx.quadraticCurveTo(4.8, -88, 5.2, -68);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillRect(-7, -56, 14, 16);
-        ctx.fillStyle = '#09090b';
-        ctx.fillRect(-7, -40, 14, 5);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-7, -35, 14, 34);
-        ctx.fillStyle = '#09090b';
-        ctx.fillRect(-7, -15, 7, 9);
-        ctx.fillRect(0, -24, 7, 9);
-        ctx.strokeStyle = '#09090b';
-        ctx.strokeRect(-7, -56, 14, 55);
+        ctx.fillRect(-5.2, -68, 10.4, 20);
+        ctx.fillStyle = '#1f1f23';
+        ctx.fillRect(-5.2, -48, 10.4, 5);
+        ctx.fillStyle = '#e4e4e7';
+        ctx.fillRect(-5.2, -43, 10.4, 42);
+        ctx.fillStyle = '#27272a';
+        ctx.fillRect(-5.2, -16, 10.4, 2.5);
+        ctx.strokeStyle = 'rgba(24,24,27,0.5)';
+        ctx.strokeRect(-5.2, -68, 10.4, 67);
 
         ctx.restore();
 

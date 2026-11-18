@@ -5,7 +5,7 @@ import {
   smoothstep,
   mulberry32,
 } from './types';
-import { getLaunchPadDropPx } from './sriharikotaTerrain';
+import { getPadZoomTransform } from './sriharikotaTerrain';
 
 interface VolumetricSmokePuff {
   dirX: -1 | 1;
@@ -75,7 +75,10 @@ function getSmokeSprites(): {
       const ly = cy + l.dy;
       const g = ctx.createRadialGradient(lx + 4, ly - 5, 2, lx, ly, l.r);
       g.addColorStop(0.0, `rgba(${l.shade},${l.shade},${l.shade},${l.a})`);
-      g.addColorStop(0.55, `rgba(${Math.max(40, l.shade - 35)},${Math.max(40, l.shade - 35)},${Math.max(40, l.shade - 35)},${l.a * 0.4})`);
+      g.addColorStop(
+        0.55,
+        `rgba(${Math.max(40, l.shade - 35)},${Math.max(40, l.shade - 35)},${Math.max(40, l.shade - 35)},${l.a * 0.4})`
+      );
       g.addColorStop(1.0, 'rgba(180,180,188,0)');
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -105,25 +108,25 @@ function getPadPools(): {
     const dirX: -1 | 1 = i % 2 === 0 ? 1 : -1;
     return {
       dirX,
-      x: dirX * (0.32 + rand() * 0.42),
-      y: 0.06 + (rand() - 0.5) * 0.10,
-      vx: dirX * (2.5 + rand() * 2.5),
-      vy: -(0.12 + rand() * 0.30),
+      x: dirX * (0.28 + rand() * 0.40),
+      y: 0.05 + (rand() - 0.5) * 0.10,
+      vx: dirX * (2.4 + rand() * 2.4),
+      vy: -(0.12 + rand() * 0.28),
       age: rand() * 1.5,
       life: 1.25 + rand() * 1.30,
-      baseR: 0.26 + rand() * 0.20,
+      baseR: 0.24 + rand() * 0.18,
       rot: rand() * Math.PI * 2,
       rotSpeed: dirX * (0.30 + rand() * 0.55),
     };
   });
 
-  sparkPool = Array.from({ length: 20 }, (_, i) => {
+  sparkPool = Array.from({ length: 18 }, (_, i) => {
     const dirX = i % 2 === 0 ? 1 : -1;
     return {
-      x: dirX * (0.24 + rand() * 0.20),
+      x: dirX * (0.20 + rand() * 0.18),
       y: 0.02,
-      vx: dirX * (2.6 + rand() * 2.8),
-      vy: -(0.9 + rand() * 1.6),
+      vx: dirX * (2.4 + rand() * 2.6),
+      vy: -(0.9 + rand() * 1.5),
       age: rand() * 0.6,
       life: 0.36 + rand() * 0.44,
     };
@@ -132,11 +135,11 @@ function getPadPools(): {
   cryoPool = Array.from({ length: 10 }, (_, i) => ({
     x: 0,
     y: 0,
-    vx: 0.38 + rand() * 0.32,
+    vx: 0.36 + rand() * 0.30,
     vy: -(0.07 + rand() * 0.12),
     age: (i / 10) * 1.6,
     life: 1.3 + rand() * 0.8,
-    r: 0.10 + rand() * 0.10,
+    r: 0.09 + rand() * 0.09,
   }));
 
   return { puffs: steamPool, sparks: sparkPool, cryo: cryoPool };
@@ -144,19 +147,18 @@ function getPadPools(): {
 
 /**
  * Minimal, Whisper-Light Monochrome Launch Pad — BACK LAYER:
- * - Zero spheres, zero bulky bunkers/clutter!
- * - 2 faint distant lightning needle spires with subtle pulsing beacon dots
- * - Slender lightweight architectural gantry tower (low-opacity crisp hairline truss)
- * - Clean low-profile launch base platform with subtle deflector glow on ignition
+ * - Zero spheres, zero bulky clutter!
+ * - Tall slender hairline gantry matching the taller, slimmer rocket
+ * - Realistically zooms out & shrinks onto Earth's receding horizon on liftoff
  */
 export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
-  const { ctx, h, sp, t, mouseX, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
-  if (sp > 0.275) return;
+  const { ctx, w, h, sp, t, mouseX, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
+  if (sp > 0.315) return;
 
-  const dropPx = getLaunchPadDropPx(sp, h);
-  const padX = vehicleAnchorX - mouseX * 8;
-  const padY = groundY + dropPx;
-  if (padY - unit * 4.2 > h) return;
+  const { scale, anchorY, alpha } = getPadZoomTransform(sp, w, h, groundY, unit);
+  if (alpha < 0.01) return;
+
+  const padX = vehicleAnchorX - mouseX * 8 * scale;
 
   const beaconCycle = t % 1.0;
   const beaconPulse = reducedMotion
@@ -166,37 +168,39 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
       : 0;
 
   ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(padX, anchorY);
+  ctx.scale(scale, scale);
 
-  // 1. TWO FAINT DISTANT LIGHTNING NEEDLE SPIRES (subtle vertical depth, zero clutter)
-  for (const ox of [-2.45, 2.35]) {
-    const mx = vehicleAnchorX + ox * unit - mouseX * 5;
-    const baseY = padY - unit * 0.04;
-    const topY = baseY - unit * 2.85;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
-    ctx.lineWidth = 0.9;
+  // 1. TWO FAINT DISTANT LIGHTNING NEEDLE SPIRES
+  for (const ox of [-2.25, 2.15]) {
+    const mx = ox * unit;
+    const baseY = -unit * 0.04;
+    const topY = baseY - unit * 3.15;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.13)';
+    ctx.lineWidth = 0.85;
     ctx.beginPath();
     ctx.moveTo(mx, baseY);
     ctx.lineTo(mx, topY);
     ctx.stroke();
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.25 + beaconPulse * 0.45})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.22 + beaconPulse * 0.42})`;
     ctx.beginPath();
-    ctx.arc(mx, topY - 2, 1.5, 0, Math.PI * 2);
+    ctx.arc(mx, topY - 2, 1.4, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // 2. SLENDER, LIGHTWEIGHT UMBILICAL GANTRY TOWER (delicate hairline silhouette)
-  const towerW = unit * 0.36;
-  const towerH = unit * 3.15;
-  const towerCx = padX - unit * 0.72;
-  const towerBaseY = padY - unit * 0.04;
+  // 2. SLENDER, TALL LIGHTWEIGHT UMBILICAL GANTRY TOWER (proportioned to taller slimmer rocket)
+  const towerW = unit * 0.28;
+  const towerH = unit * 3.85;
+  const towerCx = -unit * 0.56;
+  const towerBaseY = -unit * 0.04;
   const towerTopY = towerBaseY - towerH;
-  const bays = 7;
+  const bays = 8;
   const bayH = towerH / bays;
 
-  // Vertical slender legs
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
-  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.26)';
+  ctx.lineWidth = 1.0;
   ctx.beginPath();
   ctx.moveTo(towerCx - towerW * 0.5, towerBaseY);
   ctx.lineTo(towerCx - towerW * 0.5, towerTopY);
@@ -204,9 +208,8 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
   ctx.lineTo(towerCx + towerW * 0.5, towerTopY);
   ctx.stroke();
 
-  // Delicate X-bracing & light platform ticks
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 0.75;
   for (let i = 0; i < bays; i++) {
     const y0 = towerBaseY - i * bayH;
     const y1 = y0 - bayH;
@@ -217,149 +220,146 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
     ctx.lineTo(rx, y1);
     ctx.moveTo(rx, y0);
     ctx.lineTo(lx, y1);
-    ctx.moveTo(lx - unit * 0.03, y1);
-    ctx.lineTo(rx + unit * 0.03, y1);
+    ctx.moveTo(lx - unit * 0.025, y1);
+    ctx.lineTo(rx + unit * 0.025, y1);
     ctx.stroke();
   }
 
   // Top slender lightning rod + gentle pulsing white beacon
-  const mastTopY = towerTopY - unit * 0.45;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-  ctx.lineWidth = 1;
+  const mastTopY = towerTopY - unit * 0.42;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+  ctx.lineWidth = 0.95;
   ctx.beginPath();
   ctx.moveTo(towerCx, towerTopY);
   ctx.lineTo(towerCx, mastTopY);
   ctx.stroke();
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.35 + beaconPulse * 0.6})`;
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.32 + beaconPulse * 0.58})`;
   ctx.beginPath();
-  ctx.arc(towerCx, mastTopY - 2, 1.8, 0, Math.PI * 2);
+  ctx.arc(towerCx, mastTopY - 2, 1.6, 0, Math.PI * 2);
   ctx.fill();
 
-  // 3. CLEAN LOW-PROFILE LAUNCH PAD BASE (minimal horizontal plinth + subtle trench glow)
-  const padW = unit * 1.65;
-  const padH = unit * 0.16;
-  const padTopY = padY - unit * 0.14;
-  const trenchW = unit * 0.66;
+  // 3. CLEAN LOW-PROFILE LAUNCH PAD BASE
+  const padW = unit * 1.38;
+  const padH = unit * 0.14;
+  const padTopY = -unit * 0.12;
+  const trenchW = unit * 0.54;
 
-  // Subtle white glow beneath nozzles on ignition
   const fireRamp =
-    sp >= 0.035 && sp < 0.240
+    sp >= 0.035 && sp < 0.255
       ? clamp((sp - 0.035) / 0.025, 0, 1) *
-        (sp < 0.170 ? 1 : Math.max(0, 1 - (sp - 0.170) / 0.070))
+        (sp < 0.170 ? 1 : Math.max(0, 1 - (sp - 0.170) / 0.085))
       : 0;
 
   if (fireRamp > 0.03) {
-    const flicker = reducedMotion ? 1 : 0.85 + Math.sin(t * 48) * 0.15;
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.28 * fireRamp * flicker})`;
+    const flicker = reducedMotion ? 1 : 0.86 + Math.sin(t * 48) * 0.14;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.26 * fireRamp * flicker})`;
     ctx.beginPath();
-    ctx.moveTo(padX, padTopY + unit * 0.04);
-    ctx.lineTo(padX - trenchW * 0.48, padTopY + padH + unit * 0.03);
-    ctx.lineTo(padX + trenchW * 0.48, padTopY + padH + unit * 0.03);
+    ctx.moveTo(0, padTopY + unit * 0.04);
+    ctx.lineTo(-trenchW * 0.48, padTopY + padH + unit * 0.03);
+    ctx.lineTo(trenchW * 0.48, padTopY + padH + unit * 0.03);
     ctx.closePath();
     ctx.fill();
   }
 
-  // Minimal flanking pad plinths (clean low-contrast graphite + crisp 1px top datum line)
   const sideW = (padW - trenchW) * 0.5;
   ctx.fillStyle = '#141418';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-  ctx.lineWidth = 1;
-  ctx.fillRect(padX - padW * 0.5, padTopY, sideW, padH);
-  ctx.strokeRect(padX - padW * 0.5, padTopY, sideW, padH);
-  ctx.fillRect(padX + trenchW * 0.5, padTopY, sideW, padH);
-  ctx.strokeRect(padX + trenchW * 0.5, padTopY, sideW, padH);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
+  ctx.lineWidth = 0.95;
+  ctx.fillRect(-padW * 0.5, padTopY, sideW, padH);
+  ctx.strokeRect(-padW * 0.5, padTopY, sideW, padH);
+  ctx.fillRect(trenchW * 0.5, padTopY, sideW, padH);
+  ctx.strokeRect(trenchW * 0.5, padTopY, sideW, padH);
 
   ctx.restore();
 }
 
 /**
  * Minimal, Whisper-Light Launch Pad — FRONT LAYER:
- * - 2 simple, delicate hold-down arms lightly holding the rocket base (swing open cleanly at Step 02)
- * - 2 slender umbilical service arms lightly touching the rocket flank (retract smoothly at Step 02)
- * - Soft volumetric cryogenic mist & billowing monochrome exhaust smoke + subtle sparks
+ * - 2 delicate hold-down lines & 2 slender umbilical arms proportioned for the taller, slimmer rocket
+ * - Soft volumetric smoke & sparks shrinking realistically with the pad during zoom-out
  */
 export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
-  const { ctx, h, sp, dt, mouseX, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
-  if (sp > 0.275) return;
+  const { ctx, w, h, sp, dt, mouseX, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
+  if (sp > 0.315) return;
 
-  const dropPx = getLaunchPadDropPx(sp, h);
-  const padX = vehicleAnchorX - mouseX * 8;
-  const padY = groundY + dropPx;
-  if (padY - unit * 4.2 > h) return;
+  const { scale, anchorY, alpha } = getPadZoomTransform(sp, w, h, groundY, unit);
+  if (alpha < 0.01) return;
 
-  const padTopY = padY - unit * 0.14;
-  const towerCx = padX - unit * 0.72;
-  const towerBaseY = padY - unit * 0.04;
+  const padX = vehicleAnchorX - mouseX * 8 * scale;
+  const padTopY = -unit * 0.12;
+  const towerCx = -unit * 0.56;
+  const towerBaseY = -unit * 0.04;
   const { puffs, sparks, cryo } = getPadPools();
   const smokeSprites = getSmokeSprites();
 
   ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(padX, anchorY);
+  ctx.scale(scale, scale);
 
-  // 1. TWO SIMPLE, LIGHT HOLD-DOWN CLAMPS (just enough to suggest holding the rocket)
+  // 1. TWO SIMPLE, LIGHT HOLD-DOWN CLAMPS
   const clampOpen = sp < 0.080 ? 0 : easeOutCubic((sp - 0.080) / 0.045);
   for (const side of [-1, 1] as const) {
-    const cx = padX + side * unit * 0.44;
+    const cx = side * unit * 0.33;
     ctx.save();
     ctx.translate(cx, padTopY);
     ctx.rotate(side * clampOpen * 0.48);
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.52)';
-    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.48)';
+    ctx.lineWidth = 1.25;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(-side * unit * 0.03, -unit * 0.14);
-    ctx.lineTo(-side * unit * 0.09, -unit * 0.16);
+    ctx.lineTo(-side * unit * 0.025, -unit * 0.13);
+    ctx.lineTo(-side * unit * 0.075, -unit * 0.15);
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.68)';
     ctx.beginPath();
-    ctx.arc(0, 0, 1.8, 0, Math.PI * 2);
+    ctx.arc(0, 0, 1.6, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
-  // 2. TWO SLENDER UMBILICAL ARMS (lightly holding upper/mid vehicle, swing away smoothly at Step 02)
+  // 2. TWO SLENDER UMBILICAL ARMS (retract cleanly at Step 02)
   const armRetract = sp < 0.080 ? 0 : easeOutCubic((sp - 0.080) / 0.045);
-  const towerRightEdge = towerCx + unit * 0.18;
+  const towerRightEdge = towerCx + unit * 0.14;
 
-  for (const hU of [1.28, 2.02]) {
+  for (const hU of [1.62, 2.58]) {
     const pivotY = towerBaseY - hU * unit;
-    const visualLen = unit * 0.54 * (1 - armRetract * 0.58);
+    const visualLen = unit * 0.42 * (1 - armRetract * 0.58);
     const swingTilt = -armRetract * 0.45;
 
     ctx.save();
     ctx.translate(towerRightEdge, pivotY);
     ctx.rotate(swingTilt);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.42)';
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.40)';
+    ctx.lineWidth = 1.1;
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(visualLen, 0);
     ctx.stroke();
 
-    // Small crisp tip coupler tick
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
-    ctx.fillRect(visualLen - 2, -3, 2.5, 6);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.62)';
+    ctx.fillRect(visualLen - 2, -2.5, 2.2, 5);
     ctx.restore();
 
-    // Soft QD purge mist puff on decouple (Step 02)
     if (sp >= 0.080 && sp < 0.135) {
       const qdProg = (sp - 0.080) / 0.055;
-      const qdAlpha = Math.sin(qdProg * Math.PI) * 0.52;
+      const qdAlpha = Math.sin(qdProg * Math.PI) * 0.48 * alpha;
       const qdX = towerRightEdge + visualLen + qdProg * unit * 0.18;
       const qdY = pivotY - qdProg * unit * 0.14;
-      const qdSize = unit * (0.30 + qdProg * 0.44);
+      const qdSize = unit * (0.28 + qdProg * 0.42);
       ctx.globalAlpha = qdAlpha;
       ctx.drawImage(smokeSprites.bright, qdX - qdSize * 0.5, qdY - qdSize * 0.5, qdSize, qdSize);
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = alpha;
     }
   }
 
   // 3. SOFT STANDBY CRYOGENIC VAPOUR MIST (sp < 0.085)
   if (sp < 0.085) {
     const cryoFade = 1 - smoothstep(0.055, 0.085, sp);
-    const originX = padX + unit * 0.22;
-    const originY = towerBaseY - unit * 2.05;
+    const originX = unit * 0.17;
+    const originY = towerBaseY - unit * 2.55;
 
     for (let i = 0; i < cryo.length; i++) {
       const c = cryo[i];
@@ -375,10 +375,10 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
         }
       }
       const p = clamp(c.age / c.life, 0, 1);
-      const alpha = Math.sin(p * Math.PI) * 0.28 * cryoFade;
-      if (alpha < 0.01) continue;
-      const drawSize = (c.r + p * 0.34) * unit * 2.0;
-      ctx.globalAlpha = alpha;
+      const mistA = Math.sin(p * Math.PI) * 0.26 * cryoFade * alpha;
+      if (mistA < 0.01) continue;
+      const drawSize = (c.r + p * 0.32) * unit * 2.0;
+      ctx.globalAlpha = mistA;
       ctx.drawImage(
         smokeSprites.bright,
         originX + c.x * unit - drawSize * 0.5,
@@ -387,17 +387,17 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
         drawSize
       );
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = alpha;
   }
 
-  // 4. VOLUMETRIC BILLOWING MONOCHROME SMOKE & DELUGE STEAM (Step 01 -> Liftoff)
-  if (sp >= 0.045 && sp < 0.265) {
+  // 4. VOLUMETRIC BILLOWING MONOCHROME SMOKE & DELUGE STEAM (Step 01 -> Liftoff zoom-out)
+  if (sp >= 0.045 && sp < 0.295) {
     const density =
       sp < 0.125
-        ? smoothstep(0.045, 0.125, sp) * 0.48
+        ? smoothstep(0.045, 0.125, sp) * 0.46
         : sp < 0.170
-          ? 0.48 + smoothstep(0.125, 0.168, sp) * 0.52
-          : 1 - smoothstep(0.178, 0.265, sp);
+          ? 0.46 + smoothstep(0.125, 0.168, sp) * 0.54
+          : 1 - smoothstep(0.190, 0.295, sp);
 
     for (let i = 0; i < puffs.length; i++) {
       const p = puffs[i];
@@ -405,9 +405,9 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
         p.age += dt;
         if (p.age >= p.life) {
           p.age = 0;
-          p.x = p.dirX * (0.28 + (i % 5) * 0.09);
-          p.y = 0.06 + ((i % 3) - 1) * 0.04;
-          p.vx = p.dirX * (2.6 + ((i * 19) % 10) * 0.26);
+          p.x = p.dirX * (0.24 + (i % 5) * 0.08);
+          p.y = 0.05 + ((i % 3) - 1) * 0.04;
+          p.vx = p.dirX * (2.5 + ((i * 19) % 10) * 0.25);
           p.vy = -(0.12 + ((i * 13) % 7) * 0.05);
           p.rot = (i * 1.3) % (Math.PI * 2);
         } else {
@@ -420,27 +420,27 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
       }
 
       const lf = clamp(p.age / p.life, 0, 1);
-      const puffAlpha = Math.sin(lf * Math.PI) * 0.78 * density;
+      const puffAlpha = Math.sin(lf * Math.PI) * 0.76 * density * alpha;
       if (puffAlpha < 0.02) continue;
 
-      const px = padX + p.x * unit;
-      const py = padY + p.y * unit;
-      const drawSize = (p.baseR + lf * 0.82) * unit * (1.25 + density * 0.85);
+      const px = p.x * unit;
+      const py = p.y * unit;
+      const drawSize = (p.baseR + lf * 0.80) * unit * (1.2 + density * 0.82);
       const sprite = lf < 0.44 || p.dirX > 0 ? smokeSprites.bright : smokeSprites.shadow;
 
       ctx.save();
-      ctx.globalAlpha = clamp(puffAlpha, 0, 0.82);
+      ctx.globalAlpha = clamp(puffAlpha, 0, 0.80);
       ctx.translate(px, py);
       ctx.rotate(p.rot);
       ctx.drawImage(sprite, -drawSize * 0.5, -drawSize * 0.5, drawSize, drawSize);
       ctx.restore();
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = alpha;
   }
 
   // 5. SUBTLE FLYING SPARKS (Step 01 -> Liftoff)
-  if (sp >= 0.035 && sp < 0.220 && !reducedMotion) {
-    const sparkRamp = smoothstep(0.035, 0.060, sp) * (1 - smoothstep(0.170, 0.220, sp));
+  if (sp >= 0.035 && sp < 0.235 && !reducedMotion) {
+    const sparkRamp = smoothstep(0.035, 0.060, sp) * (1 - smoothstep(0.175, 0.235, sp));
     ctx.fillStyle = '#ffffff';
     for (let i = 0; i < sparks.length; i++) {
       const s = sparks[i];
@@ -448,20 +448,19 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
       if (s.age >= s.life) {
         s.age = 0;
         const dir = i % 2 === 0 ? 1 : -1;
-        s.x = dir * (0.24 + (i % 4) * 0.08);
+        s.x = dir * (0.20 + (i % 4) * 0.07);
         s.y = 0.02;
-        s.vx = dir * (2.6 + ((i * 23) % 10) * 0.28);
-        s.vy = -(0.9 + ((i * 17) % 10) * 0.20);
+        s.vx = dir * (2.4 + ((i * 23) % 10) * 0.26);
+        s.vy = -(0.9 + ((i * 17) % 10) * 0.18);
       } else {
         s.x += s.vx * dt;
         s.y += s.vy * dt;
         s.vy += 4.6 * dt;
       }
       const lf = clamp(s.age / s.life, 0, 1);
-      ctx.globalAlpha = (1 - lf) * 0.78 * sparkRamp;
-      ctx.fillRect(padX + s.x * unit, padY + s.y * unit, 1.8, 1.8);
+      ctx.globalAlpha = (1 - lf) * 0.74 * sparkRamp * alpha;
+      ctx.fillRect(s.x * unit, s.y * unit, 1.7, 1.7);
     }
-    ctx.globalAlpha = 1;
   }
 
   ctx.restore();
