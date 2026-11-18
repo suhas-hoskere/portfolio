@@ -14,10 +14,9 @@ export interface StageWaypoint {
 export const STAGES: StageWaypoint[] = [
   { id: 'pad', code: '00', shortLabel: 'Home', stageName: 'Launch Pad', altitude: '0 km // Ground Zero', scrollFraction: 0.0 },
   { id: 'ascent', code: '01', shortLabel: 'Origins', stageName: 'Davanagere Origins', altitude: '65 km // Ascent', scrollFraction: 0.395 },
-  { id: 'orbit', code: '02', shortLabel: 'Bangalore', stageName: 'Bangalore & PES', altitude: '420 km // LEO Orbit', scrollFraction: 0.645 },
-  { id: 'missions', code: '03', shortLabel: 'Projects', stageName: 'Exploration Missions', altitude: '420 km // Payload Ops', scrollFraction: 0.745 },
-  { id: 'heritage', code: '04', shortLabel: 'Heritage', stageName: 'Kannada Heritage', altitude: '420 km // BLR Pass', scrollFraction: 0.850 },
-  { id: 'signal', code: '05', shortLabel: 'Uplink', stageName: 'Orbital Uplink', altitude: '420 km // Signal Lock', scrollFraction: 0.985 },
+  { id: 'missions', code: '02', shortLabel: 'Projects', stageName: 'Exploration Missions', altitude: '420 km // Payload Ops', scrollFraction: 0.745 },
+  { id: 'heritage', code: '03', shortLabel: 'Heritage', stageName: 'Kannada Heritage', altitude: '420 km // BLR Pass', scrollFraction: 0.850 },
+  { id: 'signal', code: '04', shortLabel: 'Uplink', stageName: 'Orbital Uplink', altitude: '420 km // Signal Lock', scrollFraction: 0.985 },
 ];
 
 interface FlightHUDProps {
