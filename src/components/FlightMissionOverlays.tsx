@@ -513,35 +513,29 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 border-y border-white/20">
-                  {PROJECTS.map((proj, idx) => {
-                    const isLeftCol = idx % 2 === 0;
-                    const isTopRow = idx < PROJECTS.length - 2;
-                    const isLast = idx === PROJECTS.length - 1;
-                    return (
+                <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5 pt-1 pb-2">
+                  {/* Soft liquid-glass vertical center divider */}
+                  <div
+                    aria-hidden="true"
+                    className="hidden lg:block pointer-events-none absolute top-3 bottom-3 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-white/25 to-transparent"
+                  />
+
+                  {PROJECTS.map((proj) => (
+                    <div key={proj.id} className="relative pb-4">
                       <button
-                        key={proj.id}
                         type="button"
                         onClick={() => {
                           cosmicAudio.playTelemetryChirp(1380, 0.05);
                           onSelectProject(proj);
                         }}
-                        className={`w-full py-5 px-4 text-left hover:bg-white/[0.06] transition-colors cursor-pointer group flex flex-col justify-between gap-2.5 ${
-                          isLeftCol ? 'lg:pr-6 lg:border-r lg:border-white/20' : 'lg:pl-6'
-                        } ${
-                          isTopRow
-                            ? 'border-b border-white/20'
-                            : !isLast
-                              ? 'border-b border-white/20 lg:border-b-0'
-                              : ''
-                        }`}
+                        className="w-full h-full p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-white/[0.055] via-white/[0.018] to-transparent hover:from-white/[0.105] hover:via-white/[0.04] hover:to-white/[0.01] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_10px_28px_rgba(0,0,0,0.32)] text-left transition-all duration-200 cursor-pointer group flex flex-col justify-between gap-2.5"
                       >
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
                             <span className="font-semibold text-white tracking-wide">
                               {proj.name}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/20 text-zinc-200">
+                            <span className="px-2.5 py-0.5 rounded-full bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] border border-white/15 text-zinc-200">
                               {proj.badge}
                             </span>
                           </div>
@@ -556,7 +550,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-1.5 text-[10px] font-mono">
+                        <div className="flex items-center justify-between pt-2 text-[10px] font-mono">
                           <span className="text-zinc-400">
                             {proj.metrics[0].label}:{' '}
                             <span className="text-white">{proj.metrics[0].value}</span>
@@ -567,8 +561,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                           </span>
                         </div>
                       </button>
-                    );
-                  })}
+
+                      {/* Soft liquid-glass bottom divider */}
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3 right-3 bottom-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 {/* Private Repositories / Ongoing R&D Showcase */}
