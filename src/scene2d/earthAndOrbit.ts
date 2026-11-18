@@ -2,6 +2,7 @@ import {
   type Scene2DFrameContext,
   lerp,
   smoothstep,
+  mulberry32,
 } from './types';
 
 interface OrbitalSatSpec {
@@ -17,6 +18,225 @@ const CONSTELLATION: OrbitalSatSpec[] = [
   { rxScale: 1.38, ryScale: 0.38, tiltRad: 0.16, phase: 2.35 },
   { rxScale: 1.52, ryScale: 0.28, tiltRad: -0.07, phase: 4.15 },
 ];
+
+let cachedEarthSprite: HTMLCanvasElement | null = null;
+const EARTH_SPRITE_SIZE = 780;
+const EARTH_SPRITE_R = 328; // leaves 62px silky outer atmospheric glow margin on all sides!
+
+/**
+ * Pre-renders a photorealistic monochrome LEO Earth globe sprite ONCE (780x780, 0ms per-frame cost!):
+ * - Silky zero-banding radial atmospheric limb glow
+ * - Spherical sunlit-to-night obsidian lighting matching the upper-right Sun
+ * - High-fidelity Indian Subcontinent, Sri Lanka, Arabian Peninsula & SE Asia coastlines
+ * - Swirling monochrome orbital cloud bands across Indian Ocean & Bay of Bengal
+ * - Subtle illuminated Indian metro city-light clusters (BLR, MAA, BOM, HYD, DEL, SHAR)
+ */
+function getEarthSprite(): HTMLCanvasElement {
+  if (cachedEarthSprite) return cachedEarthSprite;
+
+  const size = EARTH_SPRITE_SIZE;
+  const r = EARTH_SPRITE_R;
+  const c = size * 0.5;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const rand = mulberry32(42026);
+
+  // 1. Silky continuous outer atmospheric halo (zero banding!)
+  const halo = ctx.createRadialGradient(c, c, r - 3, c, c, r + 58);
+  halo.addColorStop(0.0, 'rgba(255, 255, 255, 0.72)');
+  halo.addColorStop(0.10, 'rgba(244, 244, 250, 0.34)');
+  halo.addColorStop(0.28, 'rgba(218, 218, 230, 0.13)');
+  halo.addColorStop(0.58, 'rgba(190, 190, 210, 0.035)');
+  halo.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(c, c, r + 58, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Clipped spherical planetary body
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(c, c, r, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Deep orbital ocean shading (sunlit charcoal-silver upper-right -> deep obsidian lower-left)
+  const ocean = ctx.createRadialGradient(c + r * 0.32, c - r * 0.58, r * 0.08, c, c, r * 1.22);
+  ocean.addColorStop(0.0, '#202028');
+  ocean.addColorStop(0.38, '#121218');
+  ocean.addColorStop(0.75, '#0a0a0e');
+  ocean.addColorStop(1.0, '#050507');
+  ctx.fillStyle = ocean;
+  ctx.fillRect(c - r, c - r, r * 2, r * 2);
+
+  // Delicate latitude & longitude orbital graticule
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.055)';
+  ctx.lineWidth = 1;
+  for (let lat = -3; lat <= 3; lat++) {
+    const ly = c + (lat / 4) * r;
+    ctx.beginPath();
+    ctx.moveTo(c - r, ly);
+    ctx.lineTo(c + r, ly);
+    ctx.stroke();
+  }
+  for (let lon = -3; lon <= 3; lon++) {
+    const rx = Math.abs((lon / 4) * r);
+    ctx.beginPath();
+    ctx.ellipse(c, c, Math.max(8, rx), r, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Helper to trace geographic polygons normalized to [-1..1] globe coordinates
+  const drawLand = (pts: [number, number][], fillA: number, strokeA: number) => {
+    ctx.fillStyle = `rgba(235, 235, 242, ${fillA})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${strokeA})`;
+    ctx.lineWidth = 1.15;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    pts.forEach(([nx, ny], idx) => {
+      const x = c + nx * r;
+      const y = c + ny * r;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  };
+
+  // Accurate high-detail Indian Subcontinent & Himalayan Arc (framed cleanly in visible upper LEO arc)
+  const indiaPts: [number, number][] = [
+    [-0.10, -0.98], // Ladakh / Kashmir NW
+    [-0.01, -0.99], // Karakoram
+    [0.06, -0.95],  // Himachal / Uttarakhand
+    [0.14, -0.91],  // Nepal border
+    [0.23, -0.89],  // Sikkim / Bhutan
+    [0.32, -0.90],  // Arunachal
+    [0.35, -0.86],  // Nagaland / Manipur
+    [0.30, -0.82],  // Mizoram / Tripura
+    [0.24, -0.83],  // Meghalaya
+    [0.21, -0.79],  // West Bengal / Sundarbans
+    [0.16, -0.74],  // Odisha coast
+    [0.12, -0.69],  // Visakhapatnam / Andhra
+    [0.09, -0.64],  // Sriharikota / Chennai coast
+    [0.07, -0.58],  // Tamil Nadu / Rameshwaram
+    [0.03, -0.54],  // Kanyakumari tip
+    [-0.01, -0.58], // Kerala / Kochi
+    [-0.04, -0.64], // Mangalore / Karnataka coast
+    [-0.07, -0.70], // Goa / Konkan
+    [-0.09, -0.76], // Mumbai
+    [-0.13, -0.78], // Gulf of Khambhat / Saurashtra
+    [-0.19, -0.80], // Gujarat / Kutch
+    [-0.16, -0.84], // Rajasthan Thar
+    [-0.13, -0.90], // Punjab
+    [-0.14, -0.94], // Jammu
+  ];
+  drawLand(indiaPts, 0.14, 0.56);
+
+  // Sri Lanka
+  const sriLankaPts: [number, number][] = [
+    [0.08, -0.55],
+    [0.11, -0.52],
+    [0.10, -0.48],
+    [0.07, -0.49],
+    [0.06, -0.52],
+  ];
+  drawLand(sriLankaPts, 0.15, 0.52);
+
+  // Subtle Arabian Peninsula flank (west limb context)
+  const arabiaPts: [number, number][] = [
+    [-0.64, -0.82],
+    [-0.46, -0.84],
+    [-0.35, -0.77],
+    [-0.39, -0.66],
+    [-0.53, -0.62],
+    [-0.68, -0.70],
+  ];
+  drawLand(arabiaPts, 0.06, 0.22);
+
+  // Subtle Myanmar / Malay Peninsula flank (east limb context)
+  const seAsiaPts: [number, number][] = [
+    [0.34, -0.83],
+    [0.49, -0.79],
+    [0.55, -0.65],
+    [0.47, -0.55],
+    [0.42, -0.63],
+    [0.36, -0.72],
+  ];
+  drawLand(seAsiaPts, 0.06, 0.22);
+
+  // Swirling monochrome orbital cloud bands across Indian Ocean, Bay of Bengal & Himalayas
+  for (let cl = 0; cl < 26; cl++) {
+    const cxPos = c + (rand() - 0.5) * r * 1.55;
+    const cyPos = c - r * 0.35 - rand() * r * 0.62;
+    const rw = 26 + rand() * 68;
+    const rh = 7 + rand() * 18;
+    const rot = (rand() - 0.5) * 0.65;
+    const a = 0.07 + rand() * 0.13;
+
+    ctx.save();
+    ctx.translate(cxPos, cyPos);
+    ctx.rotate(rot);
+    const cg = ctx.createRadialGradient(0, 0, 1, 0, 0, rw);
+    cg.addColorStop(0.0, `rgba(255, 255, 255, ${a})`);
+    cg.addColorStop(0.55, `rgba(220, 220, 228, ${a * 0.45})`);
+    cg.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+    ctx.scale(1, rh / rw);
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(0, 0, rw, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Subtle glowing city-light clusters across India (Bangalore, Chennai, Sriharikota, Mumbai, Hyderabad, Delhi)
+  const cities: [number, number, number][] = [
+    [0.03, -0.64, 3.0],  // Bangalore
+    [0.08, -0.64, 2.4],  // Chennai
+    [0.09, -0.66, 2.0],  // Sriharikota
+    [0.04, -0.70, 2.4],  // Hyderabad
+    [-0.08, -0.75, 2.8], // Mumbai
+    [-0.01, -0.88, 3.0], // Delhi NCR
+    [0.19, -0.79, 2.4],  // Kolkata
+    [-0.02, -0.67, 1.7], // Davanagere
+  ];
+  for (const [nx, ny, cr] of cities) {
+    const lx = c + nx * r;
+    const ly = c + ny * r;
+    const lg = ctx.createRadialGradient(lx, ly, 0.4, lx, ly, cr * 4.2);
+    lg.addColorStop(0.0, 'rgba(255, 255, 255, 0.85)');
+    lg.addColorStop(0.35, 'rgba(240, 240, 248, 0.30)');
+    lg.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = lg;
+    ctx.beginPath();
+    ctx.arc(lx, ly, cr * 4.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Soft spherical limb inner atmospheric scatter (brightens the sunlit upper edge naturally)
+  const innerRim = ctx.createRadialGradient(c, c, r * 0.80, c, c, r);
+  innerRim.addColorStop(0.0, 'rgba(255, 255, 255, 0)');
+  innerRim.addColorStop(0.72, 'rgba(220, 220, 232, 0.06)');
+  innerRim.addColorStop(0.94, 'rgba(255, 255, 255, 0.24)');
+  innerRim.addColorStop(1.0, 'rgba(255, 255, 255, 0.58)');
+  ctx.fillStyle = innerRim;
+  ctx.beginPath();
+  ctx.arc(c, c, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore(); // End globe clip
+
+  // Crisp 1.4px glowing atmospheric horizon line on top arc
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(c, c, r, Math.PI * 1.04, Math.PI * 1.96);
+  ctx.stroke();
+
+  cachedEarthSprite = canvas;
+  return canvas;
+}
 
 function drawMonoMiniSat(
   ctx: CanvasRenderingContext2D,
@@ -42,44 +262,37 @@ function drawMonoMiniSat(
 }
 
 /**
- * Pure Monochrome Continuous Earth-to-Orbit Horizon (sp 0.165 -> 1.000):
- * - Seamlessly takes over from Sriharikota's flat horizon at liftoff (sp = 0.170) with near-flat planetary radius,
- *   then realistically zooms out into a glowing curved Earth limb & full 420 km LEO view!
- * - Earth stays ALWAYS visible beneath the vehicle from Ground Zero through Orbital Uplink (0% -> 100%).
+ * Pure Monochrome Continuous Earth-to-Orbit Horizon (sp 0.162 -> 1.000):
+ * - Smoothly zooms out from flat Sriharikota ground into a cached photorealistic monochrome LEO Earth globe
+ *   (accurate India coastline, swirling clouds, twinkling city lights, silky zero-banding atmosphere glow).
+ * - Earth stays ALWAYS visible beneath the vehicle from 0% to 100%!
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
 
-  // Begins blending seamlessly under the flat ground right before liftoff so there is ZERO gap
   if (sp < 0.162) return;
 
   const baseHorizonY = groundY - unit * 0.24;
   const baseEarthR = Math.max(w, h) * 0.56;
   const leoTopY = Math.max(h * 0.62, h - baseEarthR * 0.44);
 
-  // Continuous realistic camera zoom-out: flat ground (0.170) -> curved atmosphere -> LEO globe (0.480+)
   const zoomOut = smoothstep(0.170, 0.480, sp);
   const earthFadeIn = smoothstep(0.162, 0.195, sp);
 
-  // Exponential curvature zoom-out: starts ~4.8x viewport (flat!) and smoothly tightens to 0.56x viewport (LEO)
+  // Smooth exponential curvature zoom-out from near-flat ground -> full orbital Earth curve
   const earthR = baseEarthR * Math.pow(8.6, Math.pow(1 - zoomOut, 1.25));
-
-  // Pin Earth's upper horizon limb smoothly in the lower viewport at ALL times (never disappears!)
   const terminalDrop = smoothstep(0.84, 1.0, sp) * baseEarthR * 0.06;
   const topLimbY = lerp(baseHorizonY, leoTopY, zoomOut) + terminalDrop - mouseY * (2 + 4 * zoomOut);
 
-  // Shift horizontal center smoothly from launch pad X toward balanced orbital center
   const leoCenterX = lerp(w * 0.58, vehicleAnchorX + unit * 0.35, 0.52);
   const centerX = lerp(vehicleAnchorX, leoCenterX, zoomOut) - mouseX * (5 + 5 * zoomOut);
   const centerY = topLimbY + earthR;
 
-  // Gradual reveal of space-altitude features as we zoom out into outer atmosphere & LEO
   const atmoGlow = smoothstep(0.19, 0.42, sp);
-  const surfaceDetailAlpha = smoothstep(0.27, 0.45, sp);
+  const globeDetailAlpha = smoothstep(0.24, 0.44, sp);
   const blrReticleAlpha = smoothstep(0.32, 0.46, sp);
-  const orbitRingAlpha = smoothstep(0.33, 0.48, sp);
+  const orbitRingAlpha = smoothstep(0.34, 0.48, sp);
 
-  // Live orbital motion + scroll offset so Keplerian satellites continuously glide around Earth
   const orbitAdvance = (sp - 0.35) * 3.0 + (reducedMotion ? 0 : t * 0.20);
 
   const satPos = (sat: OrbitalSatSpec, angle: number) => {
@@ -97,7 +310,7 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   ctx.save();
   ctx.globalAlpha = earthFadeIn;
 
-  // 1. Back orbital trace arcs (fade in cleanly once approaching LEO)
+  // 1. Back orbital trace arcs
   if (orbitRingAlpha > 0.01) {
     ctx.save();
     ctx.globalAlpha = earthFadeIn * orbitRingAlpha;
@@ -117,122 +330,36 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  // 2. Soft Outer Atmosphere Halo Glow along Earth's curved limb (zero per-frame gradient allocation!)
-  if (atmoGlow > 0.01) {
-    ctx.strokeStyle = `rgba(228, 228, 234, ${0.06 * atmoGlow})`;
-    ctx.lineWidth = lerp(18, 42, zoomOut);
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, earthR + lerp(8, 16, zoomOut), Math.PI * 1.05, Math.PI * 1.95);
-    ctx.stroke();
-
-    ctx.strokeStyle = `rgba(244, 244, 248, ${0.12 * atmoGlow})`;
-    ctx.lineWidth = lerp(8, 18, zoomOut);
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, earthR + lerp(3, 6, zoomOut), Math.PI * 1.05, Math.PI * 1.95);
-    ctx.stroke();
-
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.22 * atmoGlow})`;
-    ctx.lineWidth = lerp(3, 6, zoomOut);
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, earthR + 1.5, Math.PI * 1.05, Math.PI * 1.95);
-    ctx.stroke();
-  }
-
-  // 3. Obsidian Earth Disc (matches ground #09090b seamlessly on liftoff!)
-  ctx.fillStyle = '#09090b';
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, earthR, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Clip interior to draw subtle orbital graticule & crisp India contour as we zoom out
-  if (surfaceDetailAlpha > 0.01) {
-    ctx.save();
+  // 2. Seamless early-ascent dark Earth horizon arc (visible from 0.162 -> 0.46 while sprite cross-fades in)
+  if (globeDetailAlpha < 0.99) {
+    ctx.fillStyle = '#09090b';
     ctx.beginPath();
     ctx.arc(centerX, centerY, earthR, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.globalAlpha = earthFadeIn * surfaceDetailAlpha;
-
-    // Latitude & Longitude wireframe graticule
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
-    ctx.lineWidth = 1;
-    for (let lat = -3; lat <= 3; lat++) {
-      const ly = centerY + (lat / 4) * earthR;
-      ctx.beginPath();
-      ctx.moveTo(centerX - earthR, ly);
-      ctx.lineTo(centerX + earthR, ly);
-      ctx.stroke();
-    }
-    for (let lon = -3; lon <= 3; lon++) {
-      const rx = Math.abs((lon / 4) * earthR);
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY, Math.max(8, rx), earthR, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    // Crisp monochrome Indian Subcontinent contour
-    const indiaPts: [number, number][] = [
-      [-0.16, -0.82],
-      [0.02, -0.88],
-      [0.20, -0.78],
-      [0.28, -0.66],
-      [0.16, -0.54],
-      [0.08, -0.44],
-      [0.01, -0.43],
-      [-0.06, -0.54],
-      [-0.14, -0.68],
-      [-0.22, -0.74],
-    ];
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.10)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.52)';
-    ctx.lineWidth = 1.15;
-    ctx.beginPath();
-    indiaPts.forEach(([nx, ny], idx) => {
-      const x = centerX + nx * earthR;
-      const y = centerY + ny * earthR;
-      if (idx === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.closePath();
     ctx.fill();
-    ctx.stroke();
 
-    // Sri Lanka contour
+    // Soft atmospheric rim line intensifying smoothly before cached globe takes over
+    ctx.strokeStyle = `rgba(255, 255, 255, ${lerp(0.16, 0.72, atmoGlow)})`;
+    ctx.lineWidth = lerp(1.0, 1.5, zoomOut);
     ctx.beginPath();
-    ctx.ellipse(
-      centerX + earthR * 0.13,
-      centerY - earthR * 0.40,
-      earthR * 0.022,
-      earthR * 0.032,
-      0.15,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.restore(); // End globe clip
-  }
-
-  // 4. Crisp White Atmospheric Limb Line (seamlessly intensifies from horizon line -> bright orbital rim)
-  const rimAlpha = lerp(0.18, 0.82, atmoGlow);
-  ctx.strokeStyle = `rgba(255, 255, 255, ${rimAlpha})`;
-  ctx.lineWidth = lerp(1.0, 1.7, zoomOut);
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, earthR, Math.PI * 1.05, Math.PI * 1.95);
-  ctx.stroke();
-
-  if (atmoGlow > 0.08) {
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.18 * atmoGlow})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, earthR + 9, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.arc(centerX, centerY, earthR, Math.PI * 1.05, Math.PI * 1.95);
     ctx.stroke();
   }
 
-  // 5. BANGALORE ISRO GROUND STATION RETICLE (12.97° N, 77.59° E) + PULSING RADAR PING
+  // 3. Cached Photorealistic Monochrome LEO Earth Globe Sprite (0ms per-frame cost, zero banding!)
+  if (globeDetailAlpha > 0.01) {
+    const earthImg = getEarthSprite();
+    const drawScale = earthR / EARTH_SPRITE_R;
+    const drawSize = EARTH_SPRITE_SIZE * drawScale;
+    ctx.save();
+    ctx.globalAlpha = earthFadeIn * globeDetailAlpha;
+    ctx.drawImage(earthImg, centerX - drawSize * 0.5, centerY - drawSize * 0.5, drawSize, drawSize);
+    ctx.restore();
+  }
+
+  // 4. BANGALORE ISRO GROUND STATION RETICLE (12.97° N, 77.59° E) + PULSING RADAR PING
   if (blrReticleAlpha > 0.01) {
-    const blrX = centerX + earthR * 0.04;
-    const blrY = centerY - earthR * 0.56;
+    const blrX = centerX + earthR * 0.03;
+    const blrY = centerY - earthR * 0.64;
     if (blrY < h + 40 && blrY > topLimbY) {
       ctx.save();
       ctx.globalAlpha = earthFadeIn * blrReticleAlpha;
@@ -273,7 +400,7 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     }
   }
 
-  // 6. Front orbital trace arcs & wide-sweeping monochrome Keplerian satellites
+  // 5. Front orbital trace arcs & wide-sweeping monochrome Keplerian satellites
   if (orbitRingAlpha > 0.01) {
     ctx.save();
     ctx.globalAlpha = earthFadeIn * orbitRingAlpha;
@@ -283,7 +410,7 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
       ctx.translate(centerX, centerY - earthR * 0.24);
       ctx.rotate(sat.tiltRad);
       ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.26)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.24)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.ellipse(0, 0, earthR * sat.rxScale, earthR * sat.ryScale, 0, 0, Math.PI);

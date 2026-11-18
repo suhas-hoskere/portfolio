@@ -18,6 +18,8 @@ interface MonoExhaustStreak {
 }
 
 let exhaustStreaks: MonoExhaustStreak[] | null = null;
+let cachedPlumeSprite: HTMLCanvasElement | null = null;
+let cachedTrailPuffSprite: HTMLCanvasElement | null = null;
 
 function getExhaustStreaks(): MonoExhaustStreak[] {
   if (exhaustStreaks) return exhaustStreaks;
@@ -39,7 +41,98 @@ function getExhaustStreaks(): MonoExhaustStreak[] {
   return exhaustStreaks;
 }
 
-/** Draws a live roaring, flickering monochrome supersonic exhaust plume + pulsing Mach diamonds */
+/**
+ * Pre-renders a soft, glowing volumetric monochrome rocket exhaust plume sprite ONCE (120x280):
+ * - Zero hard edges or cartoon strokes — pure feathered radiant plasma glow!
+ * - Built once at startup so drawing at 120Hz costs <0.04ms per engine.
+ */
+function getPlumeSprite(): HTMLCanvasElement {
+  if (cachedPlumeSprite) return cachedPlumeSprite;
+  const w = 120;
+  const h = 280;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const cx = w * 0.5;
+
+  // 1. Wide soft outer luminous atmospheric bloom around supersonic exhaust column
+  const bloom = ctx.createRadialGradient(cx, 54, 4, cx, 98, 128);
+  bloom.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
+  bloom.addColorStop(0.32, 'rgba(235, 235, 244, 0.22)');
+  bloom.addColorStop(0.68, 'rgba(200, 200, 214, 0.06)');
+  bloom.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = bloom;
+  ctx.fillRect(0, 0, w, h);
+
+  // 2. Feathered expanding supersonic exhaust jet layers (zero stroke outlines!)
+  const layers = [
+    { rx: 32, len: 264, a0: 0.30, a1: 0.08 },
+    { rx: 21, len: 212, a0: 0.56, a1: 0.16 },
+    { rx: 13, len: 152, a0: 0.88, a1: 0.28 },
+    { rx: 7.5, len: 92, a0: 1.0, a1: 0.42 },
+  ];
+  for (const l of layers) {
+    const grad = ctx.createLinearGradient(cx, 6, cx, l.len);
+    grad.addColorStop(0.0, `rgba(255, 255, 255, ${l.a0})`);
+    grad.addColorStop(0.45, `rgba(244, 244, 250, ${l.a1})`);
+    grad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(cx - l.rx * 0.52, 6);
+    ctx.quadraticCurveTo(cx - l.rx * 1.15, l.len * 0.46, cx, l.len);
+    ctx.quadraticCurveTo(cx + l.rx * 1.15, l.len * 0.46, cx + l.rx * 0.52, 6);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // 3. Blazing incandescent throat core right at nozzle exit
+  const throat = ctx.createRadialGradient(cx, 16, 1, cx, 20, 22);
+  throat.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+  throat.addColorStop(0.55, 'rgba(255, 255, 255, 0.72)');
+  throat.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = throat;
+  ctx.beginPath();
+  ctx.arc(cx, 20, 22, 0, Math.PI * 2);
+  ctx.fill();
+
+  cachedPlumeSprite = canvas;
+  return canvas;
+}
+
+/** Soft feathered monochrome smoke puff sprite for booster burnout trails & cold-gas RCS vents */
+function getTrailPuffSprite(): HTMLCanvasElement {
+  if (cachedTrailPuffSprite) return cachedTrailPuffSprite;
+  const size = 96;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const c = size * 0.5;
+  const lobes = [
+    { dx: -10, dy: 4, r: 24, a: 0.34 },
+    { dx: 10, dy: -4, r: 26, a: 0.38 },
+    { dx: 0, dy: 0, r: 30, a: 0.44 },
+  ];
+  for (const l of lobes) {
+    const g = ctx.createRadialGradient(c + l.dx, c + l.dy, 2, c + l.dx, c + l.dy, l.r);
+    g.addColorStop(0.0, `rgba(235, 235, 242, ${l.a})`);
+    g.addColorStop(0.55, `rgba(180, 180, 192, ${l.a * 0.42})`);
+    g.addColorStop(1.0, 'rgba(180, 180, 192, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(c + l.dx, c + l.dy, l.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  cachedTrailPuffSprite = canvas;
+  return canvas;
+}
+
+/**
+ * Draws a live roaring, radiant volumetric monochrome supersonic exhaust plume:
+ * - Uses additive luminance blending + feathered pre-rendered plasma sprite (ZERO hard strokes!)
+ * - Soft luminous pulsing Mach diamond shock nodes (no dark outline borders!)
+ */
 function drawLiveMonoPlume(
   ctx: CanvasRenderingContext2D,
   nx: number,
@@ -55,53 +148,39 @@ function drawLiveMonoPlume(
 
   const turbLen = reducedMotion
     ? 1
-    : 0.90 + Math.sin(t * 62 + nx * 0.2) * 0.11 + Math.cos(t * 108) * 0.06;
-  const turbW = reducedMotion ? 1 : 0.94 + Math.sin(t * 48 + nx) * 0.07;
-  const w = width * fireRamp * turbW;
-  const len = length * fireRamp * turbLen;
+    : 0.91 + Math.sin(t * 58 + nx * 0.3) * 0.09 + Math.cos(t * 102 + nx) * 0.05;
+  const turbW = reducedMotion ? 1 : 0.94 + Math.sin(t * 46 + nx) * 0.06;
+  const drawW = width * 2.85 * fireRamp * turbW;
+  const drawH = length * 1.18 * fireRamp * turbLen;
 
-  // Outer translucent expanding supersonic envelope
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.14 * fireRamp})`;
-  ctx.strokeStyle = `rgba(255, 255, 255, ${0.24 * fireRamp})`;
-  ctx.lineWidth = 0.85;
-  ctx.beginPath();
-  ctx.moveTo(nx - w * 0.55, ny);
-  ctx.quadraticCurveTo(nx - w * 1.25, ny + len * 0.52, nx, ny + len);
-  ctx.quadraticCurveTo(nx + w * 1.25, ny + len * 0.52, nx + w * 0.55, ny);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  const plumeImg = getPlumeSprite();
 
-  // Mid glowing white plume
-  const midLen = len * 0.72;
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.44 * fireRamp})`;
-  ctx.beginPath();
-  ctx.moveTo(nx - w * 0.42, ny);
-  ctx.quadraticCurveTo(nx - w * 0.72, ny + midLen * 0.58, nx, ny + midLen);
-  ctx.quadraticCurveTo(nx + w * 0.72, ny + midLen * 0.58, nx + w * 0.42, ny);
-  ctx.closePath();
-  ctx.fill();
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = clamp(fireRamp * 0.96, 0, 1);
 
-  // Soft bright supersonic core
-  const coreLen = len * 0.48;
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.88 * fireRamp})`;
-  ctx.beginPath();
-  ctx.moveTo(nx - w * 0.30, ny);
-  ctx.quadraticCurveTo(nx - w * 0.42, ny + coreLen * 0.65, nx, ny + coreLen);
-  ctx.quadraticCurveTo(nx + w * 0.42, ny + coreLen * 0.65, nx + w * 0.30, ny);
-  ctx.closePath();
-  ctx.fill();
+  // Primary roaring feathered volumetric plasma jet
+  ctx.drawImage(plumeImg, nx - drawW * 0.5, ny - drawH * 0.03, drawW, drawH);
 
-  // Pulsing monochrome Mach diamond shock lozenges inside Vikas core plume
+  // Secondary turbulent shimmering inner core (subtle cross-flutter for living fire texture)
+  const coreFlicker = reducedMotion ? 1 : 0.88 + Math.sin(t * 82 + nx * 0.7) * 0.12;
+  ctx.globalAlpha = clamp(fireRamp * 0.72 * coreFlicker, 0, 1);
+  ctx.drawImage(
+    plumeImg,
+    nx - drawW * 0.28,
+    ny - drawH * 0.02,
+    drawW * 0.56,
+    drawH * 0.74
+  );
+
+  // Soft glowing incandescent Mach diamond shock nodes (NO hard black outlines!)
   if (withMachDiamonds && fireRamp > 0.25) {
-    const pulse = reducedMotion ? 1 : 0.85 + Math.sin(t * 78) * 0.15;
-    ctx.strokeStyle = 'rgba(24, 24, 27, 0.32)';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
-    ctx.lineWidth = 0.8;
+    const pulse = reducedMotion ? 1 : 0.86 + Math.sin(t * 74) * 0.14;
     for (let d = 0; d < 3; d++) {
-      const dy = ny + len * (0.15 + d * 0.14);
-      const dw = w * (0.30 - d * 0.06) * pulse;
-      const dh = len * (0.055 - d * 0.01) * pulse;
+      const dy = ny + length * (0.14 + d * 0.145) * turbLen;
+      const dw = width * (0.30 - d * 0.055) * pulse;
+      const dh = length * (0.048 - d * 0.008) * pulse;
+      ctx.fillStyle = `rgba(255, 255, 255, ${(0.82 - d * 0.18) * fireRamp})`;
       ctx.beginPath();
       ctx.moveTo(nx, dy - dh);
       ctx.lineTo(nx + dw, dy);
@@ -109,9 +188,10 @@ function drawLiveMonoPlume(
       ctx.lineTo(nx - dw, dy);
       ctx.closePath();
       ctx.fill();
-      ctx.stroke();
     }
   }
+
+  ctx.restore();
 }
 
 function drawMonoS200Booster(
@@ -134,20 +214,20 @@ function drawMonoS200Booster(
     drawLiveMonoPlume(ctx, 0, u * 0.20, bw * 1.55, u * 2.25, fireRamp, t, false, reducedMotion);
   }
 
-  // Animated post-separation residual burnout smoke rings drifting behind tumbling boosters
+  // Soft volumetric burnout smoke puffs drifting cleanly behind separating boosters (ZERO soap-bubble circles!)
   if (sepProgress > 0 && sepProgress < 1) {
-    const trailAlpha = (1 - sepProgress) * 0.55;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${trailAlpha})`;
-    ctx.fillStyle = `rgba(255, 255, 255, ${trailAlpha * 0.22})`;
-    ctx.lineWidth = 1;
-    for (let s = 0; s < 4; s++) {
-      const drift = reducedMotion ? 0 : ((t * 1.4 + s * 0.25) % 1) * 0.35;
-      const sy = u * (0.26 + (s * 0.32 + drift) + sepProgress * 0.45);
-      const sr = u * (0.10 + s * 0.07 + drift * 0.18);
-      ctx.beginPath();
-      ctx.arc(0, sy, sr, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+    const trailPuff = getTrailPuffSprite();
+    const trailAlpha = (1 - sepProgress) * 0.48;
+    for (let s = 0; s < 5; s++) {
+      const drift = reducedMotion ? 0 : ((t * 1.15 + s * 0.22) % 1) * 0.34;
+      const sy = u * (0.28 + s * 0.26 + drift + sepProgress * 0.42);
+      const sz = u * (0.28 + s * 0.14 + drift * 0.30);
+      ctx.save();
+      ctx.globalAlpha = trailAlpha * (1 - s * 0.16);
+      ctx.translate(((s % 2) - 0.5) * u * 0.08, sy);
+      ctx.rotate(s * 1.3 + t * 0.4);
+      ctx.drawImage(trailPuff, -sz * 0.5, -sz * 0.5, sz, sz);
+      ctx.restore();
     }
   }
 
@@ -240,7 +320,7 @@ function drawMonoS200Booster(
     ctx.stroke();
   }
 
-  // Aft Skirt & Nozzle Bell (matte graphite, soft rim)
+  // Aft Skirt & Nozzle Bell
   ctx.fillStyle = '#1f1f23';
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
   ctx.lineWidth = 0.85;
@@ -263,20 +343,24 @@ function drawMonoS200Booster(
   ctx.fill();
   ctx.stroke();
 
-  if (sepProgress > 0 && sepProgress < 0.75) {
-    const flash = Math.sin((sepProgress / 0.75) * Math.PI);
-    ctx.strokeStyle = `rgba(255, 255, 255, ${flash})`;
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.arc(0, topY + u * 0.06, u * (0.14 + flash * 0.22), 0, Math.PI * 2);
-    ctx.stroke();
+  // Crisp directional separation motor cold-gas puff shooting inward/upward (replaces fake target circle!)
+  if (sepProgress > 0.01 && sepProgress < 0.65) {
+    const puffBell = Math.sin((sepProgress / 0.65) * Math.PI);
+    const trailPuff = getTrailPuffSprite();
+    const rcsX = -side * (bw + u * (0.08 + sepProgress * 0.22));
+    const rcsY = topY + u * 0.08;
+    const rcsSize = u * (0.20 + sepProgress * 0.34);
+    ctx.save();
+    ctx.globalAlpha = puffBell * 0.65;
+    ctx.drawImage(trailPuff, rcsX - rcsSize * 0.5, rcsY - rcsSize * 0.5, rcsSize, rcsSize);
+    ctx.restore();
   }
 }
 
 /**
  * Pure monochrome Black & White LIVE 2.5D LVM3 Launch Vehicle:
- * Roaring turbulent flames, pulsing Mach diamonds, live nozzle spark streaks,
- * acoustic hull vibration, and high-speed climbing airflow streamlines!
+ * Taller, slimmer sleek silhouette, radiant volumetric fire plumes (zero hard outlines),
+ * zero shaking, smooth multi-phase booster sep & fairing clamshell split!
  */
 export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const {
@@ -303,12 +387,12 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const u = unit * camZoom;
 
   const basePadX = vehicleAnchorX - mouseX * 10;
-  let baseY = groundY - unit * 0.20;
+  let baseY = groundY - unit * 0.14;
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
   else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
-  // Smooth upward ascent glide during liftoff & climb (zero vibration/shaking anywhere!)
-  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.380, sp) * unit * 0.56 : 0;
+  // Smooth upward ascent glide with generous headroom below top HUD bar (zero shaking!)
+  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.380, sp) * unit * 0.32 : 0;
   baseY -= climbLift;
 
   const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.410, sp) * 0.14 : 0;
@@ -328,7 +412,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   if (sp >= 0.175 && sp < 0.405 && !reducedMotion) {
     const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.340, 0.405, sp));
     ctx.save();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.20 * speedIntensity})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.18 * speedIntensity})`;
     ctx.lineWidth = 1;
     for (let i = 0; i < 12; i++) {
       const sx = basePadX + ((i - 5.5) * u * 0.62);
@@ -372,19 +456,19 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const c25TopY = interTopY - c25H;
 
   // =========================================================================
-  // 1. LOWER ROCKET BODY + ROARING EXHAUST + LIVE SPARK STREAKS
+  // 1. LOWER ROCKET BODY + RADIANT VOLUMETRIC EXHAUST + LIVE SPARK STREAKS
   // =========================================================================
   ctx.save();
   ctx.globalAlpha = coreAlpha;
   ctx.translate(0, coreDropY);
   ctx.rotate(coreDropRot);
 
-  // Twin Core Vikas Roaring Plumes + Pulsing Mach Diamonds
+  // Twin Core Vikas Radiant Plumes + Glowing Mach Diamonds
   if (fireRamp > 0.01) {
     const thrustStretch = 1.0 + Math.min(scrollSpeed * 0.22, 0.42);
     const vikasSpread = coreR * 0.46;
-    drawLiveMonoPlume(ctx, -vikasSpread, u * 0.18, coreR * 0.78, u * 1.92 * thrustStretch, fireRamp, t, true, reducedMotion);
-    drawLiveMonoPlume(ctx, vikasSpread, u * 0.18, coreR * 0.78, u * 1.92 * thrustStretch, fireRamp, t, true, reducedMotion);
+    drawLiveMonoPlume(ctx, -vikasSpread, u * 0.18, coreR * 0.85, u * 2.05 * thrustStretch, fireRamp, t, true, reducedMotion);
+    drawLiveMonoPlume(ctx, vikasSpread, u * 0.18, coreR * 0.85, u * 2.05 * thrustStretch, fireRamp, t, true, reducedMotion);
   }
 
   // Live supersonic monochrome spark streaks streaming down from active engine nozzles
@@ -392,7 +476,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     const streaks = getExhaustStreaks();
     const boostersActive = boosterFireRamp > 0.1;
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.3;
+    ctx.lineWidth = 1.15;
     for (let i = 0; i < streaks.length; i++) {
       const p = streaks[i];
       if (!boostersActive && p.nozzle < 2) continue;
@@ -414,7 +498,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
         p.y += p.vy * u * dt * fireRamp;
       }
       const ratio = clamp(p.age / p.life, 0, 1);
-      ctx.globalAlpha = (1 - ratio) * 0.88 * fireRamp * coreAlpha;
+      ctx.globalAlpha = (1 - ratio) * 0.82 * fireRamp * coreAlpha;
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
       ctx.lineTo(p.x - p.vx * 2, p.y + p.len);
@@ -454,7 +538,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.fillStyle = '#c4c4cc';
     ctx.fillRect(-coreR, l110TopY, coreR * 0.92, l110H);
 
-    // Subtle minimal charcoal trim bands (no heavy blocky checkerboards)
     ctx.fillStyle = '#27272a';
     ctx.fillRect(-coreR, l110TopY + l110H * 0.72, coreR * 2, u * 0.042);
     ctx.strokeStyle = 'rgba(24, 24, 27, 0.16)';
@@ -488,7 +571,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.lineWidth = 0.9;
     ctx.strokeRect(-coreR, c25TopY, coreR * 2, c25H);
 
-    // Core Aft Boat-tail & Twin Vikas Nozzles (matte graphite, soft rim)
+    // Core Aft Boat-tail & Twin Vikas Nozzles
     ctx.fillStyle = '#1f1f23';
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
     ctx.lineWidth = 0.85;
@@ -546,25 +629,28 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     }
   }
 
-  // Breathing, Shimmering Prandtl-Glauert Max-Q Shock Cone (sp 0.250 -> 0.312)
+  // Soft feathery Prandtl-Glauert Max-Q Vapour Cone (sp 0.250 -> 0.312, zero hard polygon outline!)
   if (sp >= 0.250 && sp <= 0.312) {
     const qBell = Math.sin(((sp - 0.250) / 0.062) * Math.PI);
-    const shimmer = reducedMotion ? 1 : 1 + Math.sin(t * 54) * 0.05;
-    const coneY = c25TopY - fairingCylH * 0.2;
-    const coneW = u * 1.15 * shimmer;
-    const coneH = u * 0.56;
+    const shimmer = reducedMotion ? 1 : 1 + Math.sin(t * 54) * 0.04;
+    const coneY = c25TopY - fairingCylH * 0.12;
+    const coneW = u * 1.05 * shimmer;
+    const coneH = u * 0.46;
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.18 * qBell})`;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.68 * qBell})`;
-    ctx.lineWidth = 1.1;
+    ctx.save();
+    const qGrad = ctx.createLinearGradient(0, coneY - u * 0.08, 0, coneY + coneH * 0.85);
+    qGrad.addColorStop(0.0, `rgba(255, 255, 255, ${0.28 * qBell})`);
+    qGrad.addColorStop(0.55, `rgba(235, 235, 245, ${0.12 * qBell})`);
+    qGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = qGrad;
     ctx.beginPath();
-    ctx.moveTo(-coreR * 1.05, coneY - u * 0.12);
-    ctx.lineTo(-coneW * 0.82, coneY + coneH * 0.65);
-    ctx.quadraticCurveTo(0, coneY + coneH * 0.90, coneW * 0.82, coneY + coneH * 0.65);
-    ctx.lineTo(coreR * 1.05, coneY - u * 0.12);
+    ctx.moveTo(-coreR * 1.02, coneY - u * 0.06);
+    ctx.quadraticCurveTo(-coneW * 0.55, coneY + coneH * 0.22, -coneW * 0.84, coneY + coneH * 0.66);
+    ctx.quadraticCurveTo(0, coneY + coneH * 0.86, coneW * 0.84, coneY + coneH * 0.66);
+    ctx.quadraticCurveTo(coneW * 0.55, coneY + coneH * 0.22, coreR * 1.02, coneY - u * 0.06);
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
+    ctx.restore();
   }
 
   ctx.restore(); // End lower body

@@ -13,15 +13,28 @@ function drawMonoSolarSegment(
   ph: number,
   blueprintMode: boolean
 ): void {
-  ctx.fillStyle = blueprintMode ? 'rgba(255, 255, 255, 0.05)' : '#18181b';
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.15;
+  ctx.fillStyle = blueprintMode ? 'rgba(255, 255, 255, 0.05)' : '#141418';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.62)';
+  ctx.lineWidth = 0.95;
   ctx.fillRect(x, y, pw, ph);
+
+  if (!blueprintMode && pw > 8) {
+    // Subtle diagonal sunlight sheen across solar cells
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + pw * 0.62, y);
+    ctx.lineTo(x + pw * 0.26, y + ph);
+    ctx.lineTo(x, y + ph);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   ctx.strokeRect(x, y, pw, ph);
 
   // Crisp monochrome photovoltaic cell grid
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
-  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.24)';
+  ctx.lineWidth = 0.7;
   const cols = 4;
   const rows = 3;
   for (let c = 1; c < cols; c++) {
@@ -79,7 +92,7 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const camZoom =
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
   const u = unit * camZoom;
-  let rocketBaseY = groundY - unit * 0.20 - unit * 0.56;
+  let rocketBaseY = groundY - unit * 0.14 - unit * 0.32;
   if (cameraMode === 'BOOSTER') rocketBaseY += unit * 0.32;
   else if (cameraMode === 'CHASE') rocketBaseY -= unit * 0.22;
   const pitchRad = 0.14;
@@ -227,14 +240,14 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     ctx.strokeRect(-busW * 0.34, -busH * 0.34, busW * 0.68, busH * 0.68);
     ctx.restore();
   } else {
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#e4e4e7';
     ctx.fillRect(-busW * 0.5, -busH * 0.5, busW, busH);
-    ctx.fillStyle = '#d4d4d8';
+    ctx.fillStyle = '#c4c4cc';
     ctx.fillRect(-busW * 0.5, -busH * 0.5, busW * 0.48, busH);
 
     // Thermal foil diamond seam lines
-    ctx.strokeStyle = 'rgba(9, 9, 11, 0.35)';
-    ctx.lineWidth = 0.9;
+    ctx.strokeStyle = 'rgba(24, 24, 27, 0.24)';
+    ctx.lineWidth = 0.8;
     ctx.beginPath();
     ctx.moveTo(-busW * 0.5, 0);
     ctx.lineTo(0, -busH * 0.5);
@@ -243,25 +256,25 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     ctx.closePath();
     ctx.stroke();
 
-    // Crisp dark top & bottom bus collars + outline
-    ctx.fillStyle = '#09090b';
-    ctx.fillRect(-busW * 0.52, -busH * 0.52, busW * 1.04, s * 0.055);
-    ctx.fillRect(-busW * 0.52, busH * 0.5 - s * 0.035, busW * 1.04, s * 0.055);
-    ctx.strokeStyle = '#09090b';
-    ctx.lineWidth = 1.3;
+    // Sleek matte graphite top & bottom bus collars + soft hairline outline
+    ctx.fillStyle = '#1f1f23';
+    ctx.fillRect(-busW * 0.52, -busH * 0.52, busW * 1.04, s * 0.052);
+    ctx.fillRect(-busW * 0.52, busH * 0.5 - s * 0.032, busW * 1.04, s * 0.052);
+    ctx.strokeStyle = 'rgba(24, 24, 27, 0.42)';
+    ctx.lineWidth = 0.95;
     ctx.strokeRect(-busW * 0.5, -busH * 0.5, busW, busH);
 
     // Optical Star-Tracker Lens
-    ctx.fillStyle = '#09090b';
+    ctx.fillStyle = '#141418';
     ctx.beginPath();
     ctx.arc(0, -busH * 0.08, s * 0.105, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
+    ctx.lineWidth = 1.0;
     ctx.stroke();
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(s * 0.025, -busH * 0.10, s * 0.03, 0, Math.PI * 2);
+    ctx.arc(s * 0.025, -busH * 0.10, s * 0.028, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -269,15 +282,15 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const dishY = -busH * 0.5 - s * 0.18;
   const dishR = s * 0.42;
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(-s * 0.03, dishY, s * 0.06, s * 0.15);
+  ctx.fillStyle = '#d4d4dc';
+  ctx.fillRect(-s * 0.028, dishY, s * 0.056, s * 0.15);
 
   ctx.beginPath();
   ctx.ellipse(0, dishY, dishR, s * 0.14, 0, 0, Math.PI);
   ctx.closePath();
-  ctx.fillStyle = blueprintMode ? 'rgba(255,255,255,0.08)' : '#ffffff';
-  ctx.strokeStyle = blueprintMode ? '#ffffff' : '#09090b';
-  ctx.lineWidth = 1.25;
+  ctx.fillStyle = blueprintMode ? 'rgba(255,255,255,0.08)' : '#e4e4e7';
+  ctx.strokeStyle = blueprintMode ? '#ffffff' : 'rgba(24, 24, 27, 0.42)';
+  ctx.lineWidth = 0.95;
   ctx.fill();
   ctx.stroke();
 
