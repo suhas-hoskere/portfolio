@@ -105,18 +105,31 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 </div>
 
                 <p
-                  className={`text-sm sm:text-base lg:text-[17px] text-zinc-200 font-sans font-light leading-relaxed max-w-2xl ${enterCls}`}
+                  className={`text-[15px] sm:text-base text-zinc-300 font-space font-normal leading-[1.78] max-w-2xl ${enterCls}`}
                   style={{ animationDelay: '140ms' }}
                 >
-                  A <span className="text-white font-medium">passionate writer</span> crafting{' '}
-                  <span className="text-white font-medium">
+                  A{' '}
+                  <em
+                    className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
+                    style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
+                  >
+                    passionate writer
+                  </em>{' '}
+                  crafting{' '}
+                  <em
+                    className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
+                    style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
+                  >
                     poems, stories, lyrics, and raw reflections
-                  </span>{' '}
+                  </em>{' '}
                   in Kannada and English — exploring love, memory, and pain through words. Alongside
                   writing, an{' '}
-                  <span className="text-white font-medium">
+                  <em
+                    className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
+                    style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
+                  >
                     AI &amp; Machine Learning student at PES University
-                  </span>{' '}
+                  </em>{' '}
                   and open-source contributor building voice pipelines (Neural TTS, Moonshine,
                   Whisper), desktop utilities, and web apps.
                 </p>
