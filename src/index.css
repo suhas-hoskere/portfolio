@@ -58,17 +58,34 @@ html.lenis, html.lenis body {
   font-style: italic;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar (Pure Monochrome) */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #04050d;
+  background: #050505;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(244, 242, 237, 0.15);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #f97316;
+  background: #ffffff;
+}
+
+/* Hide native OS arrow on fine-pointer desktop devices so the vintage feather quill is the active cursor */
+@media (pointer: fine) {
+  html,
+  body,
+  a,
+  button,
+  [role="button"],
+  .cursor-pointer {
+    cursor: none !important;
+  }
+
+  input,
+  textarea {
+    cursor: text !important;
+  }
 }
