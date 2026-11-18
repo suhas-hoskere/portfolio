@@ -12,6 +12,7 @@ import {
   trackProjectViewed,
   trackScrollAndSection,
 } from './utils/visitorLogger';
+import { preloadMadhvaKB } from './utils/madhvaKB';
 
 // Lazy-load modals so their heavy DOM and icon sets are never loaded until opened
 const FlightMissionModal = lazy(() =>
@@ -73,9 +74,10 @@ export const App: React.FC = () => {
     setShowLoader(false);
   }, []);
 
-  // Start strictly anonymous, non-PII visitor & engagement logger (when configured)
+  // Start strictly anonymous, non-PII visitor & engagement logger + live MadhvaKB sync
   useEffect(() => {
-    void initVisitorAnalytics();
+    initVisitorAnalytics();
+    preloadMadhvaKB();
   }, []);
 
   // Gently auto-start ambient soundtrack on first user gesture

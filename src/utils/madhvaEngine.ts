@@ -8,6 +8,7 @@ import {
   STAGES,
   type ProjectData,
 } from '../data/portfolioData';
+import { getCustomKBEntries } from './madhvaKB';
 
 export type MadhvaSideEffect =
   | { type: 'goto'; stageIndex: number; label: string }
@@ -46,6 +47,7 @@ export type MadhvaKind =
   | 'help'
   | 'action'
   | 'thanks'
+  | 'custom-kb'
   | 'fallback';
 
 export interface MadhvaReply {
@@ -1074,6 +1076,12 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     return buildAboutReply();
   }
 
+  // Live Google Sheets Knowledge Base (`MadhvaKB` tab — zero-redeploy learned Q&As)
+  const kbMatch = matchCustomKB(text, tokens);
+  if (kbMatch) {
+    return kbMatch;
+  }
+
   // Graceful Fallback (Honest & helpful)
   return {
     kind: 'fallback',
@@ -1188,4 +1196,63 @@ function buildProjectDetailReply(project: ProjectData): MadhvaReply {
 
 export function getTelemetryStageName(stageIndex: number): string {
   return STAGES[stageIndex]?.stageName ?? 'Orbit';
+}
+
+function matchCustomKB(text: string, tokens: string[]): MadhvaReply | null {
+  const entries = getCustomKBEntries();
+  if (entries.length === 0) return null;
+
+  // Pass 1: Direct phrase / keyword / typo-tolerant fuzzy match
+  for (const entry of entries) {
+    if (hasAnyKeyword(text, tokens, entry.keywords)) {
+      return {
+        kind: 'custom-kb',
+        headline: entry.headline ?? 'MADHVA // ANSWER',
+        lines: entry.answer
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean),
+        suggestions: entry.suggestions ?? ['Who is Suhas?', 'Show his projects', 'Share a quote'],
+      };
+    }
+  }
+
+  // Pass 2: High word-overlap match for full natural-language questions pasted from the log
+  const queryWords = tokens.filter((t) => t.length >= 3);
+  if (queryWords.length >= 2) {
+    let bestScore = 0;
+    let bestEntry: (typeof entries)[number] | null = null;
+    for (const entry of entries) {
+      for (const kw of entry.keywords) {
+        const kwWords = normalize(kw)
+          .split(' ')
+          .filter((w) => w.length >= 3);
+        if (kwWords.length < 2) continue;
+        let hits = 0;
+        for (const w of kwWords) {
+          if (queryWords.some((qw) => qw === w || (qw.length >= 4 && editDistance(qw, w) <= 1))) {
+            hits++;
+          }
+        }
+        const score = hits / kwWords.length;
+        if (score >= 0.65 && score > bestScore) {
+          bestScore = score;
+          bestEntry = entry;
+        }
+      }
+    }
+    if (bestEntry) {
+      return {
+        kind: 'custom-kb',
+        headline: bestEntry.headline ?? 'MADHVA // ANSWER',
+        lines: bestEntry.answer
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean),
+        suggestions: bestEntry.suggestions ?? ['Who is Suhas?', 'Show his projects', 'Share a quote'],
+      };
+    }
+  }
+
+  return null;
 }
