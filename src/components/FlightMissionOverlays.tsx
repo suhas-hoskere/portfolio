@@ -67,7 +67,7 @@ export const PROJECTS: ProjectData[] = [
   {
     id: 'santypes',
     name: 'santypes',
-    title: 'Multi-Script Precision Typing Platform',
+    title: 'Typing Practice Platform',
     category: 'WEB PLATFORM // TYPESCRIPT',
     badge: 'Live App',
     description:
