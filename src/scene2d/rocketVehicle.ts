@@ -403,8 +403,6 @@ export function getRocketPose(
 export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const {
     ctx,
-    w,
-    h,
     sp,
     scrollSpeed,
     t,
@@ -439,26 +437,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     isBurning && sp < 0.325
       ? clamp((sp - 0.035) / 0.025, 0, 1) * (1 - smoothstep(0.298, 0.322, sp))
       : 0;
-
-  // High-speed atmospheric climb streamlines rushing downward past rocket (Step 04 -> Stage 01)
-  if (sp >= 0.175 && sp < 0.405 && !reducedMotion) {
-    const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.340, 0.405, sp));
-    ctx.save();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.18 * speedIntensity})`;
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 12; i++) {
-      const sx = basePadX + ((i - 5.5) * u * 0.62);
-      if (sx < 0 || sx > w) continue;
-      const cycle = (t * (2.6 + (i % 3) * 0.8) + i * 0.37) % 1;
-      const sy = cycle * h;
-      const len = 28 + (i % 4) * 18;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(sx, sy + len);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
 
   // Slow, graceful multi-step separation:
   // 1) Fairing clamshells peel open slowly across 0.395 -> 0.515 (12% scroll span!)
@@ -659,30 +637,6 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
         ctx.restore();
       }
     }
-  }
-
-  // Soft feathery Prandtl-Glauert Max-Q Vapour Cone (sp 0.250 -> 0.312, zero hard polygon outline!)
-  if (sp >= 0.250 && sp <= 0.312) {
-    const qBell = Math.sin(((sp - 0.250) / 0.062) * Math.PI);
-    const shimmer = reducedMotion ? 1 : 1 + Math.sin(t * 54) * 0.04;
-    const coneY = c25TopY - fairingCylH * 0.12;
-    const coneW = u * 1.05 * shimmer;
-    const coneH = u * 0.46;
-
-    ctx.save();
-    const qGrad = ctx.createLinearGradient(0, coneY - u * 0.08, 0, coneY + coneH * 0.85);
-    qGrad.addColorStop(0.0, `rgba(255, 255, 255, ${0.28 * qBell})`);
-    qGrad.addColorStop(0.55, `rgba(235, 235, 245, ${0.12 * qBell})`);
-    qGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = qGrad;
-    ctx.beginPath();
-    ctx.moveTo(-coreR * 1.02, coneY - u * 0.06);
-    ctx.quadraticCurveTo(-coneW * 0.55, coneY + coneH * 0.22, -coneW * 0.84, coneY + coneH * 0.66);
-    ctx.quadraticCurveTo(0, coneY + coneH * 0.86, coneW * 0.84, coneY + coneH * 0.66);
-    ctx.quadraticCurveTo(coneW * 0.55, coneY + coneH * 0.22, coreR * 1.02, coneY - u * 0.06);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
   }
 
   ctx.restore(); // End lower body

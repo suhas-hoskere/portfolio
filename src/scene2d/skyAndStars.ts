@@ -1,6 +1,5 @@
 import {
   type Scene2DFrameContext,
-  clamp,
   lerp,
   smoothstep,
   mulberry32,
@@ -118,7 +117,7 @@ function getSunSprite(): HTMLCanvasElement {
  * and luminous monochrome Sun.
  */
 export function renderSkyAndStars(frame: Scene2DFrameContext): void {
-  const { ctx, w, h, sp, t, scrollSpeed, mouseX, mouseY, reducedMotion } = frame;
+  const { ctx, w, h, sp, t, mouseX, mouseY, reducedMotion } = frame;
 
   // 1. Crisp monochrome background (subtle dark charcoal at ground zero -> pure obsidian in space, zero grid)
   const spaceBlend = smoothstep(0.16, 0.36, sp);
@@ -126,13 +125,10 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   ctx.fillStyle = `rgb(${bgLum},${bgLum},${bgLum + 1})`;
   ctx.fillRect(0, 0, w, h);
 
-  // 2. Crisp monochrome starfield with gentle subtle atmospheric twinkle
+  // 2. Crisp monochrome starfield with gentle subtle twinkle (clean pinpoints, zero rain/warp streaks!)
   const starVis = lerp(0.24, 1.0, smoothstep(0.14, 0.34, sp));
   const stars = getStars();
   const driftY = sp * h * 1.45;
-  const warpLen = reducedMotion
-    ? 0
-    : clamp(scrollSpeed, 0, 3.0) * 12 * smoothstep(0.24, 0.38, sp);
 
   ctx.fillStyle = '#ffffff';
   ctx.strokeStyle = '#ffffff';
@@ -148,24 +144,16 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
     const py = ((s.ny * h + driftY * s.depth - mouseY * 7 * s.depth) % h + h) % h;
 
     ctx.globalAlpha = alpha;
-    if (warpLen > 2.5) {
-      ctx.lineWidth = 1;
+    ctx.fillRect(px | 0, py | 0, s.size, s.size);
+    if (s.bright && sp > 0.28) {
+      ctx.globalAlpha = alpha * 0.36;
+      ctx.lineWidth = 0.75;
       ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(px, py - warpLen * s.depth);
+      ctx.moveTo(px - 5.5, py + 1);
+      ctx.lineTo(px + 7.5, py + 1);
+      ctx.moveTo(px + 1, py - 5.5);
+      ctx.lineTo(px + 1, py + 7.5);
       ctx.stroke();
-    } else {
-      ctx.fillRect(px | 0, py | 0, s.size, s.size);
-      if (s.bright && sp > 0.28) {
-        ctx.globalAlpha = alpha * 0.36;
-        ctx.lineWidth = 0.75;
-        ctx.beginPath();
-        ctx.moveTo(px - 5.5, py + 1);
-        ctx.lineTo(px + 7.5, py + 1);
-        ctx.moveTo(px + 1, py - 5.5);
-        ctx.lineTo(px + 1, py + 7.5);
-        ctx.stroke();
-      }
     }
   }
   ctx.globalAlpha = 1;
