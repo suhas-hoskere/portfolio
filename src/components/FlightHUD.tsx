@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VolumeX, ChevronDown, Rocket, Terminal } from 'lucide-react';
+import { VolumeX, ChevronDown, ArrowUp, ArrowDown, Rocket, Terminal } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
 export interface StageWaypoint {
@@ -251,6 +251,21 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
           </div>
         </div>
       )}
+
+      {/* ===== MINIMAL GO TO TOP / GO TO BOTTOM ARROW BUTTON ===== */}
+      <button
+        type="button"
+        onClick={() => jumpToIndex(scrollProgress >= 0.5 ? 0 : STAGES.length - 1)}
+        aria-label={scrollProgress >= 0.5 ? 'Go to top' : 'Go to bottom'}
+        title={scrollProgress >= 0.5 ? 'Go to top' : 'Go to bottom'}
+        className="absolute bottom-4 sm:bottom-5 right-3.5 sm:right-5 pointer-events-auto w-9 h-9 rounded-full bg-[#050505]/95 border border-white/25 hover:bg-white hover:text-black hover:border-white text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.75)] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+      >
+        {scrollProgress >= 0.5 ? (
+          <ArrowUp className="w-4 h-4" />
+        ) : (
+          <ArrowDown className="w-4 h-4" />
+        )}
+      </button>
     </header>
   );
 });
