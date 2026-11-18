@@ -157,7 +157,7 @@ export const PROJECTS: ProjectData[] = [
     metrics: [
       { label: 'Scripts', value: 'EN · KN · HI' },
       { label: 'Runtime', value: '100% Local' },
-      { label: 'Quality', value: 'Vitest + Oxlint' },
+      { label: 'Core Stack', value: 'TypeScript · Vite' },
     ],
     tags: ['TypeScript', 'Vite', 'Indic Graphemes', 'Vitest', 'Privacy-First'],
     architecture: [
@@ -170,7 +170,6 @@ export const PROJECTS: ProjectData[] = [
       'Vite',
       'Three.js',
       'Vitest',
-      'Oxlint',
       '@fontsource/noto-sans-kannada',
       '@fontsource/noto-sans-devanagari',
     ],
