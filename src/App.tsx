@@ -238,8 +238,11 @@ export const App: React.FC = () => {
 
   const handleJumpToStage = (fraction: number) => {
     if (!trackRef.current) return;
-    const maxScroll = trackRef.current.scrollHeight - window.innerHeight;
-    animateScrollTo(fraction * maxScroll, 1100);
+    const maxScroll = Math.max(trackRef.current.scrollHeight - window.innerHeight, 1);
+    const currentFraction = (window.scrollY || window.pageYOffset || 0) / maxScroll;
+    const distance = Math.abs(fraction - currentFraction);
+    const durationMs = Math.max(520, Math.min(1150, Math.round(480 + distance * 720)));
+    animateScrollTo(fraction * maxScroll, durationMs);
   };
 
   const handleLaunch = () => {

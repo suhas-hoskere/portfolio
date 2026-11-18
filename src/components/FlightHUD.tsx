@@ -1,21 +1,23 @@
 import React, { useState, useMemo } from 'react';
-import { VolumeX, ChevronDown, Rocket, Terminal, Layers, Camera } from 'lucide-react';
+import { VolumeX, ChevronUp, ChevronDown, Rocket, Terminal, Layers, Camera } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
 export interface StageWaypoint {
   id: string;
+  code: string;
+  shortLabel: string;
   stageName: string;
   altitude: string;
   scrollFraction: number;
 }
 
 export const STAGES: StageWaypoint[] = [
-  { id: 'pad', stageName: 'Launch Pad', altitude: '0 km (Ground Zero)', scrollFraction: 0.0 },
-  { id: 'ascent', stageName: 'Outer Atmosphere', altitude: '65 km (Ascent)', scrollFraction: 0.34 },
-  { id: 'orbit', stageName: 'Satellite Deploy', altitude: '420 km (LEO)', scrollFraction: 0.60 },
-  { id: 'missions', stageName: 'Orbital Missions', altitude: '420 km (Payload)', scrollFraction: 0.74 },
-  { id: 'heritage', stageName: 'Karnataka Pass', altitude: '420 km (BLR Track)', scrollFraction: 0.85 },
-  { id: 'signal', stageName: 'Orbital Uplink', altitude: '420 km (Signal Lock)', scrollFraction: 0.95 },
+  { id: 'pad', code: '00', shortLabel: 'Home', stageName: 'Launch Pad', altitude: '0 km // Ground Zero', scrollFraction: 0.0 },
+  { id: 'ascent', code: '01', shortLabel: 'Origins', stageName: 'Davanagere Origins', altitude: '65 km // Ascent', scrollFraction: 0.31 },
+  { id: 'orbit', code: '02', shortLabel: 'Bangalore', stageName: 'Bangalore & PES', altitude: '420 km // LEO Orbit', scrollFraction: 0.62 },
+  { id: 'missions', code: '03', shortLabel: 'Projects', stageName: 'Exploration Missions', altitude: '420 km // Payload Ops', scrollFraction: 0.75 },
+  { id: 'heritage', code: '04', shortLabel: 'Heritage', stageName: 'Kannada Heritage', altitude: '420 km // BLR Pass', scrollFraction: 0.85 },
+  { id: 'signal', code: '05', shortLabel: 'Uplink', stageName: 'Orbital Uplink', altitude: '420 km // Signal Lock', scrollFraction: 0.98 },
 ];
 
 interface FlightHUDProps {
@@ -147,13 +149,24 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
     }
   }, [scrollProgress]);
 
+  const jumpToIndex = (idx: number) => {
+    const clamped = Math.min(Math.max(idx, 0), STAGES.length - 1);
+    cosmicAudio.playTelemetryChirp(1120 + clamped * 55, 0.04);
+    onJumpToStage(STAGES[clamped].scrollFraction);
+  };
+
   return (
     <header className="fixed inset-0 pointer-events-none z-30 select-none">
       {/* ===== PURE MONOCHROME TOP BAR ===== */}
       <div className="absolute top-0 left-0 right-0 p-3.5 sm:p-6 flex items-center justify-between gap-2">
-        {/* Identity */}
-        <div className="flex items-center gap-2.5 pointer-events-auto min-w-0">
-          <div className="flex items-center justify-center w-7 h-7 rounded-md bg-white text-black shrink-0">
+        {/* Identity (click to return to Launch Pad) */}
+        <button
+          type="button"
+          onClick={() => jumpToIndex(0)}
+          className="flex items-center gap-2.5 pointer-events-auto min-w-0 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/60 rounded-lg"
+          aria-label="Return to Launch Pad"
+        >
+          <div className="flex items-center justify-center w-7 h-7 rounded-md bg-white text-black shrink-0 transition-transform duration-200 group-hover:scale-105">
             <Rocket className="w-3.5 h-3.5" />
           </div>
           <div className="min-w-0">
@@ -169,7 +182,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
               PES University // Bangalore
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Flight Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
@@ -259,63 +272,156 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         </div>
       </div>
 
-      {/* ===== VERTICAL FLIGHT RAIL (Right Margin, Desktop & Tablet) ===== */}
+      {/* ===== MOBILE QUICK-PAGE NAVIGATION BAR (< 640px) ===== */}
       <nav
-        aria-label="Flight trajectory navigation"
-        className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 hidden sm:flex flex-col items-center pointer-events-auto py-3 px-1.5"
+        aria-label="Mobile page navigation"
+        className="absolute top-[56px] left-3 right-3 flex sm:hidden justify-center pointer-events-none"
       >
-        <div className="relative flex flex-col items-center justify-between h-44">
-          <div className="absolute top-1 bottom-1 w-[1px] bg-white/15" />
-          <div
-            className="absolute w-[2px] bg-white"
-            style={{
-              top: '4px',
-              height: `${Math.min(Math.max((scrollProgress / 0.95) * 100, 0), 100)}%`,
-            }}
-          />
-
+        <div className="pointer-events-auto inline-flex items-center gap-0.5 p-1 rounded-lg bg-[#09090b]/92 border border-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
           {STAGES.map((s, idx) => {
             const isActive = idx === activeStageIndex;
-            const isHovered = hoveredIdx === idx;
+            const isPassed = idx < activeStageIndex;
             return (
-              <div
+              <button
                 key={s.id}
-                className="relative flex items-center justify-center cursor-pointer py-1"
-                onMouseEnter={() => setHoveredIdx(idx)}
-                onMouseLeave={() => setHoveredIdx(null)}
-                onClick={() => {
-                  cosmicAudio.playTelemetryChirp(1200, 0.04);
-                  onJumpToStage(s.scrollFraction);
-                }}
+                type="button"
+                onClick={() => jumpToIndex(idx)}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={`Navigate to ${s.stageName}`}
+                className={`px-2 py-1 rounded-md font-mono text-[10px] transition-colors cursor-pointer flex items-center gap-1 ${
+                  isActive
+                    ? 'bg-white text-black font-semibold'
+                    : isPassed
+                      ? 'text-zinc-200 hover:bg-white/10'
+                      : 'text-zinc-500 hover:text-white hover:bg-white/10'
+                }`}
               >
-                {(isHovered || (isActive && hoveredIdx === null)) && (
-                  <div
-                    className={`absolute right-6 px-2.5 py-1 rounded-md border text-right whitespace-nowrap pointer-events-none ${
-                      isActive
-                        ? 'bg-[#09090b]/95 border-white/40 text-white'
-                        : 'bg-[#09090b]/95 border-white/15 text-zinc-300'
-                    }`}
-                  >
-                    <div className="text-[10px] font-space font-semibold tracking-tight">
-                      {s.stageName}
-                    </div>
-                    <div className="text-[9px] font-mono text-zinc-400">
-                      {s.altitude}
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  aria-label={`Jump to ${s.stageName}`}
-                  className={`rounded-full transition-transform cursor-pointer ${
-                    isActive
-                      ? 'w-2.5 h-2.5 bg-white ring-4 ring-white/20'
-                      : 'w-2 h-2 bg-zinc-600 hover:bg-white'
-                  }`}
-                />
-              </div>
+                <span>{s.code}</span>
+                {isActive && <span className="font-space tracking-tight">{s.shortLabel}</span>}
+              </button>
             );
           })}
+        </div>
+      </nav>
+
+      {/* ===== CLICKABLE PAGE NAVIGATION SIDEBAR (Right Edge, Tablet & Desktop) ===== */}
+      <nav
+        aria-label="Page navigation sidebar"
+        className="absolute right-3 sm:right-4 lg:right-5 top-1/2 -translate-y-1/2 hidden sm:flex flex-col pointer-events-auto"
+      >
+        <div className="bg-[#09090b]/92 border border-white/15 hover:border-white/30 rounded-xl p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.65)] transition-colors duration-200">
+          {/* Header Counter (Desktop) */}
+          <div className="hidden lg:flex items-center justify-between px-2 pt-1 pb-1.5 mb-1 border-b border-white/10">
+            <span className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 uppercase">
+              NAV
+            </span>
+            <span className="text-[9px] font-mono text-white font-semibold tabular-nums">
+              {String(activeStageIndex + 1).padStart(2, '0')}/{String(STAGES.length).padStart(2, '0')}
+            </span>
+          </div>
+
+          {/* Previous Page Stepper */}
+          <button
+            type="button"
+            onClick={() => jumpToIndex(activeStageIndex - 1)}
+            disabled={activeStageIndex === 0}
+            aria-label="Previous page"
+            title="Previous page"
+            className="w-full py-1 mb-1 flex items-center justify-center rounded-md text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+          >
+            <ChevronUp className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Clickable Page Links + Live Progress Spine */}
+          <div className="relative flex flex-col gap-0.5 pr-2">
+            {/* Background & Active Vertical Flight Progress Track */}
+            <div className="absolute right-0.5 top-2 bottom-2 w-[2px] rounded-full bg-white/12 overflow-hidden pointer-events-none">
+              <div
+                className="w-full bg-white rounded-full"
+                style={{
+                  height: `${Math.min(Math.max((scrollProgress / 0.98) * 100, 0), 100)}%`,
+                }}
+              />
+            </div>
+
+            {STAGES.map((s, idx) => {
+              const isActive = idx === activeStageIndex;
+              const isPassed = idx < activeStageIndex;
+              const isHovered = hoveredIdx === idx;
+              return (
+                <div
+                  key={s.id}
+                  className="relative flex items-center"
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                >
+                  {/* Hover Detail Preview Pill (Appears cleanly to the left of sidebar) */}
+                  {isHovered && (
+                    <div className="absolute right-full mr-2.5 px-2.5 py-1.5 rounded-lg bg-[#09090b]/95 border border-white/25 text-right whitespace-nowrap pointer-events-none shadow-[0_8px_24px_rgba(0,0,0,0.7)]">
+                      <div className="text-[11px] font-space font-semibold text-white tracking-tight">
+                        {s.stageName}
+                      </div>
+                      <div className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
+                        {s.altitude}
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => jumpToIndex(idx)}
+                    aria-current={isActive ? 'page' : undefined}
+                    aria-label={`Jump to ${s.stageName}`}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white ${
+                      isActive
+                        ? 'bg-white text-black font-semibold'
+                        : isPassed
+                          ? 'text-zinc-200 hover:bg-white/10 hover:text-white'
+                          : 'text-zinc-400 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {/* Status Indicator Dot */}
+                    <span
+                      aria-hidden="true"
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+                        isActive
+                          ? 'bg-black'
+                          : isPassed
+                            ? 'bg-white/80'
+                            : 'bg-zinc-600'
+                      }`}
+                    />
+
+                    {/* Stage Number */}
+                    <span
+                      className={`text-[10px] font-mono tabular-nums ${
+                        isActive ? 'text-black/75' : 'text-zinc-500'
+                      }`}
+                    >
+                      {s.code}
+                    </span>
+
+                    {/* Page Label (Always visible on desktop lg+) */}
+                    <span className="hidden lg:inline text-[11px] font-space tracking-tight pr-1 whitespace-nowrap">
+                      {s.shortLabel}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Next Page Stepper */}
+          <button
+            type="button"
+            onClick={() => jumpToIndex(activeStageIndex + 1)}
+            disabled={activeStageIndex === STAGES.length - 1}
+            aria-label="Next page"
+            title="Next page"
+            className="w-full py-1 mt-1 flex items-center justify-center rounded-md text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+          >
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
         </div>
       </nav>
 
