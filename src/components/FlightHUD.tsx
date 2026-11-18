@@ -14,9 +14,9 @@ export interface StageWaypoint {
 export const STAGES: StageWaypoint[] = [
   { id: 'pad', code: '00', shortLabel: 'Home', stageName: 'Launch Pad', altitude: '0 km // Ground Zero', scrollFraction: 0.0 },
   { id: 'ascent', code: '01', shortLabel: 'Origins', stageName: 'Davanagere Origins', altitude: '65 km // Ascent', scrollFraction: 0.31 },
-  { id: 'orbit', code: '02', shortLabel: 'Bangalore', stageName: 'Bangalore & PES', altitude: '420 km // LEO Orbit', scrollFraction: 0.62 },
-  { id: 'missions', code: '03', shortLabel: 'Projects', stageName: 'Exploration Missions', altitude: '420 km // Payload Ops', scrollFraction: 0.75 },
-  { id: 'heritage', code: '04', shortLabel: 'Heritage', stageName: 'Kannada Heritage', altitude: '420 km // BLR Pass', scrollFraction: 0.85 },
+  { id: 'orbit', code: '02', shortLabel: 'Bangalore', stageName: 'Bangalore & PES', altitude: '420 km // LEO Orbit', scrollFraction: 0.56 },
+  { id: 'missions', code: '03', shortLabel: 'Projects', stageName: 'Exploration Missions', altitude: '420 km // Payload Ops', scrollFraction: 0.70 },
+  { id: 'heritage', code: '04', shortLabel: 'Heritage', stageName: 'Kannada Heritage', altitude: '420 km // BLR Pass', scrollFraction: 0.83 },
   { id: 'signal', code: '05', shortLabel: 'Uplink', stageName: 'Orbital Uplink', altitude: '420 km // Signal Lock', scrollFraction: 0.98 },
 ];
 
@@ -82,17 +82,14 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: `${(101.3 - climbFrac * 48).toFixed(1)} KPA`,
         gForce: `${(1.62 + climbFrac * 0.42).toFixed(2)} G`,
       };
-    } else if (sp < 0.560) {
-      const ascFrac = (sp - 0.220) / 0.340;
-      const isBoosterSep = sp >= 0.280 && sp < 0.385;
-      const isFairingSep = sp >= 0.485;
-      const status = isFairingSep
-        ? 'STAGE 01 // FAIRING JETTISON'
-        : isBoosterSep
-          ? 'STAGE 01 // S200 BOOSTER SEP'
-          : sp < 0.280
-            ? 'STAGE 01 // STRATOSPHERE CLIMB'
-            : 'STAGE 01 // CORE ORBITAL INSERTION';
+    } else if (sp < 0.480) {
+      const ascFrac = (sp - 0.220) / 0.260;
+      const isBoosterSep = sp >= 0.280 && sp < 0.390;
+      const status = isBoosterSep
+        ? 'STAGE 01 // S200 BOOSTER SEP'
+        : sp < 0.280
+          ? 'STAGE 01 // STRATOSPHERE CLIMB'
+          : 'STAGE 01 // CORE ORBITAL INSERTION';
       return {
         status,
         altitude: `${Math.round(15 + ascFrac * 405)} KM`,
@@ -100,11 +97,11 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: `${(53.3 * Math.exp(-ascFrac * 5.2)).toFixed(2)} KPA`,
         gForce: `${(2.05 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
       };
-    } else if (sp < 0.700) {
+    } else if (sp < 0.640) {
       const status =
-        sp < 0.610
-          ? 'STAGE 02 // STAGE SEP & SATELLITE RELEASE'
-          : sp < 0.680
+        sp < 0.540
+          ? 'STAGE 02 // FAIRING JETTISON & RELEASE'
+          : sp < 0.610
             ? 'STAGE 02 // SOLAR ARRAY DEPLOY'
             : 'STAGE 02 // SATELLITE DEPLOYED (LEO)';
       return {
@@ -114,7 +111,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
-    } else if (sp < 0.810) {
+    } else if (sp < 0.770) {
       return {
         status: 'STAGE 03 // ORBITAL PAYLOAD OPS',
         altitude: '420 KM',
@@ -122,7 +119,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
-    } else if (sp < 0.900) {
+    } else if (sp < 0.890) {
       return {
         status: 'STAGE 04 // BANGALORE GROUND PASS',
         altitude: '420 KM',

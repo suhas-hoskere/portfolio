@@ -106,12 +106,12 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
 
   // Realistic distance scale:
   // - Emerges tiny out of the distant horizontal nose fairing (0.08) and cruises at a realistic compact
-  //   orbital scale (0.38) through Stages 02–04 (0.51 -> 0.86)
-  // - Enlarges dramatically ONLY during the final 2–3 scrolls (0.86 -> 0.98) for the Earth-facing RF downlink finale!
+  //   orbital scale (0.38) through Stages 02–04 (0.51 -> 0.88)
+  // - Enlarges dramatically ONLY during the final 2–3 scrolls (0.88 -> 0.99) for the Earth-facing RF downlink finale!
   const scaleEase = Math.pow(floatOut, 1.35);
   let satScale = lerp(0.08, 0.38, scaleEase);
-  if (sp >= 0.86) {
-    const finaleZoom = easeOutCubic(smoothstep(0.86, 0.98, sp));
+  if (sp >= 0.88) {
+    const finaleZoom = easeOutCubic(smoothstep(0.88, 0.99, sp));
     satScale = lerp(0.38, 0.95, finaleZoom);
   }
   if (cameraMode === 'BOOSTER') satScale *= 1.16;
@@ -145,7 +145,7 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   //    (with solar array wings perfectly parallel to Earth's curved horizon!)
   const nadirAttitude = zenithRad + Math.PI * 1.5;
 
-  const nadirSlew = easeOutCubic(smoothstep(0.855, 0.945, sp));
+  const nadirSlew = easeOutCubic(smoothstep(0.875, 0.955, sp));
   const targetAttitude = lerp(tangentAttitude, nadirAttitude, nadirSlew);
   const bankRad =
     lerp(pitchRad, targetAttitude, floatEase) +
@@ -160,10 +160,10 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const busH = s * 0.82;
 
   // 1A. STAGE 05 LIVE DISH-TO-BANGALORE CARRIER DOWNLINK BEAM (world-space lock to BLR beacon!)
-  if (sp >= 0.905) {
+  if (sp >= 0.895) {
     const blr = getBlrGroundStationPos(frame);
     if (blr.visible) {
-      const lockAlpha = smoothstep(0.905, 0.945, sp) * revealAlpha;
+      const lockAlpha = smoothstep(0.895, 0.940, sp) * revealAlpha;
       const dishTipLocalY = -busH * 0.5 - s * 0.42;
       // Convert dish tip from satellite local space to world coordinates
       const dishWorldX = cx - Math.sin(bankRad) * dishTipLocalY;

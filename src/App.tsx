@@ -17,10 +17,10 @@ const MissionTerminalModal = lazy(() =>
 // STAGE_CONFIG removed
 
 function stageForProgress(p: number): number {
-  if (p >= 0.90) return 5;
-  if (p >= 0.81) return 4;
-  if (p >= 0.70) return 3;
-  if (p >= 0.56) return 2;
+  if (p >= 0.89) return 5;
+  if (p >= 0.77) return 4;
+  if (p >= 0.64) return 3;
+  if (p >= 0.48) return 2;
   if (p >= 0.22) return 1;
   return 0;
 }
@@ -305,7 +305,7 @@ export const App: React.FC = () => {
   return (
     <div
       ref={trackRef}
-      className="relative min-h-[1200vh] bg-[#050505] text-white overflow-x-hidden selection:bg-white selection:text-black"
+      className="relative min-h-[580vh] bg-[#050505] text-white overflow-x-hidden selection:bg-white selection:text-black"
     >
       {/* Pure Monochrome Liftoff Loading Screen (unmounts cleanly after launch) */}
       {showLoader && <MonochromeLiftoffLoader onComplete={handleLoaderComplete} />}
