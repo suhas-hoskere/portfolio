@@ -346,7 +346,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 {/* Subtle Club Contribution Note (below the writings card — in Kannada) */}
                 <div className="px-4 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-kannada">
                   <span className="text-zinc-300">
-                    <span className="text-white font-medium">ಕನ್ನಡ ಕೂಟ ಕ್ಲಬ್‌ನಲ್ಲಿ</span> ಬರಹಗಾರನಾಗಿಯೂ ಕೊಡುಗೆ ನೀಡುತ್ತಿದ್ದೇನೆ
+                    <span className="text-white font-medium">ಕನ್ನಡ ಕೂಟ ಕ್ಲಬ್‌ನಲ್ಲಿ</span> ಬರಹಗಾರನಾಗಿ
                   </span>
                   <span className="text-[11px] text-zinc-400">
                     ಪಿಇಎಸ್ ವಿಶ್ವವಿದ್ಯಾಲಯ · ಇಸಿ ಕ್ಯಾಂಪಸ್
