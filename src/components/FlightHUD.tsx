@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { VolumeX, ChevronDown, ArrowUp, ArrowDown, Rocket, Terminal } from 'lucide-react';
+import { VolumeX, ChevronDown, ArrowUp, ArrowDown, Terminal } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 import { STAGES } from '../data/portfolioData';
+import { BrandLogo } from './Icons';
 
 interface FlightHUDProps {
   scrollProgress: number;
@@ -41,9 +42,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
           className="flex items-center gap-2.5 pointer-events-auto min-w-0 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/60 rounded-lg px-2.5 py-1.5 bg-[#050505]/95 border border-white/15"
           aria-label="Return to Launch Pad"
         >
-          <div className="flex items-center justify-center w-7 h-7 rounded-md bg-white text-black shrink-0 transition-transform duration-200 group-hover:scale-105">
-            <Rocket className="w-3.5 h-3.5" />
-          </div>
+          <BrandLogo className="w-8 h-8 shrink-0 transition-transform duration-200 group-hover:scale-105" />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-kannada text-sm sm:text-base font-bold text-white tracking-tight truncate">

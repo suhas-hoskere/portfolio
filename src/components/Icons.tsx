@@ -1,5 +1,32 @@
 import React from 'react';
 
+/** Suhas Hoskere personal monogram: Quill Ascent (Launching Feather-Nib Rocket Crest) */
+export const BrandLogo: React.FC<{ className?: string }> = ({ className = 'w-8 h-8' }) => (
+  <svg
+    viewBox="0 0 64 64"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    aria-hidden="true"
+  >
+    <circle cx="32" cy="32" r="29.5" fill="#050505" stroke="#ffffff" strokeOpacity="0.42" strokeWidth="2.2" />
+    <circle cx="32" cy="32" r="25" stroke="#ffffff" strokeWidth="0.95" strokeOpacity="0.28" strokeDasharray="3 3" />
+    <path d="M 19 15 L 20.1 17.9 L 23 19 L 20.1 20.1 L 19 23 L 17.9 20.1 L 15 19 L 17.9 17.9 Z" fill="#ffffff" />
+    <g transform="translate(32 32) rotate(42) translate(-32 -32)">
+      <path
+        d="M 32 10.5 C 36.8 18 41.2 25.5 41.2 33.5 L 37.5 41.5 L 26.5 41.5 L 22.8 33.5 C 22.8 29.8 24.1 26.2 25.8 23.2 L 28.4 24.2 L 26.6 20.4 C 28.3 17.1 30.2 13.8 32 10.5 Z"
+        fill="#ffffff"
+      />
+      <line x1="32" y1="10.2" x2="32" y2="28.5" stroke="#050505" strokeWidth="2.0" strokeLinecap="round" />
+      <circle cx="32" cy="30.2" r="3.1" fill="#050505" />
+      <rect x="26.5" y="43.8" width="11" height="3.2" rx="1.2" fill="#ffffff" />
+      <line x1="32" y1="49.5" x2="32" y2="55.5" stroke="#ffffff" strokeWidth="2.1" strokeLinecap="round" />
+      <line x1="27.5" y1="49.2" x2="26.2" y2="53.4" stroke="#ffffff" strokeWidth="1.5" strokeOpacity="0.72" strokeLinecap="round" />
+      <line x1="36.5" y1="49.2" x2="37.8" y2="53.4" stroke="#ffffff" strokeWidth="1.5" strokeOpacity="0.72" strokeLinecap="round" />
+    </g>
+  </svg>
+);
+
 export const GithubIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
   <svg
     viewBox="0 0 24 24"
