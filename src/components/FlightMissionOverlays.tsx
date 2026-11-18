@@ -161,42 +161,6 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
             </section>
 
-            {/* ===== TECHNICAL STACK & TOOLING ===== */}
-            <section
-              aria-label="Technical skills and stack"
-              className="min-h-[65vh] flex flex-col justify-center py-10 pointer-events-auto"
-            >
-              <div className={`${textWell} space-y-5 text-left`}>
-                <div className="flex items-center justify-between text-[11px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
-                  <span className="inline-flex items-center gap-2 text-white">
-                    <Code2 className="w-3.5 h-3.5" />
-                    <span>TECH STACK &amp; MODULES</span>
-                  </span>
-                  <span>AI-ASSISTED DEV</span>
-                </div>
-
-                <div className="space-y-4">
-                  {SKILL_GROUPS.map((group) => (
-                    <div key={group.label} className="space-y-2">
-                      <div className="text-[10px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
-                        {group.label}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {group.items.map((item) => (
-                          <span
-                            key={item}
-                            className="px-2.5 py-1 rounded-md bg-black/75 border border-white/15 text-[11px] font-mono text-zinc-200"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
             {/* ===== SECTION 01: DAVANAGERE ORIGINS & SCHOOLING ===== */}
             <section
               id="section-ascent"
@@ -447,6 +411,42 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     <Sparkles className="w-4 h-4 text-zinc-300 shrink-0 -translate-y-[1.5px]" />
                     <span>ಜೀವ, ಜೀವನ ಎರಡೂ ಕನ್ನಡದ್ದೇ</span>
                   </span>
+                </div>
+              </div>
+            </section>
+
+            {/* ===== TECHNICAL STACK & TOOLING ===== */}
+            <section
+              aria-label="Technical skills and stack"
+              className="min-h-[65vh] flex flex-col justify-center py-14 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-5 text-left`}>
+                <div className="flex items-center justify-between text-[11px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
+                  <span className="inline-flex items-center gap-2 text-white">
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>TECH STACK &amp; MODULES</span>
+                  </span>
+                  <span>AI-ASSISTED DEV</span>
+                </div>
+
+                <div className="space-y-4">
+                  {SKILL_GROUPS.map((group) => (
+                    <div key={group.label} className="space-y-2">
+                      <div className="text-[10px] font-mono tracking-[0.2em] text-zinc-400 uppercase">
+                        {group.label}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.items.map((item) => (
+                          <span
+                            key={item}
+                            className="px-2.5 py-1 rounded-md bg-black/75 border border-white/15 text-[11px] font-mono text-zinc-200"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </section>
