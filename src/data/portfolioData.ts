@@ -53,6 +53,18 @@ export const EDUCATION = [
   },
 ] as const;
 
+export const PERSONAL_QA = {
+  whyMadhva: 'Madhva is Suhas’s favorite name — so he named his personal offline portfolio assistant after it.',
+  writingThemes:
+    'He mostly writes about love — and pain, of course. He loves pain as a raw, honest lens for creative expression in both Kannada and English.',
+  whyAiMl:
+    'He chose Artificial Intelligence & Machine Learning because he believes it is the future — and backs it up by building voice pipelines (Neural TTS, Moonshine Voices, Whisper) and applied ML apps.',
+  futureGoal:
+    'He is aiming to build his own startup — blending real-world AI/ML engineering, product design, and storytelling.',
+  availability:
+    'Yes — Suhas is open to internships alongside college at PES University, available online/remotely or during his free time, as well as open-source and writing collaborations.',
+} as const;
+
 export interface StageWaypoint {
   id: string;
   code: string;

@@ -14,6 +14,7 @@ import {
 import { cosmicAudio } from './AudioEngine';
 import {
   EDUCATION,
+  PERSONAL_QA,
   PROFILE,
   PROJECTS,
   SKILL_GROUPS,
@@ -25,6 +26,7 @@ import {
   STARTER_PROMPTS,
   getTelemetryStageName,
   runMadhvaQuery,
+  type MadhvaKind,
   type MadhvaReply,
 } from '../utils/madhvaEngine';
 import { GithubIcon, InstagramIcon, LinkedinIcon } from './Icons';
@@ -50,6 +52,7 @@ interface TerminalEntry {
   query: string;
   reply: MadhvaReply;
   time: string;
+  animate?: boolean;
 }
 
 const VIRTUAL_FILES = [
@@ -67,9 +70,36 @@ const INITIAL_WELCOME: MadhvaReply = {
   headline: 'MADHVA // OFFLINE ASSISTANT READY',
   lines: [
     `ನಮಸ್ಕಾರ! I'm Madhva — ${PROFILE.name}'s local portfolio bot (100% offline, zero API keys).`,
-    `Ask me any question in plain English or Kannada, or run CLI commands like "neofetch", "ls", "goto writing", "open dlives", or "help".`,
+    `Ask me anything in plain English or Kannada (even follow-ups like "tell me more" or "open it"), or run CLI commands like "neofetch", "ls", "goto writing", or "help".`,
   ],
   suggestions: STARTER_PROMPTS,
+};
+
+/** Fast crisp typewriter headline so Madhva feels alive without ever slowing readers down */
+const TypewriterHeadline: React.FC<{ text: string; animate?: boolean }> = ({ text, animate }) => {
+  const [shown, setShown] = useState(() => {
+    if (!animate) return text.length;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return text.length;
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    if (!animate || shown >= text.length) return;
+    const step = Math.max(1, Math.ceil(text.length / 16));
+    const timer = window.setTimeout(() => {
+      setShown((prev) => Math.min(prev + step, text.length));
+    }, 16);
+    return () => window.clearTimeout(timer);
+  }, [animate, shown, text]);
+
+  return (
+    <span>
+      {text.slice(0, shown)}
+      {shown < text.length && <span className="inline-block ml-0.5 animate-pulse">▍</span>}
+    </span>
+  );
 };
 
 export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
@@ -97,9 +127,12 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
       query: 'madhva --init --offline',
       reply: INITIAL_WELCOME,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      animate: false,
     },
   ]);
 
+  const lastKindRef = useRef<MadhvaKind | null>('greeting');
+  const lastProjectIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -151,6 +184,8 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
         cameraMode,
         blueprintMode,
         audioActive,
+        lastKind: lastKindRef.current,
+        lastProjectId: lastProjectIdRef.current,
       });
 
       const effect = reply.sideEffect;
@@ -158,6 +193,8 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
         switch (effect.type) {
           case 'clear':
             setEntries([]);
+            lastKindRef.current = null;
+            lastProjectIdRef.current = null;
             return;
           case 'exit':
             onClose();
@@ -167,6 +204,9 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             break;
           case 'resume':
             triggerResumeDownload();
+            break;
+          case 'open-url':
+            window.open(effect.url, '_blank', 'noopener,noreferrer');
             break;
           case 'camera':
             onSetCameraMode(effect.mode);
@@ -184,6 +224,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             window.setTimeout(() => onJumpToStage(effect.stageIndex), 60);
             return;
           case 'open-project':
+            lastProjectIdRef.current = effect.project.id;
             onClose();
             window.setTimeout(() => onSelectProject(effect.project), 60);
             return;
@@ -194,6 +235,11 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
         }
       }
 
+      lastKindRef.current = reply.kind;
+      if (reply.project) {
+        lastProjectIdRef.current = reply.project.id;
+      }
+
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setEntries((prev) => [
         ...prev,
@@ -202,6 +248,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
           query: cleaned,
           reply,
           time,
+          animate: true,
         },
       ]);
     },
@@ -256,32 +303,151 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
 
   if (!isOpen) return null;
 
+  const renderProjectCards = (list: ProjectData[], showPrivateBlock: boolean) => (
+    <div className="space-y-2.5 text-xs font-mono">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {list.map((p) => (
+          <div
+            key={p.id}
+            className="p-2.5 rounded-lg bg-black border border-white/15 flex flex-col justify-between gap-2"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-white font-bold">{p.name}</span>
+                <span className="text-[10px] text-zinc-400">{p.badge}</span>
+              </div>
+              <p className="text-[11px] text-zinc-300 mt-0.5">{p.title}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => submitQuery(`open ${p.name.toLowerCase()}`)}
+                className="px-2 py-0.5 rounded bg-white text-black font-bold text-[10px] hover:bg-zinc-200 transition-colors cursor-pointer"
+              >
+                Inspect
+              </button>
+              {p.demo && (
+                <a
+                  href={p.demo}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-2 py-0.5 rounded border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[10px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <span>Website</span>
+                  <ArrowUpRight className="w-2.5 h-2.5" />
+                </a>
+              )}
+              <a
+                href={p.github}
+                target="_blank"
+                rel="noreferrer"
+                className="px-2 py-0.5 rounded border border-white/20 hover:border-white text-zinc-300 hover:text-white text-[10px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>GitHub</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showPrivateBlock && (
+        <div className="p-2.5 rounded-lg bg-white/[0.04] border border-white/15 text-[11px] text-zinc-300 flex items-start gap-2">
+          <Lock className="w-3.5 h-3.5 text-white shrink-0 mt-0.5" />
+          <span>
+            <span className="text-white font-semibold">Private Repositories (Active R&amp;D):</span>{' '}
+            Voice pipelines using Neural TTS, Moonshine Voices &amp; Whisper engines plus unreleased AI/desktop builds. Walkthroughs available on request.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderContactActions = (includeResume = false) => (
+    <div className="flex flex-wrap items-center gap-2">
+      <a
+        href={PROFILE.gmailComposeUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="px-3 py-1.5 rounded-md bg-white hover:bg-zinc-200 text-black font-bold text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+      >
+        <span>{PROFILE.email}</span>
+        <ExternalLink className="w-3 h-3" />
+      </a>
+      <button
+        type="button"
+        onClick={copyEmailToClipboard}
+        className="px-2.5 py-1.5 rounded-md bg-black border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+      >
+        {copiedEmail ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+        <span>{copiedEmail ? 'Copied' : 'Copy Email'}</span>
+      </button>
+      {includeResume && (
+        <button
+          type="button"
+          onClick={triggerResumeDownload}
+          className="px-2.5 py-1.5 rounded-md bg-black border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <Download className="w-3 h-3" />
+          <span>Resume</span>
+        </button>
+      )}
+      <a
+        href={SOCIAL_LINKS.github.url}
+        target="_blank"
+        rel="noreferrer"
+        className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+      >
+        <GithubIcon className="w-3 h-3" />
+        <span>GitHub</span>
+      </a>
+      <a
+        href={SOCIAL_LINKS.linkedin.url}
+        target="_blank"
+        rel="noreferrer"
+        className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+      >
+        <LinkedinIcon className="w-3 h-3" />
+        <span>LinkedIn</span>
+      </a>
+      <a
+        href={SOCIAL_LINKS.instagramPersonal.url}
+        target="_blank"
+        rel="noreferrer"
+        className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+      >
+        <InstagramIcon className="w-3 h-3" />
+        <span>{SOCIAL_LINKS.instagramPersonal.label}</span>
+      </a>
+    </div>
+  );
+
   const renderReplyBody = (reply: MadhvaReply) => {
     switch (reply.kind) {
       case 'help':
         return (
           <div className="space-y-3 text-xs font-mono text-zinc-300">
             <p className="text-zinc-200">
-              Ask any question naturally (e.g. &quot;Does he know Whisper?&quot;, &quot;Where does he study?&quot;,
-              &quot;Tell me about Dlives&quot;) or run a CLI command:
+              Ask any question naturally (e.g. &quot;What does he write about?&quot;, &quot;Is he open to internships?&quot;,
+              &quot;Which projects are live?&quot;, &quot;Does he know Whisper?&quot;) or run a CLI command:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] text-zinc-400">
               <div><span className="text-white font-semibold">about</span> — Writer &amp; AIML profile</div>
-              <div><span className="text-white font-semibold">writing</span> — Kannada Koota &amp; IG pages</div>
+              <div><span className="text-white font-semibold">writing</span> — Love, pain, Kannada Koota &amp; IG</div>
               <div><span className="text-white font-semibold">projects</span> — Public repos + Private R&amp;D</div>
               <div><span className="text-white font-semibold">open &lt;name&gt;</span> — Inspect project modal</div>
               <div><span className="text-white font-semibold">skills</span> — Stack &amp; voice pipelines</div>
               <div><span className="text-white font-semibold">education</span> — Diddige → PU → PESU</div>
-              <div><span className="text-white font-semibold">contact</span> — Gmail, GitHub, LinkedIn, IG</div>
-              <div><span className="text-white font-semibold">copy email</span> — Copy email to clipboard</div>
+              <div><span className="text-white font-semibold">goals</span> — Startup vision &amp; why AI/ML</div>
+              <div><span className="text-white font-semibold">internships</span> — Online/free-time availability</div>
+              <div><span className="text-white font-semibold">contact</span> / <span className="text-white font-semibold">copy email</span> — Direct links</div>
               <div><span className="text-white font-semibold">goto &lt;section&gt;</span> — Jump to any stage</div>
               <div><span className="text-white font-semibold">tour</span> — Hands-free auto-scroll journey</div>
               <div><span className="text-white font-semibold">audio on|off</span> — Ambient soundtrack</div>
               <div><span className="text-white font-semibold">neofetch</span> / <span className="text-white font-semibold">ls</span> — Profile card &amp; files</div>
-              <div><span className="text-white font-semibold">camera [mode]</span> — cinematic | booster | chase</div>
-              <div><span className="text-white font-semibold">blueprint</span> — Toggle wireframe overlay</div>
+              <div><span className="text-white font-semibold">camera [mode]</span> / <span className="text-white font-semibold">blueprint</span> — Flight modes</div>
               <div><span className="text-white font-semibold">resume</span> — Download resume PDF</div>
-              <div><span className="text-white font-semibold">clear</span> / <span className="text-white font-semibold">exit</span> — Clear or close CLI</div>
+              <div><span className="text-white font-semibold">clear</span> / <span className="text-white font-semibold">exit</span> — Clear or close Madhva</div>
             </div>
           </div>
         );
@@ -305,11 +471,12 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
                 <span className="font-mono text-xs text-zinc-400 font-normal">({PROFILE.name})</span>
               </p>
               <p><span className="text-zinc-500">ROLE:</span> Writer · AIML Student · Open Source</p>
+              <p><span className="text-zinc-500">WRITING:</span> Love &amp; Pain · Kannada Koota Club</p>
+              <p><span className="text-zinc-500">GOAL:</span> Building a Startup</p>
               <p><span className="text-zinc-500">CAMPUS:</span> PES University, EC Campus (2025–2029)</p>
               <p><span className="text-zinc-500">VOICE AI:</span> Neural TTS · Moonshine · Whisper</p>
-              <p><span className="text-zinc-500">WRITING:</span> Kannada Koota · @mugulnage_manasu_10</p>
+              <p><span className="text-zinc-500">INTERN:</span> Open (Online / Free Time with College)</p>
               <p><span className="text-zinc-500">STAGE:</span> 0{activeStageIndex} // {getTelemetryStageName(activeStageIndex)} ({(scrollProgress * 100).toFixed(0)}%)</p>
-              <p><span className="text-zinc-500">ENGINE:</span> Madhva Local NLU (0 API keys)</p>
             </div>
           </div>
         );
@@ -333,10 +500,10 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
       case 'writing':
         return (
           <div className="space-y-3 text-xs font-mono text-zinc-300">
-            <p className="leading-relaxed">
-              Writing comes first for Suhas — he is a passionate creative writer in Kannada and English,
-              and a <span className="text-white font-semibold">Content Writer at Kannada Koota Club</span>{' '}
-              (PES University Electronic City Campus).
+            <p className="leading-relaxed text-zinc-200">{PERSONAL_QA.writingThemes}</p>
+            <p className="leading-relaxed text-zinc-400">
+              He is also a <span className="text-white font-semibold">Content Writer at Kannada Koota Club</span>{' '}
+              (PES University, Electronic City Campus). Read his pages directly:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <a
@@ -375,61 +542,15 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
         );
 
       case 'projects':
-        return (
-          <div className="space-y-2.5 text-xs font-mono">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {PROJECTS.map((p) => (
-                <div
-                  key={p.id}
-                  className="p-2.5 rounded-lg bg-black border border-white/15 flex flex-col justify-between gap-2"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-white font-bold">{p.name}</span>
-                      <span className="text-[10px] text-zinc-400">{p.badge}</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-300 mt-0.5">{p.title}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => submitQuery(`open ${p.name.toLowerCase()}`)}
-                      className="px-2 py-0.5 rounded bg-white text-black font-bold text-[10px] hover:bg-zinc-200 transition-colors cursor-pointer"
-                    >
-                      Inspect
-                    </button>
-                    {p.demo && (
-                      <a
-                        href={p.demo}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2 py-0.5 rounded border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[10px] inline-flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <span>Website</span>
-                        <ArrowUpRight className="w-2.5 h-2.5" />
-                      </a>
-                    )}
-                    <a
-                      href={p.github}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2 py-0.5 rounded border border-white/20 hover:border-white text-zinc-300 hover:text-white text-[10px] inline-flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <span>GitHub</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
+        return renderProjectCards(PROJECTS, true);
 
-            <div className="p-2.5 rounded-lg bg-white/[0.04] border border-white/15 text-[11px] text-zinc-300 flex items-start gap-2">
-              <Lock className="w-3.5 h-3.5 text-white shrink-0 mt-0.5" />
-              <span>
-                <span className="text-white font-semibold">Private Repositories (Active R&amp;D):</span>{' '}
-                Voice pipelines using Neural TTS, Moonshine Voices &amp; Whisper engines plus unreleased AI/desktop builds. Walkthroughs available on request.
-              </span>
-            </div>
+      case 'filtered-projects':
+        return (
+          <div className="space-y-2.5 text-xs font-mono text-zinc-300">
+            {reply.lines?.map((l, i) => (
+              <p key={i} className="text-zinc-200">{l}</p>
+            ))}
+            {reply.filteredProjects && renderProjectCards(reply.filteredProjects, false)}
           </div>
         );
 
@@ -437,7 +558,18 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
         if (!reply.project) return null;
         return (
           <div className="space-y-2.5 text-xs font-mono text-zinc-300">
-            <p className="leading-relaxed">{reply.project.description}</p>
+            {reply.lines && reply.lines.length > 0 ? (
+              <ul className="space-y-1">
+                {reply.lines.map((line, i) => (
+                  <li key={i} className="flex items-start gap-2 leading-relaxed">
+                    <span className="mt-1.5 w-1 h-1 rounded-full bg-white shrink-0" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="leading-relaxed">{reply.project.description}</p>
+            )}
             <div className="flex flex-wrap gap-1.5">
               {reply.project.tech.map((t) => (
                 <span
@@ -520,56 +652,24 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
           </div>
         );
 
+      case 'availability':
+        return (
+          <div className="space-y-2.5 text-xs font-mono text-zinc-300 leading-relaxed">
+            {reply.lines?.map((l, i) => (
+              <p key={i} className={i === 0 ? 'text-zinc-200' : 'text-zinc-400'}>{l}</p>
+            ))}
+            {renderContactActions(true)}
+          </div>
+        );
+
       case 'contact':
         return (
           <div className="space-y-2.5 text-xs font-mono text-zinc-300">
-            <p>Open to open-source collaborations, AI/ML &amp; software projects, and creative writing conversations.</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <a
-                href={PROFILE.gmailComposeUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 rounded-md bg-white hover:bg-zinc-200 text-black font-bold text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <span>{PROFILE.email}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-              <button
-                type="button"
-                onClick={copyEmailToClipboard}
-                className="px-2.5 py-1.5 rounded-md bg-black border border-white/25 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                {copiedEmail ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                <span>{copiedEmail ? 'Copied' : 'Copy Email'}</span>
-              </button>
-              <a
-                href={SOCIAL_LINKS.github.url}
-                target="_blank"
-                rel="noreferrer"
-                className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <GithubIcon className="w-3 h-3" />
-                <span>GitHub</span>
-              </a>
-              <a
-                href={SOCIAL_LINKS.linkedin.url}
-                target="_blank"
-                rel="noreferrer"
-                className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <LinkedinIcon className="w-3 h-3" />
-                <span>LinkedIn</span>
-              </a>
-              <a
-                href={SOCIAL_LINKS.instagramPersonal.url}
-                target="_blank"
-                rel="noreferrer"
-                className="px-2.5 py-1.5 rounded-md bg-black border border-white/20 hover:border-white text-zinc-200 hover:text-white text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <InstagramIcon className="w-3 h-3" />
-                <span>{SOCIAL_LINKS.instagramPersonal.label}</span>
-              </a>
-            </div>
+            <p>
+              Open to online internships alongside college, open-source collaborations, AI/ML &amp; software
+              projects, and creative writing conversations.
+            </p>
+            {renderContactActions(false)}
           </div>
         );
 
@@ -669,7 +769,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
           )}
 
           {entries.map((entry) => (
-            <div key={entry.id} className="space-y-2">
+            <div key={entry.id} className="space-y-2 animate-stage-in">
               <div className="flex items-center gap-2 text-xs text-zinc-400">
                 <span className="text-zinc-500">visitor@madhva:~$</span>
                 <span className="text-white font-semibold break-words">{entry.query}</span>
@@ -679,7 +779,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
               <div className="pl-3.5 border-l border-white/25 space-y-2.5 py-0.5">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-white tracking-wider">
                   <Sparkles className="w-3 h-3 text-zinc-300 shrink-0" />
-                  <span>{entry.reply.headline}</span>
+                  <TypewriterHeadline text={entry.reply.headline} animate={entry.animate} />
                 </div>
 
                 {renderReplyBody(entry.reply)}

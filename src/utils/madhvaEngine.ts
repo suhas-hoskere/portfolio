@@ -1,9 +1,9 @@
 import {
   EDUCATION,
+  PERSONAL_QA,
   PROFILE,
   PROJECTS,
   SKILL_GROUPS,
-  SOCIAL_LINKS,
   STAGES,
   type ProjectData,
 } from '../data/portfolioData';
@@ -11,6 +11,7 @@ import {
 export type MadhvaSideEffect =
   | { type: 'goto'; stageIndex: number; label: string }
   | { type: 'open-project'; project: ProjectData }
+  | { type: 'open-url'; url: string }
   | { type: 'tour' }
   | { type: 'audio'; state: 'on' | 'off' | 'toggle' }
   | { type: 'camera'; mode: 'CINEMATIC' | 'BOOSTER' | 'CHASE' }
@@ -26,11 +27,15 @@ export type MadhvaKind =
   | 'about'
   | 'writing'
   | 'projects'
+  | 'filtered-projects'
   | 'project-detail'
   | 'private-repos'
   | 'skills'
   | 'skill-check'
   | 'education'
+  | 'goal'
+  | 'why-aiml'
+  | 'availability'
   | 'contact'
   | 'resume'
   | 'telemetry'
@@ -46,6 +51,7 @@ export interface MadhvaReply {
   headline: string;
   lines?: string[];
   project?: ProjectData;
+  filteredProjects?: ProjectData[];
   matchedSkill?: {
     queried: string;
     known: boolean;
@@ -62,6 +68,8 @@ export interface MadhvaContext {
   cameraMode: 'CINEMATIC' | 'BOOSTER' | 'CHASE';
   blueprintMode: boolean;
   audioActive: boolean;
+  lastKind?: MadhvaKind | null;
+  lastProjectId?: string | null;
 }
 
 export const CLI_AUTOCOMPLETE_TERMS = [
@@ -73,6 +81,8 @@ export const CLI_AUTOCOMPLETE_TERMS = [
   'skills',
   'education',
   'contact',
+  'internships',
+  'goals',
   'resume',
   'neofetch',
   'telemetry',
@@ -106,11 +116,11 @@ export const CLI_AUTOCOMPLETE_TERMS = [
 
 export const STARTER_PROMPTS = [
   'Who is Suhas?',
-  'Where can I read his writings?',
+  'What does he write about?',
   'What projects has he built?',
-  'Tell me about voice pipelines',
-  'Where does he study?',
-  'How can I contact him?',
+  'Is he open to internships?',
+  'What is his future goal?',
+  'Why is your name Madhva?',
   'neofetch',
   'help',
 ];
@@ -202,6 +212,59 @@ function findProjectInText(text: string, tokens: string[]): ProjectData | null {
   return null;
 }
 
+function checkFilteredProjectsQuery(text: string, tokens: string[]): MadhvaReply | null {
+  const asksProjects = hasAnyKeyword(text, tokens, ['project', 'projects', 'app', 'apps', 'repo', 'repos', 'live', 'website', 'websites', 'demo']);
+  if (!asksProjects) return null;
+
+  if (hasAnyKeyword(text, tokens, ['live', 'deployed', 'hosted', 'website', 'websites', 'demo'])) {
+    const live = PROJECTS.filter((p) => Boolean(p.demo));
+    return {
+      kind: 'filtered-projects',
+      headline: 'LIVE DEPLOYED APPS',
+      lines: [
+        `Suhas currently has ${live.length} live web/landing apps you can try right now:`,
+      ],
+      filteredProjects: live,
+      suggestions: ['Show all projects', 'Tell me about Dlives', 'Tell me about santypes'],
+    };
+  }
+
+  if (hasAnyKeyword(text, tokens, ['python', 'flask', 'pyqt'])) {
+    const py = PROJECTS.filter((p) => p.tech.some((t) => t.toLowerCase() === 'python'));
+    return {
+      kind: 'filtered-projects',
+      headline: 'PYTHON PROJECTS',
+      lines: ['Here are Suhas’s public Python repositories (alongside private voice-pipeline builds):'],
+      filteredProjects: py,
+      suggestions: ['What about private repos?', 'Show all projects', 'Show tech stack'],
+    };
+  }
+
+  if (hasAnyKeyword(text, tokens, ['typescript', 'react', 'web', 'frontend'])) {
+    const ts = PROJECTS.filter((p) => p.tech.some((t) => t.toLowerCase() === 'typescript'));
+    return {
+      kind: 'filtered-projects',
+      headline: 'TYPESCRIPT & WEB PROJECTS',
+      lines: ['Here are Suhas’s TypeScript & web-based repositories:'],
+      filteredProjects: ts,
+      suggestions: ['Show all projects', 'Tell me about santypes', 'Tell me about ntools'],
+    };
+  }
+
+  if (hasAnyKeyword(text, tokens, ['android', 'mobile'])) {
+    const mob = PROJECTS.filter((p) => p.id === 'ntools');
+    return {
+      kind: 'filtered-projects',
+      headline: 'ANDROID & MOBILE PROJECTS',
+      lines: ['Suhas built ntools for Android & Web using React 19 + Capacitor 7:'],
+      filteredProjects: mob,
+      suggestions: ['open ntools', 'Show all projects'],
+    };
+  }
+
+  return null;
+}
+
 const KNOWN_SKILLS_INDEX: { label: string; category: string; aliases: string[] }[] = [
   ...SKILL_GROUPS.flatMap((g) =>
     g.items.map((item) => ({
@@ -272,7 +335,6 @@ function checkSpecificSkillQuery(raw: string, text: string, tokens: string[]): M
 
   if (!isQuestionAboutSkill) return null;
 
-  // Check unlisted tech first for explicit exact mentions (avoid false positives on 'c')
   const rawLower = raw.toLowerCase();
   for (const tech of UNLISTED_TECH_TERMS) {
     const escaped = tech.replace(/[+#]/g, '\\$&');
@@ -290,13 +352,12 @@ function checkSpecificSkillQuery(raw: string, text: string, tokens: string[]): M
           known: false,
           relatedProjects: [],
         },
-        suggestions: ['What skills does he have?', 'Show his projects', 'How can I contact him?'],
+        suggestions: ['What skills does he have?', 'Show his projects', 'Is he open to internships?'],
       };
     }
   }
 
   for (const entry of KNOWN_SKILLS_INDEX) {
-    // Require exact match for short 1-2 char tokens like "c" or "ts" or "js" or "py"
     const matched = entry.aliases.some((alias) => {
       if (alias.length <= 2) {
         return tokens.includes(alias);
@@ -349,6 +410,77 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     };
   }
 
+  // ===== 0. MULTI-TURN CONTEXTUAL FOLLOW-UPS ("open it", "visit it", "tell me more", "what else") =====
+  const lastProject = ctx.lastProjectId ? PROJECTS.find((p) => p.id === ctx.lastProjectId) ?? null : null;
+
+  if (
+    lastProject &&
+    hasAnyKeyword(text, tokens, ['open it', 'inspect it', 'show specs', 'open that', 'view it'])
+  ) {
+    return {
+      kind: 'project-detail',
+      headline: `OPENING // ${lastProject.name}`,
+      project: lastProject,
+      sideEffect: { type: 'open-project', project: lastProject },
+    };
+  }
+
+  if (
+    lastProject &&
+    hasAnyKeyword(text, tokens, ['visit it', 'launch it', 'open website', 'live link', 'open github', 'repo link'])
+  ) {
+    const wantsGithub = hasAnyKeyword(text, tokens, ['github', 'repo']);
+    const targetUrl = wantsGithub || !lastProject.demo ? lastProject.github : lastProject.demo;
+    return {
+      kind: 'action',
+      headline: `OPENING LINK // ${lastProject.name}`,
+      lines: [`Opening ${targetUrl} in a new tab.`],
+      project: lastProject,
+      sideEffect: { type: 'open-url', url: targetUrl },
+      suggestions: ['Show all projects', 'Who is Suhas?'],
+    };
+  }
+
+  if (hasAnyKeyword(text, tokens, ['tell me more', 'more info', 'more details', 'what else', 'anything else'])) {
+    if (ctx.lastKind === 'writing') {
+      return {
+        kind: 'writing',
+        headline: 'MORE ON SUHAS’S WRITING // LOVE & PAIN',
+        lines: [
+          PERSONAL_QA.writingThemes,
+          'He writes for Kannada Koota Club (PES University EC Campus) and shares his pieces across @mugulnage_manasu_10 (Kannada) and @unofficial_overthinker_ (English & tech).',
+        ],
+        suggestions: ['goto writing', 'What is his future goal?', 'Show his projects'],
+      };
+    }
+    if (ctx.lastKind === 'project-detail' && lastProject) {
+      return {
+        kind: 'project-detail',
+        headline: `ARCHITECTURE // ${lastProject.name}`,
+        lines: lastProject.architecture,
+        project: lastProject,
+        suggestions: ['open it', 'Show all projects', 'What about private repos?'],
+      };
+    }
+    if (ctx.lastKind === 'about' || ctx.lastKind === 'greeting') {
+      return buildGoalReply();
+    }
+    if (ctx.lastKind === 'goal') {
+      return buildWhyAiMlReply();
+    }
+    if (ctx.lastKind === 'projects') {
+      return {
+        kind: 'private-repos',
+        headline: 'PRIVATE REPOSITORIES // ACTIVE R&D',
+        lines: [
+          'Beyond his public GitHub repos, Suhas is actively building private voice-pipeline and AI/desktop experiments using Neural TTS, Moonshine Voices, and Whisper engines.',
+          'Available for live walkthroughs on request.',
+        ],
+        suggestions: ['Is he open to internships?', 'How can I contact him?'],
+      };
+    }
+  }
+
   // ===== 1. IMMEDIATE CONTROL COMMANDS =====
   if (text === 'clear' || text === 'cls') {
     return { kind: 'action', headline: 'CLEARED', sideEffect: { type: 'clear' } };
@@ -362,7 +494,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     return {
       kind: 'help',
       headline: 'MADHVA // COMMANDS & NATURAL Q&A',
-      suggestions: ['Who is Suhas?', 'His writings', 'Show projects', 'neofetch'],
+      suggestions: ['Who is Suhas?', 'What does he write about?', 'Is he open to internships?', 'neofetch'],
     };
   }
 
@@ -370,7 +502,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     return {
       kind: 'neofetch',
       headline: 'MADHVA // SYSTEM PROFILE',
-      suggestions: ['Show projects', 'His writings', 'Start auto journey'],
+      suggestions: ['Show projects', 'What does he write about?', 'Start auto journey'],
     };
   }
 
@@ -396,7 +528,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
         headline: 'RESUME // DOWNLOAD TRIGGERED',
         lines: [`Downloading ${PROFILE.resumeFilename} from ${PROFILE.resumePath}.`],
         sideEffect: { type: 'resume' },
-        suggestions: ['Show education', 'Show projects', 'How to contact Suhas?'],
+        suggestions: ['Is he open to internships?', 'Show education', 'Show projects'],
       };
     }
     const proj = findProjectInText(file, tokens.slice(1));
@@ -439,7 +571,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     return {
       kind: 'action',
       headline: `WIREFRAME BLUEPRINT // ${!ctx.blueprintMode ? 'ENABLED' : 'DISABLED'}`,
-      lines: [`Toggled monochrome CAD wireframe overlay on the rocket & satellite.`],
+      lines: ['Toggled monochrome CAD wireframe overlay on the rocket & satellite.'],
       sideEffect: { type: 'blueprint' },
       suggestions: ['blueprint', 'telemetry', 'camera chase'],
     };
@@ -499,7 +631,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       headline: 'CLIPBOARD // EMAIL COPIED',
       lines: [`Copied ${PROFILE.email} to your clipboard.`],
       sideEffect: { type: 'copy-email' },
-      suggestions: ['Show all contact links', 'Who is Suhas?'],
+      suggestions: ['Show all contact links', 'Is he open to internships?'],
     };
   }
 
@@ -522,7 +654,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   }
 
   // Open specific project modal: "open dlives" / "inspect santypes"
-  const wantsOpen = tokens[0] === 'open' || tokens[0] === 'inspect' || tokens[0] === 'launch';
+  const wantsOpen = tokens[0] === 'open' || tokens[0] === 'inspect';
   if (wantsOpen) {
     const proj = findProjectInText(text, tokens);
     if (proj) {
@@ -547,6 +679,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       'helo',
       'namaskara',
       'namaste',
+      'hegidira',
       'hola',
       'yo',
       'good morning',
@@ -554,17 +687,18 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       'good evening',
       'ನಮಸ್ಕಾರ',
       'ಹಲೋ',
+      'ಹೇಗಿದ್ದೀರಾ',
     ]) &&
-    tokens.length <= 4
+    tokens.length <= 5
   ) {
     return {
       kind: 'greeting',
       headline: 'ನಮಸ್ಕಾರ // NAMASKARA — I AM MADHVA',
       lines: [
-        `Welcome to ${PROFILE.name}'s portfolio! I'm Madhva, a 100% offline assistant running right in your browser with zero API keys.`,
-        `Ask me anything about Suhas — his writings, projects, voice pipelines, PES University journey, or contact details.`,
+        `Welcome to ${PROFILE.name}'s portfolio! I'm Madhva — Suhas's favorite name, and his 100% offline portfolio assistant (zero API keys).`,
+        `Ask me anything about Suhas — his writings on love & pain, projects, voice pipelines, startup vision, or online internship availability.`,
       ],
-      suggestions: ['Who is Suhas?', 'Where can I read his writings?', 'Show projects', 'How can I contact him?'],
+      suggestions: ['Who is Suhas?', 'What does he write about?', 'Show projects', 'Is he open to internships?'],
     };
   }
 
@@ -574,18 +708,20 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       kind: 'thanks',
       headline: 'YOU ARE WELCOME // ಧನ್ಯವಾದಗಳು',
       lines: [
-        'Glad I could help! Feel free to ask another question, start the hands-free tour, or reach out to Suhas directly.',
+        'Glad I could help! Feel free to ask another question, start the hands-free journey, or reach out to Suhas directly.',
       ],
       suggestions: ['Start auto journey', 'How can I contact him?', 'Show projects'],
     };
   }
 
-  // Bot self-identity ("who are you?", "what is madhva?", "do you use api?")
+  // Bot self-identity ("who are you?", "why madhva?", "do you use api?")
   if (
     hasAnyKeyword(text, tokens, [
       'who are you',
       'what are you',
       'your name',
+      'why madhva',
+      'named madhva',
       'madhva',
       'api key',
       'apikey',
@@ -597,13 +733,87 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   ) {
     return {
       kind: 'who-are-you',
-      headline: 'MADHVA // OFFLINE PORTFOLIO ASSISTANT',
+      headline: 'MADHVA // SUHAS’S FAVORITE NAME & OFFLINE BOT',
       lines: [
-        `I'm Madhva — a lightweight, 100% client-side assistant built directly into ${PROFILE.name}'s portfolio.`,
-        `Zero API keys, zero external servers, instant responses. You can ask natural questions in English/Kannada or run classic CLI commands like "neofetch", "ls", "goto writing", or "tour".`,
+        PERSONAL_QA.whyMadhva,
+        `I run 100% locally inside your browser — zero API keys, zero external servers, instant responses.`,
+        `Ask natural questions in English/Kannada (even follow-ups like "tell me more" or "open it") or run CLI commands like "neofetch", "ls", "goto writing", or "tour".`,
       ],
-      suggestions: ['Who is Suhas?', 'Show projects', 'help', 'neofetch'],
+      suggestions: ['Who is Suhas?', 'What does he write about?', 'What is his future goal?', 'help'],
     };
+  }
+
+  // Internships / Availability / Hiring / Remote work
+  if (
+    hasAnyKeyword(text, tokens, [
+      'internship',
+      'internships',
+      'intern',
+      'available',
+      'availability',
+      'hire',
+      'hiring',
+      'freelance',
+      'remote',
+      'online work',
+      'part time',
+      'free time',
+      'open to work',
+      'job',
+      'opportunity',
+      'opportunities',
+      'ಕೆಲಸ',
+    ])
+  ) {
+    return {
+      kind: 'availability',
+      headline: 'AVAILABILITY // ONLINE INTERNSHIPS & COLLABS',
+      lines: [
+        PERSONAL_QA.availability,
+        `Best way to reach him: email ${PROFILE.email} or connect on LinkedIn.`,
+      ],
+      suggestions: ['copy email', 'Download resume', 'Show his projects', 'Show full tech stack'],
+    };
+  }
+
+  // Future Goal / Startup Vision
+  if (
+    hasAnyKeyword(text, tokens, [
+      'startup',
+      'startups',
+      'goal',
+      'goals',
+      'aim',
+      'aiming',
+      'ambition',
+      'dream',
+      'vision',
+      'plan',
+      'plans',
+      'founder',
+      'entrepreneur',
+      'company',
+      'next',
+    ])
+  ) {
+    return buildGoalReply();
+  }
+
+  // Why AI & ML?
+  if (
+    hasAnyKeyword(text, tokens, [
+      'why ai',
+      'why ml',
+      'why aiml',
+      'why machine learning',
+      'why artificial intelligence',
+      'why this branch',
+      'chose ai',
+      'choose ai',
+      'future of ai',
+    ])
+  ) {
+    return buildWhyAiMlReply();
   }
 
   // Resume / CV
@@ -618,7 +828,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
           : `You can download Suhas's resume directly using the button below or by typing "resume".`,
       ],
       sideEffect: triggerDownload ? { type: 'resume' } : undefined,
-      suggestions: ['Show education', 'Show projects', 'Show tech stack'],
+      suggestions: ['Is he open to internships?', 'Show education', 'Show projects'],
     };
   }
 
@@ -627,6 +837,10 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   if (matchedProj) {
     return buildProjectDetailReply(matchedProj);
   }
+
+  // Filtered Project Lists ("which projects are live?", "python projects", "android apps")
+  const filteredProj = checkFilteredProjectsQuery(text, tokens);
+  if (filteredProj) return filteredProj;
 
   // Private Repositories / Ongoing R&D
   if (hasAnyKeyword(text, tokens, ['private', 'unreleased', 'secret', 'r&d', 'working on', 'upcoming', 'ongoing'])) {
@@ -639,7 +853,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
         '• Unreleased AI tooling and native desktop experiments.',
         'Live demos and walkthroughs are available on request — reach out via email or LinkedIn!',
       ],
-      suggestions: ['Show public projects', 'Show voice & AI stack', 'How can I contact him?'],
+      suggestions: ['Show public projects', 'Why did he choose AI & ML?', 'How can I contact him?'],
     };
   }
 
@@ -647,7 +861,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   const skillCheck = checkSpecificSkillQuery(trimmed, text, tokens);
   if (skillCheck) return skillCheck;
 
-  // Writing & Culture (Kannada Koota + Instagram pages)
+  // Writing & Culture + Love & Pain Themes (Kannada Koota + Instagram pages)
   if (
     hasAnyKeyword(text, tokens, [
       'writing',
@@ -655,6 +869,17 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       'writer',
       'write',
       'writes',
+      'love',
+      'pain',
+      'heartbreak',
+      'emotion',
+      'emotions',
+      'feelings',
+      'inspire',
+      'inspires',
+      'inspiration',
+      'theme',
+      'themes',
       'kannada',
       'koota',
       'club',
@@ -670,6 +895,10 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       'literature',
       'ಕನ್ನಡ',
       'ಬರಹ',
+      'ಪ್ರೀತಿ',
+      'ನೋವು',
+      'preeti',
+      'novu',
     ])
   ) {
     return buildWritingReply();
@@ -705,6 +934,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       'year',
       'graduate',
       'graduation',
+      'ಕಾಲೇಜು',
     ])
   ) {
     return buildEducationReply();
@@ -732,7 +962,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     return {
       kind: 'projects',
       headline: 'SELECTED PROJECTS // OPEN SOURCE + PRIVATE R&D',
-      suggestions: ['Tell me about Dlives', 'Tell me about santypes', 'Tell me about ntools', 'Private repos'],
+      suggestions: ['Which projects are live?', 'Tell me about Dlives', 'Tell me about santypes', 'Private repos'],
     };
   }
 
@@ -762,7 +992,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
     return buildSkillsReply();
   }
 
-  // Contact / Socials / Links / Hire
+  // Contact / Socials / Links
   if (
     hasAnyKeyword(text, tokens, [
       'contact',
@@ -770,7 +1000,6 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       'mail',
       'gmail',
       'reach',
-      'hire',
       'collaborate',
       'collab',
       'connect',
@@ -804,7 +1033,10 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       'summary',
       'yourself',
       'himself',
+      'yaru',
+      'nimma bagge',
       'ಸುಹಾಸ್',
+      'ಯಾರು',
     ])
   ) {
     return buildAboutReply();
@@ -818,7 +1050,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       `I didn't find a direct match for "${trimmed}". Since I run 100% locally with zero API keys, I specialize in everything about ${PROFILE.name} and controlling this portfolio.`,
       `Try clicking one of the questions below or typing "help" to see all commands!`,
     ],
-    suggestions: ['Who is Suhas?', 'His writings', 'What projects has he built?', 'How can I contact him?'],
+    suggestions: ['Who is Suhas?', 'What does he write about?', 'What is his future goal?', 'Is he open to internships?'],
   };
 }
 
@@ -829,22 +1061,45 @@ function buildAboutReply(): MadhvaReply {
     lines: [
       PROFILE.roleLine,
       PROFILE.summary,
-      `Based in ${PROFILE.location} (roots in Diddige & Davanagere, Karnataka).`,
+      `Based in ${PROFILE.location} (roots in Diddige & Davanagere, Karnataka) — aiming to build his own startup.`,
     ],
-    suggestions: ['Where can I read his writings?', 'What projects has he built?', 'Where does he study?', 'Contact links'],
+    suggestions: ['What does he write about?', 'What projects has he built?', 'What is his future goal?', 'Is he open to internships?'],
   };
 }
 
 function buildWritingReply(): MadhvaReply {
   return {
     kind: 'writing',
-    headline: 'WRITING & CULTURE // ಕನ್ನಡ ಕೂಟ',
+    headline: 'WRITING & CULTURE // LOVE, PAIN & ಕನ್ನಡ ಕೂಟ',
     lines: [
-      'Writing comes first for Suhas — he is a passionate creative writer in both Kannada and English, and a Content Writer at Kannada Koota Club (PES University, Electronic City Campus).',
-      `Kannada Writings: ${SOCIAL_LINKS.instagramKannada.label}`,
-      `English & Tech: ${SOCIAL_LINKS.instagramEnglishTech.label}`,
+      PERSONAL_QA.writingThemes,
+      `He is also a Content Writer at Kannada Koota Club (PES University, Electronic City Campus).`,
     ],
-    suggestions: ['goto writing', 'Show his projects', 'Who is Suhas?'],
+    suggestions: ['goto writing', 'Show his projects', 'What is his future goal?'],
+  };
+}
+
+function buildGoalReply(): MadhvaReply {
+  return {
+    kind: 'goal',
+    headline: 'VISION // BUILDING A STARTUP',
+    lines: [
+      PERSONAL_QA.futureGoal,
+      `Right now, he is sharpening his craft at PES University (B.Tech AI & ML), shipping open-source & voice-pipeline tools, and staying open to online internships alongside college.`,
+    ],
+    suggestions: ['Why did he choose AI & ML?', 'Is he open to internships?', 'Show his projects'],
+  };
+}
+
+function buildWhyAiMlReply(): MadhvaReply {
+  return {
+    kind: 'why-aiml',
+    headline: 'WHY AI & ML // BUILDING FOR THE FUTURE',
+    lines: [
+      PERSONAL_QA.whyAiMl,
+      `Combined with his startup vision, he focuses on practical applied AI — especially local & hybrid voice systems (Neural TTS, Moonshine Voices, Whisper engines).`,
+    ],
+    suggestions: ['Show full tech stack', 'What about private repos?', 'What is his future goal?'],
   };
 }
 
@@ -852,7 +1107,7 @@ function buildSkillsReply(): MadhvaReply {
   return {
     kind: 'skills',
     headline: 'TECH STACK & VOICE PIPELINES',
-    suggestions: ['Does he know Python?', 'What about private repos?', 'Show his projects'],
+    suggestions: ['Does he know Python?', 'Why did he choose AI & ML?', 'What about private repos?'],
   };
 }
 
@@ -861,7 +1116,7 @@ function buildEducationReply(): MadhvaReply {
     kind: 'education',
     headline: 'EDUCATION // ACADEMIC JOURNEY',
     lines: EDUCATION.map((e) => `${e.period} · ${e.institution} (${e.level})`),
-    suggestions: ['Who is Suhas?', 'His writings', 'Show his projects'],
+    suggestions: ['Why did he choose AI & ML?', 'Is he open to internships?', 'Who is Suhas?'],
   };
 }
 
@@ -869,7 +1124,9 @@ function buildContactReply(): MadhvaReply {
   return {
     kind: 'contact',
     headline: 'ESTABLISH UPLINK // DIRECT LINKS',
-    lines: ['Open to open-source collaborations, AI/ML & software projects, and creative writing conversations.'],
+    lines: [
+      'Open to online internships (alongside college / free time), open-source collaborations, AI/ML & software projects, and creative writing conversations.',
+    ],
     suggestions: ['copy email', 'Download resume', 'Start auto journey'],
   };
 }
@@ -879,7 +1136,7 @@ function buildProjectDetailReply(project: ProjectData): MadhvaReply {
     kind: 'project-detail',
     headline: `${project.name} // ${project.title}`,
     project,
-    suggestions: ['Show all projects', 'What about private repos?', 'How can I contact him?'],
+    suggestions: ['open it', 'tell me more', 'Show all projects', 'What about private repos?'],
   };
 }
 
