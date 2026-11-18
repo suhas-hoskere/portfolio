@@ -359,8 +359,8 @@ function drawMonoS200Booster(
 
 /**
  * Shared physical rocket trajectory pose (used by both rocketVehicle & heroSatellite):
- * - On liftoff (0.170+): Rocket genuinely accelerates UPWARD off the pad, clears the gantry,
- *   shrinks dramatically as it climbs far away from Earth (1.0 -> 0.36!), and curves along a realistic gravity turn!
+ * - On liftoff (0.170+): Rocket accelerates upward off the pad, already shrinking small by the time
+ *   it reaches the clouds (0.25 -> ~0.34 scale), and down to a tiny distant vehicle (~0.16) approaching orbit!
  */
 export function getRocketPose(
   sp: number,
@@ -373,22 +373,23 @@ export function getRocketPose(
   const camZoom =
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
 
-  // Rocket realistically shrinks much smaller as it flies high and far away from Earth (1.00 -> 0.36)
-  const climbDist = smoothstep(0.175, 0.425, sp);
-  const altitudeScale = 1 - Math.pow(climbDist, 0.88) * 0.64;
+  // Exponential distance perspective: shrinks rapidly as it climbs into the clouds (0.25 -> ~0.32)
+  // and becomes a small distant orbital vehicle (0.16) as it reaches outer atmosphere & LEO!
+  const climbDist = smoothstep(0.170, 0.420, sp);
+  const altitudeScale = Math.max(0.16, Math.pow(0.16, Math.pow(climbDist, 0.68)));
   const u = unit * camZoom * altitudeScale;
 
   // Realistic gravity-turn lateral arc + pitch eastward into LEO
-  const turnProg = smoothstep(0.215, 0.425, sp);
-  const pitchRad = turnProg * 0.28;
-  const x = vehicleAnchorX - mouseX * 10 + turnProg * unit * 0.24;
+  const turnProg = smoothstep(0.210, 0.425, sp);
+  const pitchRad = turnProg * 0.30;
+  const x = vehicleAnchorX - mouseX * 10 + turnProg * unit * 0.28;
 
-  // Rocket physically blasts UPWARD off the pad during liftoff (0.170 -> 0.290) and climbs high above Earth!
+  // Rocket physically blasts UPWARD off the pad into the clouds and high above Earth's limb
   let baseY = groundY - unit * 0.14;
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
   else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
-  const liftoffRise = sp >= 0.170 ? Math.pow(smoothstep(0.170, 0.360, sp), 1.05) * unit * 2.15 : 0;
+  const liftoffRise = sp >= 0.170 ? Math.pow(smoothstep(0.170, 0.360, sp), 0.92) * unit * 2.55 : 0;
   const y = baseY - liftoffRise;
 
   return { x, y, u, pitchRad };
