@@ -104,36 +104,38 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const pitchRad = rocketPose.pitchRad;
 
   // Stays tiny matching the fairing as it slides forward out of the horizontal nose cone,
-  // then smoothly zooms into clean LEO showcase framing once clear of the spent rocket stage!
+  // then smoothly zooms into clean horizontal LEO showcase framing once clear of the spent rocket stage!
   const scaleEase = Math.pow(floatOut, 1.45);
-  let satScale = lerp(0.08, 0.94, scaleEase);
+  let satScale = lerp(0.08, 0.88, scaleEase);
   if (sp >= 0.90) {
     const terminalZoom = easeOutCubic((sp - 0.90) / 0.08);
-    satScale = lerp(0.94, 1.28, terminalZoom);
+    satScale = lerp(0.88, 1.12, terminalZoom);
   }
-  if (cameraMode === 'BOOSTER') satScale *= 1.18;
-  else if (cameraMode === 'CHASE') satScale *= 1.10;
+  if (cameraMode === 'BOOSTER') satScale *= 1.16;
+  else if (cameraMode === 'CHASE') satScale *= 1.08;
 
   const s = unit * satScale;
-  const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.032 * floatEase;
+  const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.028 * floatEase;
   const targetX =
-    vehicleAnchorX - mouseX * 10 - (sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.18 : 0);
-  const targetY = h * 0.40 + bobY - mouseY * 6;
+    vehicleAnchorX - mouseX * 10 - (sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.16 : 0);
+  const targetY = h * 0.37 + bobY - mouseY * 6;
 
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);
 
-  // Smoothly rotates from horizontal orbital insertion attitude (~88°) upright into 0° orbital cruise!
+  // Stays HORIZONTAL (~90°, parallel to Earth's orbital path & matching the horizontal rocket!)
+  const orbitalHorizRad = Math.PI * 0.49;
   const bankRad =
-    lerp(pitchRad, 0, floatEase) + (reducedMotion ? 0 : Math.sin(t * 0.48) * 0.024 * floatEase);
+    lerp(pitchRad, orbitalHorizRad, floatEase) +
+    (reducedMotion ? 0 : Math.sin(t * 0.45) * 0.018 * floatEase);
 
   ctx.save();
   ctx.globalAlpha = revealAlpha;
   ctx.translate(cx, cy);
   ctx.rotate(bankRad);
 
-  const busW = s * 0.60;
-  const busH = s * 0.74;
+  const busW = s * 0.52;
+  const busH = s * 0.82;
 
   // 1. STAGE 05 ORBITAL DOWNLINK CONTINUOUSLY EXPANDING RF SIGNAL ARCS & CARRIER BEAM
   if (sp >= 0.900) {
@@ -166,13 +168,13 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     }
   }
 
-  // 3. TWO-STAGE ARTICULATED MONOCHROME SOLAR ARRAY WINGS (unfold gradually after clearing fairing!)
+  // 3. TWO-STAGE ARTICULATED MONOCHROME SOLAR ARRAY WINGS (unfold smoothly perpendicular to horizontal bus)
   const innerUnfold = easeOutCubic(smoothstep(0.565, 0.645, sp));
   const outerUnfold = easeOutCubic(smoothstep(0.615, 0.695, sp));
 
-  const panelW = s * 0.70;
-  const panelH = s * 0.52;
-  const yokeLen = s * 0.15;
+  const panelW = s * 0.54;
+  const panelH = s * 0.44;
+  const yokeLen = s * 0.13;
 
   if (innerUnfold > 0.01) {
     for (const side of [-1, 1] as const) {
