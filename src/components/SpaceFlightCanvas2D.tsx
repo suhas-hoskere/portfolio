@@ -25,7 +25,7 @@ interface SpaceFlightCanvas2DProps {
  * - Never feels sticky or slow at Origins, Bangalore, Projects, Heritage, or Uplink
  */
 function getCinematicMaxRate(sp: number): number {
-  return lerp(0.15, 0.22, smoothstep(0.0, 0.72, sp));
+  return lerp(0.165, 0.225, smoothstep(0.0, 0.75, sp));
 }
 
 /**

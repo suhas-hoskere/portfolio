@@ -8,21 +8,185 @@ interface FeatherParticle {
   vy: number;
   age: number;
   life: number;
-  size: number;
   rot: number;
   vRot: number;
   isWisp: boolean;
   swayPhase: number;
 }
 
-const PARTICLE_POOL_SIZE = 16;
+interface BarbStrand {
+  d: string;
+  width: number;
+  opacity: number;
+  color: string;
+}
+
+const PARTICLE_POOL_SIZE = 22;
 
 /**
- * Redesigned Hairy Vintage Feather Quill Cursor + Floating Micro-Particles (pure monochrome B&W):
- * - Organic layered feather plume with delicate curved barb strands, wispy stray outer hairs,
- *   soft downy base fluff, curved ivory rachis, and pinpoint beveled calligraphic nib
- * - Zero-allocation pool of 16 lightweight monochrome motes & tiny feather wisps drifting out
- *   from the plume as you glide or click (0% CPU when mouse is still, zero extra canvas VRAM)
+ * Generates an authentic, naturally hairy monochrome bird-feather plume ONCE at module load:
+ * - Zero solid cut-out leaf outlines — built from ~68 fine curved barb strands flowing along
+ *   a curved central rachis with natural bird-feather splits, wispy outer tips, and downy base fluff!
+ */
+function buildFeatherGeometry(): {
+  upperBarbs: BarbStrand[];
+  lowerBarbs: BarbStrand[];
+  downyBarbs: BarbStrand[];
+  softCorePath: string;
+  rachisPath: string;
+} {
+  // Deterministic PRNG for natural, organic hair-length & curve variation (no flicker)
+  let seed = 7391;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+
+  // Graceful S-curved spine from bare quill transition (15.5, 47.5) to feather tip (59.5, 4.0)
+  const spineAt = (u: number) => {
+    const bow = Math.sin(u * Math.PI);
+    const x = 15.5 + 44.0 * u - 3.6 * bow;
+    const y = 47.5 - 43.5 * u - 3.4 * bow;
+    // Tangent vector along spine
+    const tx = 44.0 - 3.6 * Math.PI * Math.cos(u * Math.PI);
+    const ty = -43.5 - 3.4 * Math.PI * Math.cos(u * Math.PI);
+    const len = Math.hypot(tx, ty) || 1;
+    const ux = tx / len;
+    const uy = ty / len;
+    // Left (upper-leading) normal and right (lower-trailing) normal
+    return { x, y, ux, uy, nx: uy, ny: -ux };
+  };
+
+  const upperBarbs: BarbStrand[] = [];
+  const lowerBarbs: BarbStrand[] = [];
+  const downyBarbs: BarbStrand[] = [];
+
+  // Natural feather splits (small air gaps separating barb clusters)
+  const upperSplits = [0.33, 0.64];
+  const lowerSplits = [0.24, 0.49, 0.72, 0.86];
+
+  const splitGapFactor = (u: number, splits: number[]) => {
+    for (const s of splits) {
+      const d = Math.abs(u - s);
+      if (d < 0.022) return 0.0; // clean natural split gap
+      if (d < 0.048) return 0.72 + (d - 0.022) * 10;
+    }
+    return 1.0;
+  };
+
+  // Upper leading vane: 32 sleek curved hairs sweeping gently forward & out
+  const upperCount = 32;
+  for (let i = 0; i < upperCount; i++) {
+    const u = 0.06 + (i / (upperCount - 1)) * 0.91;
+    const gap = splitGapFactor(u, upperSplits);
+    if (gap === 0) continue;
+
+    const p = spineAt(u);
+    const envelope = Math.pow(Math.sin(Math.pow(u, 0.78) * Math.PI), 0.72);
+    const isStray = i % 4 === 1 || i === upperCount - 2;
+    const jitter = 0.86 + rand() * 0.28 + (isStray ? 0.22 : 0);
+    const barbLen = (3.4 + envelope * 11.4) * gap * jitter;
+
+    // Swept aerodynamic angle along spine + outward normal
+    const sweepFwd = 0.56 + u * 0.26;
+    const out = 0.82 - u * 0.22;
+    const dirX = p.ux * sweepFwd + p.nx * out;
+    const dirY = p.uy * sweepFwd + p.ny * out;
+    const dLen = Math.hypot(dirX, dirY) || 1;
+    const bx = dirX / dLen;
+    const by = dirY / dLen;
+
+    const endX = p.x + bx * barbLen;
+    const endY = p.y + by * barbLen;
+    // Gentle outward-then-swept natural curve
+    const curl = (rand() - 0.35) * 1.4;
+    const ctrlX = p.x + (p.nx * 0.75 + p.ux * 0.35) * (barbLen * 0.58) + curl;
+    const ctrlY = p.y + (p.ny * 0.75 + p.uy * 0.35) * (barbLen * 0.58) + curl;
+
+    upperBarbs.push({
+      d: `M ${p.x.toFixed(1)} ${p.y.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`,
+      width: isStray ? 0.62 : 0.78 + envelope * 0.28,
+      opacity: isStray ? 0.74 : 0.84 + u * 0.14,
+      color: u > 0.6 ? '#ffffff' : '#eef0f6',
+    });
+  }
+
+  // Lower trailing vane: 38 fuller billowing curved hairs
+  const lowerCount = 38;
+  for (let i = 0; i < lowerCount; i++) {
+    const u = 0.05 + (i / (lowerCount - 1)) * 0.92;
+    const gap = splitGapFactor(u, lowerSplits);
+    if (gap === 0) continue;
+
+    const p = spineAt(u);
+    const envelope = Math.pow(Math.sin(Math.pow(u, 0.72) * Math.PI), 0.68);
+    const isStray = i % 5 === 2 || i === lowerCount - 2;
+    const jitter = 0.84 + rand() * 0.30 + (isStray ? 0.24 : 0);
+    const barbLen = (4.2 + envelope * 14.8) * gap * jitter;
+
+    const sweepFwd = 0.50 + u * 0.30;
+    const out = -(0.86 - u * 0.24);
+    const dirX = p.ux * sweepFwd + p.nx * out;
+    const dirY = p.uy * sweepFwd + p.ny * out;
+    const dLen = Math.hypot(dirX, dirY) || 1;
+    const bx = dirX / dLen;
+    const by = dirY / dLen;
+
+    const endX = p.x + bx * barbLen;
+    const endY = p.y + by * barbLen;
+    const curl = (rand() - 0.4) * 1.6;
+    const ctrlX = p.x + (-p.nx * 0.78 + p.ux * 0.30) * (barbLen * 0.56) + curl;
+    const ctrlY = p.y + (-p.ny * 0.78 + p.uy * 0.30) * (barbLen * 0.56) + curl;
+
+    lowerBarbs.push({
+      d: `M ${p.x.toFixed(1)} ${p.y.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`,
+      width: isStray ? 0.62 : 0.78 + envelope * 0.32,
+      opacity: isStray ? 0.72 : 0.82 + u * 0.14,
+      color: u > 0.65 ? '#f4f4fa' : '#d2d4de',
+    });
+  }
+
+  // Soft downy plumulaceous fluff wisps at the base where plume meets bare quill barrel
+  for (let i = 0; i < 8; i++) {
+    const u = -0.02 + (i / 7) * 0.13;
+    const side = i % 2 === 0 ? 1 : -1;
+    const p = spineAt(Math.max(0, u));
+    const baseShift = u < 0 ? u * 40 : 0;
+    const sx = p.x + p.ux * baseShift;
+    const sy = p.y + p.uy * baseShift;
+    const len = 4.5 + rand() * 4.8;
+    const angleSpread = side * (0.85 + rand() * 0.35);
+    const ctrlX = sx + (p.nx * angleSpread - p.ux * 0.15) * (len * 0.55);
+    const ctrlY = sy + (p.ny * angleSpread - p.uy * 0.15) * (len * 0.55);
+    const endX = sx + (p.nx * angleSpread + p.ux * 0.25) * len;
+    const endY = sy + (p.ny * angleSpread + p.uy * 0.25) * len;
+
+    downyBarbs.push({
+      d: `M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`,
+      width: 0.58 + rand() * 0.18,
+      opacity: 0.68 + rand() * 0.20,
+      color: '#e4e4ec',
+    });
+  }
+
+  // Soft wispy translucent inner core (no hard border — gives subtle fullness beneath the hairs)
+  const softCorePath =
+    'M 16.5 46.0 C 17.5 34.0 27.0 19.5 41.0 10.5 C 48.0 6.5 54.5 4.2 59.5 4.0 C 57.5 11.5 50.5 22.5 41.5 32.0 C 32.5 41.0 22.5 45.8 16.5 46.0 Z';
+
+  // Tapered curved central rachis (thick ivory barrel tapering smoothly to a fine hair tip)
+  const rachisPath =
+    'M 8.0 54.8 C 14.5 47.6 24.5 36.8 35.5 25.8 C 45.2 16.2 53.6 8.8 59.8 3.6 C 53.8 9.4 45.6 17.0 36.2 26.6 C 25.4 37.8 15.6 48.6 9.4 56.0 Z';
+
+  return { upperBarbs, lowerBarbs, downyBarbs, softCorePath, rachisPath };
+}
+
+const FEATHER_GEO = buildFeatherGeometry();
+
+/**
+ * Redesigned Naturally Hairy Vintage Feather Quill Cursor + Floating Micro-Particles:
+ * - Anatomically layered plume built from ~78 fine curved barb hairs (no stiff solid leaf outline!)
+ * - Soft floating monochrome motes & micro-wisps shedding smoothly out from the feather on glide,
+ *   click, and as a whisper-subtle ambient trickle (zero extra canvas VRAM, 0% CPU when hidden)
  */
 export const CustomCursor: React.FC = () => {
   const quillRef = useRef<HTMLDivElement | null>(null);
@@ -38,6 +202,7 @@ export const CustomCursor: React.FC = () => {
     let lastMouseX = -100;
     let lastMouseY = -100;
     let distSinceSpawn = 0;
+    let ambientAccum = 0;
     let tiltDeg = 0;
     let targetTilt = 0;
     let isHovering = false;
@@ -54,40 +219,56 @@ export const CustomCursor: React.FC = () => {
       vx: 0,
       vy: 0,
       age: 0,
-      life: 0.7,
-      size: 2,
+      life: 0.9,
       rot: 0,
       vRot: 0,
       isWisp: idx % 3 === 0,
-      swayPhase: idx * 1.37,
+      swayPhase: idx * 1.43,
     }));
 
-    const spawnParticle = (originX: number, originY: number, moveDx: number, moveDy: number, burst = false) => {
-      if (reducedMotion) return;
+    const spawnParticle = (
+      originX: number,
+      originY: number,
+      moveDx: number,
+      moveDy: number,
+      mode: 'glide' | 'ambient' | 'burst'
+    ) => {
+      if (reducedMotion || !isVisible) return;
       const p = pool[poolCursor];
       const idx = poolCursor;
       poolCursor = (poolCursor + 1) % PARTICLE_POOL_SIZE;
 
-      // Emit along the feather plume (upper-right diagonal from nib tip at originX, originY)
-      const along = burst ? 0.12 + Math.random() * 0.55 : 0.22 + Math.random() * 0.68;
-      const jitterX = (Math.random() - 0.5) * 8;
-      const jitterY = (Math.random() - 0.5) * 8;
+      // Spawn directly along the diagonal feathery plume (from lower fluff to wispy tip!)
+      const along =
+        mode === 'burst'
+          ? 0.10 + Math.random() * 0.65
+          : 0.24 + Math.random() * 0.68;
+      const perp = (Math.random() - 0.5) * 14;
 
       p.active = true;
-      p.x = originX + along * 34 + jitterX;
-      p.y = originY - along * 34 + jitterY;
+      p.x = originX + along * 38 + perp * 0.7;
+      p.y = originY - along * 38 + perp * 0.7;
 
-      // Soft outward drift opposing glide direction + gentle buoyant breeze
       const angle = Math.random() * Math.PI * 2;
-      const speed = burst ? 26 + Math.random() * 34 : 10 + Math.random() * 20;
-      p.vx = Math.cos(angle) * speed - moveDx * 0.35 + (Math.random() - 0.35) * 10;
-      p.vy = Math.sin(angle) * speed - moveDy * 0.35 - (12 + Math.random() * 14);
+      const speed =
+        mode === 'burst'
+          ? 28 + Math.random() * 38
+          : mode === 'ambient'
+            ? 8 + Math.random() * 14
+            : 14 + Math.random() * 24;
+
+      p.vx = Math.cos(angle) * speed - moveDx * 0.32 + (Math.random() - 0.4) * 12;
+      p.vy = Math.sin(angle) * speed - moveDy * 0.32 - (14 + Math.random() * 16);
       p.age = 0;
-      p.life = burst ? 0.50 + Math.random() * 0.28 : 0.58 + Math.random() * 0.36;
+      p.life =
+        mode === 'burst'
+          ? 0.62 + Math.random() * 0.32
+          : mode === 'ambient'
+            ? 0.95 + Math.random() * 0.45
+            : 0.78 + Math.random() * 0.40;
       p.isWisp = idx % 3 === 0;
-      p.size = p.isWisp ? 3.5 + Math.random() * 2.2 : 1.5 + Math.random() * 1.5;
       p.rot = -45 + (Math.random() - 0.5) * 110;
-      p.vRot = (Math.random() - 0.5) * 95;
+      p.vRot = (Math.random() - 0.5) * 105;
       p.swayPhase = Math.random() * Math.PI * 2;
     };
 
@@ -99,11 +280,16 @@ export const CustomCursor: React.FC = () => {
         const hoverRot = isHovering ? -7 : 0;
         const pressRot = isPressed ? -10 : 0;
         const scale = isPressed ? 0.93 : isHovering ? 1.07 : 1.0;
-        svgWrapRef.current.style.transform = `translate(-1.6px, -97.2%) rotate(${(tiltDeg + hoverRot + pressRot).toFixed(2)}deg) scale(${scale})`;
+        svgWrapRef.current.style.transform = `translate(-1.8px, -96.8%) rotate(${(tiltDeg + hoverRot + pressRot).toFixed(2)}deg) scale(${scale})`;
       }
     };
 
     const animLoop = (now: number) => {
+      if (document.hidden || !isVisible) {
+        rafId = 0;
+        return;
+      }
+
       const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05);
       lastTime = now;
 
@@ -111,7 +297,15 @@ export const CustomCursor: React.FC = () => {
       tiltDeg += (targetTilt - tiltDeg) * (1 - Math.exp(-15 * dt));
       applyTransform();
 
-      let anyParticleActive = false;
+      // Gentle ambient trickle so small particles always softly drift out from the feather
+      if (!reducedMotion) {
+        ambientAccum += dt;
+        if (ambientAccum >= 0.42) {
+          ambientAccum = 0;
+          spawnParticle(mouseX, mouseY, 0, 0, 'ambient');
+        }
+      }
+
       for (let i = 0; i < PARTICLE_POOL_SIZE; i++) {
         const p = pool[i];
         const el = particleElsRef.current[i];
@@ -124,38 +318,32 @@ export const CustomCursor: React.FC = () => {
           continue;
         }
 
-        anyParticleActive = true;
-        const drag = Math.pow(0.22, dt);
+        const drag = Math.pow(0.24, dt);
         p.vx *= drag;
-        p.vy = p.vy * drag - 10 * dt; // delicate feather-light upward float
-        const sway = Math.sin(p.age * 7.5 + p.swayPhase) * 14;
+        p.vy = p.vy * drag - 11 * dt;
+        const sway = Math.sin(p.age * 6.8 + p.swayPhase) * 15;
         p.x += (p.vx + sway) * dt;
         p.y += p.vy * dt;
         p.rot += p.vRot * dt;
 
         const progress = p.age / p.life;
-        // Soft fade-in then graceful feather fade-out
-        const alpha = progress < 0.14 ? progress / 0.14 : Math.pow(1 - (progress - 0.14) / 0.86, 1.45);
-        const scale = 1 - progress * 0.42;
+        const alpha =
+          progress < 0.14
+            ? progress / 0.14
+            : Math.pow(1 - (progress - 0.14) / 0.86, 1.35);
+        const scale = 1 - progress * 0.45;
 
         if (el) {
-          el.style.opacity = (alpha * (p.isWisp ? 0.78 : 0.88)).toFixed(3);
+          el.style.opacity = (alpha * (p.isWisp ? 0.85 : 0.92)).toFixed(3);
           el.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0) rotate(${p.rot.toFixed(1)}deg) scale(${scale.toFixed(2)})`;
         }
       }
 
-      if (anyParticleActive || Math.abs(tiltDeg) > 0.12 || Math.abs(targetTilt) > 0.12) {
-        rafId = requestAnimationFrame(animLoop);
-      } else {
-        tiltDeg = 0;
-        targetTilt = 0;
-        applyTransform();
-        rafId = 0;
-      }
+      rafId = requestAnimationFrame(animLoop);
     };
 
     const wakeLoop = () => {
-      if (!rafId) {
+      if (!rafId && isVisible && !document.hidden) {
         lastTime = performance.now();
         rafId = requestAnimationFrame(animLoop);
       }
@@ -180,9 +368,9 @@ export const CustomCursor: React.FC = () => {
 
       const dist = Math.hypot(dx, dy);
       distSinceSpawn += dist;
-      if (distSinceSpawn >= 14) {
+      if (distSinceSpawn >= 9) {
         distSinceSpawn = 0;
-        spawnParticle(mouseX, mouseY, dx, dy, false);
+        spawnParticle(mouseX, mouseY, dx, dy, 'glide');
       }
 
       const target = e.target as HTMLElement | null;
@@ -200,8 +388,8 @@ export const CustomCursor: React.FC = () => {
     const onMouseDown = () => {
       isPressed = true;
       if (isVisible) {
-        for (let k = 0; k < 3; k++) {
-          spawnParticle(mouseX, mouseY, 0, 0, true);
+        for (let k = 0; k < 4; k++) {
+          spawnParticle(mouseX, mouseY, 0, 0, 'burst');
         }
       }
       applyTransform();
@@ -228,23 +416,34 @@ export const CustomCursor: React.FC = () => {
       }
     };
 
+    const onVisibilityChange = () => {
+      if (document.hidden && rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      } else if (!document.hidden && isVisible) {
+        wakeLoop();
+      }
+    };
+
     window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('mousedown', onMouseDown, { passive: true });
     window.addEventListener('mouseup', onMouseUp, { passive: true });
     document.addEventListener('mouseleave', onMouseLeave);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mouseup', onMouseUp);
       document.removeEventListener('mouseleave', onMouseLeave);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 
   return (
     <>
-      {/* Lightweight Floating Monochrome Feather Dust & Tiny Micro-Wisp Particle Pool */}
+      {/* Floating Monochrome Feather Stardust & Delicate Micro-Wisp Particle Pool */}
       <div
         aria-hidden="true"
         className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden"
@@ -259,188 +458,124 @@ export const CustomCursor: React.FC = () => {
               }}
               className={
                 isWisp
-                  ? 'fixed top-0 left-0 w-[5px] h-[1.2px] rounded-full bg-white/90 will-change-transform opacity-0'
-                  : 'fixed top-0 left-0 w-[2.4px] h-[2.4px] rounded-full bg-white will-change-transform opacity-0'
+                  ? 'fixed top-0 left-0 w-[6px] h-[1.2px] rounded-full bg-white/95 will-change-transform opacity-0'
+                  : 'fixed top-0 left-0 w-[2.6px] h-[2.6px] rounded-full bg-white will-change-transform opacity-0'
               }
               style={{
                 transform: 'translate3d(-100px, -100px, 0)',
-                boxShadow: '0 0 4px rgba(255, 255, 255, 0.55)',
+                boxShadow: '0 0 5px rgba(255, 255, 255, 0.7)',
               }}
             />
           );
         })}
       </div>
 
-      {/* Redesigned Hairy Organic Vintage Feather Quill Cursor */}
+      {/* Anatomically Layered Hairy Vintage Feather Quill Cursor */}
       <div
         ref={quillRef}
         aria-hidden="true"
         className="fixed top-0 left-0 pointer-events-none z-[9999] will-change-transform opacity-0"
         style={{ transform: 'translate3d(-100px, -100px, 0)' }}
       >
-        {/* Pivot pinned to the razor-sharp nib tip at (1.6px, 97.2%) */}
         <div
           ref={svgWrapRef}
           className="will-change-transform"
           style={{
-            transformOrigin: '1.6px 97.2%',
-            transform: 'translate(-1.6px, -97.2%)',
-            filter: 'drop-shadow(0 2px 5px rgba(0, 0, 0, 0.88))',
+            transformOrigin: '1.8px 96.8%',
+            transform: 'translate(-1.8px, -96.8%)',
+            filter: 'drop-shadow(0 1.5px 4px rgba(0, 0, 0, 0.95))',
           }}
         >
           <svg
-            width="52"
-            height="52"
+            width="54"
+            height="54"
             viewBox="0 0 64 64"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              <linearGradient id="quillUpperVane" x1="15" y1="44" x2="58" y2="4" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#cfcfd8" />
-                <stop offset="48%" stopColor="#f2f2f7" />
-                <stop offset="100%" stopColor="#ffffff" />
+              <linearGradient id="softPlumeCore" x1="16" y1="46" x2="58" y2="5" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#a1a1aa" stopOpacity="0.18" />
+                <stop offset="55%" stopColor="#e4e4ec" stopOpacity="0.34" />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity="0.40" />
               </linearGradient>
-              <linearGradient id="quillLowerVane" x1="18" y1="47" x2="59" y2="10" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#9d9da8" />
-                <stop offset="50%" stopColor="#d4d4de" />
+              <linearGradient id="rachisGrad" x1="8" y1="56" x2="60" y2="4" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#e4e4ec" />
+                <stop offset="45%" stopColor="#ffffff" />
                 <stop offset="100%" stopColor="#f4f4f8" />
               </linearGradient>
             </defs>
 
-            {/* 1. FINE WISPY OUTER FEATHER HAIRS (tasteful airy halo of curved barbs extending past the vane) */}
-            <g stroke="#e4e4ec" strokeLinecap="round" fill="none" opacity="0.88">
-              {/* Upper-left sweeping barb wisps */}
-              <path d="M 18.2 38.6 Q 14.2 33.4 15.2 28.0" strokeWidth="0.72" />
-              <path d="M 20.6 34.4 Q 16.6 28.2 18.4 22.8" strokeWidth="0.76" />
-              <path d="M 24.4 29.0 Q 21.0 22.4 23.8 17.6" strokeWidth="0.78" />
-              <path d="M 29.2 23.4 Q 26.8 16.8 30.2 12.6" strokeWidth="0.76" />
-              <path d="M 34.8 17.8 Q 33.6 11.4 37.8 8.0" strokeWidth="0.74" />
-              <path d="M 41.2 12.6 Q 41.6 7.0 46.2 4.6" strokeWidth="0.70" />
-              <path d="M 48.0 8.2 Q 50.2 4.0 54.8 2.8" strokeWidth="0.64" />
-              {/* Lower-right trailing barb wisps */}
-              <path d="M 21.6 42.6 Q 27.6 46.2 33.0 44.2" strokeWidth="0.74" />
-              <path d="M 26.6 39.2 Q 33.8 42.4 39.4 39.8" strokeWidth="0.78" />
-              <path d="M 32.0 34.8 Q 39.6 37.2 45.2 34.0" strokeWidth="0.78" />
-              <path d="M 37.6 29.6 Q 45.2 31.2 50.2 27.4" strokeWidth="0.76" />
-              <path d="M 43.2 23.8 Q 50.2 24.6 54.6 20.4" strokeWidth="0.72" />
-              <path d="M 48.2 18.0 Q 54.2 17.8 57.8 13.6" strokeWidth="0.68" />
-              <path d="M 52.6 12.2 Q 57.6 11.2 60.4 7.4" strokeWidth="0.62" />
-              {/* Delicate wispy plume tip strands */}
-              <path d="M 56.2 6.8 Q 59.6 4.4 62.0 2.4" strokeWidth="0.65" />
-              <path d="M 54.4 8.0 Q 57.8 3.8 60.2 1.6" strokeWidth="0.58" />
+            {/* 1. MISTY TRANSLUCENT INNER PLUME BODY (zero solid border so outer edge is 100% fine hairs!) */}
+            <path d={FEATHER_GEO.softCorePath} fill="url(#softPlumeCore)" />
+
+            {/* 2. LOWER TRAILING FEATHER BARB HAIRS (soft pearl-silver depth) */}
+            <g fill="none" strokeLinecap="round">
+              {FEATHER_GEO.lowerBarbs.map((b, i) => (
+                <path
+                  key={`lb-${i}`}
+                  d={b.d}
+                  stroke={b.color}
+                  strokeWidth={b.width}
+                  opacity={b.opacity}
+                />
+              ))}
             </g>
 
-            {/* 2. UPPER LEADING FEATHER VANE (deeply parted natural bird-feather clusters) */}
+            {/* 3. UPPER LEADING FEATHER BARB HAIRS (bright luminous white) */}
+            <g fill="none" strokeLinecap="round">
+              {FEATHER_GEO.upperBarbs.map((b, i) => (
+                <path
+                  key={`ub-${i}`}
+                  d={b.d}
+                  stroke={b.color}
+                  strokeWidth={b.width}
+                  opacity={b.opacity}
+                />
+              ))}
+            </g>
+
+            {/* 4. SOFT DOWNY FLUFF TUFTS AT BASE OF PLUME */}
+            <g fill="none" strokeLinecap="round">
+              {FEATHER_GEO.downyBarbs.map((b, i) => (
+                <path
+                  key={`db-${i}`}
+                  d={b.d}
+                  stroke={b.color}
+                  strokeWidth={b.width}
+                  opacity={b.opacity}
+                />
+              ))}
+            </g>
+
+            {/* 5. TAPERED CURVED CENTRAL RACHIS (SPINE) & HOLLOW QUILL BARREL */}
             <path
-              d="M 16.4 41.8
-                 C 15.8 36.2 17.6 30.2 21.4 24.8
-                 L 25.8 25.0
-                 L 22.8 22.4
-                 C 26.0 17.8 30.2 13.8 35.2 10.6
-                 L 38.4 12.4
-                 L 37.2 9.4
-                 C 41.8 6.8 46.6 5.0 51.4 4.0
-                 L 51.8 6.4
-                 L 53.6 3.7
-                 C 56.2 3.3 58.6 3.2 60.8 3.3
-                 C 53.8 9.8 44.2 18.4 34.8 27.0
-                 C 27.0 34.0 21.0 38.8 16.4 41.8 Z"
-              fill="url(#quillUpperVane)"
+              d={FEATHER_GEO.rachisPath}
+              fill="url(#rachisGrad)"
               stroke="#09090b"
-              strokeWidth="0.95"
+              strokeWidth="0.65"
               strokeLinejoin="round"
             />
 
-            {/* 3. LOWER TRAILING FEATHER VANE (gracefully notched billowing barbs) */}
+            {/* 6. FINE CALLIGRAPHIC DIP-PEN NIB (pinpoint click tip at exact 2, 62) */}
             <path
-              d="M 18.6 43.2
-                 C 22.8 44.6 27.8 44.0 32.4 41.6
-                 L 29.0 38.8
-                 L 34.4 40.4
-                 C 38.2 38.2 41.8 35.2 44.8 31.6
-                 L 40.6 30.2
-                 L 46.2 29.8
-                 C 49.0 26.4 51.4 22.8 53.4 19.0
-                 L 49.0 18.6
-                 L 54.4 17.0
-                 C 56.2 13.8 57.8 10.6 58.8 7.6
-                 L 55.6 8.2
-                 L 59.6 5.8
-                 C 60.1 4.8 60.5 4.0 60.8 3.3
-                 C 53.0 10.4 43.0 19.6 33.4 28.4
-                 C 26.6 34.6 21.6 39.6 18.6 43.2 Z"
-              fill="url(#quillLowerVane)"
-              stroke="#09090b"
-              strokeWidth="0.95"
-              strokeLinejoin="round"
-            />
-
-            {/* 4. INTERNAL FINE FEATHER BARB TEXTURE (dense curved strands radiating from the shaft) */}
-            <g stroke="#18181b" strokeLinecap="round" fill="none" opacity="0.52">
-              {/* Upper vane barb lines */}
-              <path d="M 20.4 38.6 Q 19.2 33.8 19.8 29.6" strokeWidth="0.65" />
-              <path d="M 23.6 35.6 Q 22.6 30.2 23.6 25.8" strokeWidth="0.65" />
-              <path d="M 27.2 32.2 Q 26.6 26.4 28.0 21.4" strokeWidth="0.65" />
-              <path d="M 31.2 28.4 Q 31.0 22.4 33.0 17.2" strokeWidth="0.65" />
-              <path d="M 35.4 24.4 Q 35.8 18.4 38.2 13.2" strokeWidth="0.62" />
-              <path d="M 40.0 20.2 Q 41.0 14.4 43.8 9.6" strokeWidth="0.60" />
-              <path d="M 44.8 15.8 Q 46.4 10.6 49.4 6.8" strokeWidth="0.58" />
-              <path d="M 49.8 11.4 Q 52.0 7.4 55.0 4.8" strokeWidth="0.55" />
-              {/* Lower vane barb lines */}
-              <path d="M 22.2 40.0 Q 26.6 41.0 30.4 40.2" strokeWidth="0.65" />
-              <path d="M 25.8 36.8 Q 30.8 37.8 35.4 36.8" strokeWidth="0.65" />
-              <path d="M 29.8 33.0 Q 35.4 34.0 40.2 32.6" strokeWidth="0.65" />
-              <path d="M 34.2 29.0 Q 40.0 29.8 44.8 28.0" strokeWidth="0.62" />
-              <path d="M 38.8 24.6 Q 44.6 25.2 49.2 23.2" strokeWidth="0.60" />
-              <path d="M 43.4 20.2 Q 49.0 20.4 53.0 18.0" strokeWidth="0.58" />
-              <path d="M 48.0 15.6 Q 53.0 15.4 56.4 12.8" strokeWidth="0.55" />
-              <path d="M 52.4 11.2 Q 56.2 10.4 58.6 8.2" strokeWidth="0.52" />
-            </g>
-
-            {/* 5. SOFT DOWNY BASE FLUFF HAIRS (delicate curved tufts where plume meets bare quill barrel) */}
-            <g stroke="#e4e4ec" strokeLinecap="round" fill="none" opacity="0.88">
-              <path d="M 16.4 42.4 Q 13.0 40.6 12.2 37.4" strokeWidth="0.72" />
-              <path d="M 15.2 44.0 Q 11.6 43.0 10.4 40.2" strokeWidth="0.68" />
-              <path d="M 14.2 45.6 Q 11.0 45.4 9.6 43.2" strokeWidth="0.62" />
-              <path d="M 18.0 44.2 Q 20.6 47.0 24.0 46.8" strokeWidth="0.72" />
-              <path d="M 16.6 45.8 Q 19.2 48.6 22.6 48.8" strokeWidth="0.66" />
-              <path d="M 15.4 47.2 Q 17.6 49.6 20.4 50.0" strokeWidth="0.58" />
-            </g>
-
-            {/* 6. SLENDER CURVED CENTRAL SHAFT (RACHIS) & EXPOSED QUILL BARREL (CALAMUS) */}
-            <path
-              d="M 7.8 54.4 C 13.6 47.6 23.4 37.4 34.4 27.0 C 44.6 17.4 53.6 9.4 59.8 3.8"
-              stroke="#09090b"
-              strokeWidth="2.9"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 8.2 54.0 C 13.8 47.4 23.4 37.4 34.4 27.0 C 44.6 17.4 53.6 9.4 59.6 4.0"
-              stroke="#ffffff"
-              strokeWidth="1.45"
-              strokeLinecap="round"
-            />
-
-            {/* 7. CALLIGRAPHIC HAND-CUT DIP-PEN NIB (pinpoint click tip at exact 2, 62!) */}
-            <path
-              d="M 2.0 62.0 L 6.4 52.8 L 10.2 56.6 Z"
+              d="M 2.0 62.0 L 6.6 53.0 L 10.2 56.6 Z"
               fill="#18181b"
               stroke="#ffffff"
-              strokeWidth="0.88"
+              strokeWidth="0.82"
               strokeLinejoin="round"
             />
             <line
               x1="2.4"
               y1="61.6"
-              x2="6.6"
+              x2="6.7"
               y2="56.4"
               stroke="#ffffff"
-              strokeWidth="0.65"
+              strokeWidth="0.6"
               strokeLinecap="round"
             />
-            <circle cx="7.0" cy="56.0" r="0.82" fill="#ffffff" />
-            <circle cx="2.0" cy="62.0" r="1.0" fill="#ffffff" />
+            <circle cx="7.0" cy="56.0" r="0.78" fill="#ffffff" />
+            <circle cx="2.0" cy="62.0" r="0.95" fill="#ffffff" />
           </svg>
         </div>
       </div>
