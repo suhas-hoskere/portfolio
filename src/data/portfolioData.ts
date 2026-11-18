@@ -9,7 +9,7 @@ export const PROFILE = {
   resumeFilename: 'Suhas_Hoskere_Resume.pdf',
   roleLine: 'Passionate Writer · AI & ML Student at PES University · Open-Source Contributor',
   summary:
-    'A passionate writer and B.Tech AI & Machine Learning student at PES University (Electronic City Campus, Bangalore). Open-source contributor building voice pipelines (Neural TTS, Moonshine Voices, Whisper engines), desktop utilities, multi-script web apps, and applied ML tools.',
+    'A passionate writer crafting poems, stories, lyrics, and raw reflections in Kannada and English — exploring love, memory, and pain through words. Alongside writing, a B.Tech AI & Machine Learning student at PES University (Electronic City Campus, Bangalore) and open-source contributor building voice pipelines (Neural TTS, Moonshine Voices, Whisper engines), desktop utilities, and web apps.',
 } as const;
 
 export const SOCIAL_LINKS = {
@@ -56,7 +56,7 @@ export const EDUCATION = [
 export const PERSONAL_QA = {
   whyMadhva: 'Madhva is Suhas’s favorite name — so he named his personal portfolio assistant after it.',
   writingThemes:
-    'He mostly writes about love — and pain, of course. He loves pain as a raw, honest lens for creative expression in both Kannada and English.',
+    'He writes poems, stories, lyrics, and raw reflections in Kannada and English — mostly about love, memory, and pain. He loves pain as a raw, honest lens for creative expression.',
   whyAiMl:
     'He chose Artificial Intelligence & Machine Learning because he believes it is the future — and backs it up by building voice pipelines (Neural TTS, Moonshine Voices, Whisper) and applied ML apps.',
   futureGoal:

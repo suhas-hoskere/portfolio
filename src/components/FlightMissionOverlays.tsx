@@ -105,12 +105,17 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   className={`text-sm sm:text-base lg:text-[17px] text-zinc-200 font-sans font-light leading-relaxed max-w-2xl ${enterCls}`}
                   style={{ animationDelay: '140ms' }}
                 >
-                  A <span className="text-white font-medium">passionate writer</span> and{' '}
+                  A <span className="text-white font-medium">passionate writer</span> crafting{' '}
+                  <span className="text-white font-medium">
+                    poems, stories, lyrics, and raw reflections
+                  </span>{' '}
+                  in Kannada and English — exploring love, memory, and pain through words. Alongside
+                  writing, an{' '}
                   <span className="text-white font-medium">
                     AI &amp; Machine Learning student at PES University
-                  </span>
-                  . Open-source contributor building voice pipelines (Neural TTS, Moonshine,
-                  Whisper), desktop utilities, multi-script web apps, and applied ML tools.
+                  </span>{' '}
+                  and open-source contributor building voice pipelines (Neural TTS, Moonshine,
+                  Whisper), desktop utilities, and web apps.
                 </p>
 
                 <div
