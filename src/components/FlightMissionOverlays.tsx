@@ -104,35 +104,39 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   </div>
                 </div>
 
-                <p
-                  className={`text-[15px] sm:text-base text-zinc-300 font-space font-normal leading-[1.78] max-w-2xl ${enterCls}`}
+                <div
+                  className={`space-y-3 text-[15px] sm:text-base text-zinc-300 font-space font-normal leading-[1.75] max-w-2xl ${enterCls}`}
                   style={{ animationDelay: '140ms' }}
                 >
-                  A{' '}
-                  <em
-                    className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
-                    style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
-                  >
-                    passionate writer
-                  </em>{' '}
-                  crafting{' '}
-                  <em
-                    className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
-                    style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
-                  >
-                    poems, stories, lyrics, and raw reflections
-                  </em>{' '}
-                  in Kannada and English — exploring love, memory, and pain through words. Alongside
-                  writing, an{' '}
-                  <em
-                    className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
-                    style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
-                  >
-                    AI &amp; Machine Learning student at PES University
-                  </em>{' '}
-                  and open-source contributor building voice pipelines (Neural TTS, Moonshine,
-                  Whisper), desktop utilities, and web apps.
-                </p>
+                  <p>
+                    A{' '}
+                    <em
+                      className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
+                      style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
+                    >
+                      passionate writer
+                    </em>{' '}
+                    crafting{' '}
+                    <em
+                      className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
+                      style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
+                    >
+                      poems, stories, lyrics, and raw reflections
+                    </em>{' '}
+                    in Kannada and English — exploring love, memory, and pain through words.
+                  </p>
+                  <p>
+                    Alongside writing, an{' '}
+                    <em
+                      className="font-signature italic font-semibold text-[19px] sm:text-[21px] text-white tracking-[0.01em]"
+                      style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontStyle: 'italic', fontWeight: 600 }}
+                    >
+                      AI &amp; Machine Learning student at PES University
+                    </em>{' '}
+                    and open-source contributor building voice pipelines (Neural TTS, Moonshine,
+                    Whisper), desktop utilities, and web apps.
+                  </p>
+                </div>
 
                 <div
                   className={`pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3 ${enterCls}`}
