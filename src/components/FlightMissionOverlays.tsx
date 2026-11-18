@@ -695,6 +695,13 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     </a>
                   </div>
                 </div>
+
+                {/* Minimal Privacy & Transparency Note */}
+                <p className="pt-3 border-t border-white/10 text-[10px] font-mono text-zinc-500 leading-relaxed max-w-lg">
+                  Privacy: Anonymous browser &amp; engagement stats (no cookies, no IP stored, no
+                  third-party tracking) and Madhva queries are logged to improve this site. Email
+                  suhashoskere@gmail.com for removal.
+                </p>
               </div>
             </section>
           </div>

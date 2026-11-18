@@ -1,16 +1,10 @@
 /**
- * Strictly Anonymous, Non-PII Visitor, Engagement & Madhva Analytics Logger.
- * - Zero cookies, zero localStorage, zero raw IP, zero ISP, zero raw User-Agent, zero GPS.
- * - Sends clean, human-readable coarse locale/device/display info + engagement summary + Madhva Q&A
- *   to a Google Apps Script Web App URL configured via VITE_SHEETS_WEBHOOK_URL.
- * - Automatically redacts accidental emails/phone numbers inside Madhva queries before logging.
+ * Strictly Anonymous, Zero-Third-Party Visitor, Engagement & Madhva Analytics Logger.
+ * - Zero cookies, zero localStorage, zero IP lookup, zero ISP, zero raw User-Agent, zero GPS.
+ * - Uses only local browser metadata (Timezone, Language, Device, OS, Browser, Screen, Referrer)
+ *   + engagement summary + Madhva Q&A logs sent to VITE_SHEETS_WEBHOOK_URL.
+ * - Neutralizes Google Sheets formula injection and redacts accidental emails/phone numbers.
  */
-
-interface CoarseGeo {
-  city: string;
-  region: string;
-  country: string;
-}
 
 type PortfolioAction =
   | 'resume'
@@ -28,14 +22,18 @@ const STAGE_NAMES = [
   '05 Contact',
 ] as const;
 
-// Purely ephemeral per-tab random key used only by Apps Script CacheService to update the same row
-// (never stored in cookies/localStorage and never written as a column in the spreadsheet)
-const sessionTag = Math.random().toString(36).slice(2, 10);
+const MAX_MADHVA_LOGS_PER_SESSION = 40;
+
+// Ephemeral per-tab cryptographic key used only by Apps Script CacheService to update the same row
+const sessionTag =
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
 let initialized = false;
 let visitStartMs = Date.now();
-let cachedGeo: CoarseGeo = { city: 'Unknown', region: 'Unknown', country: 'Unknown' };
 let cachedDeviceType: 'Desktop' | 'Mobile' | 'Tablet' = 'Desktop';
+let cachedTimezone = 'Unknown';
 
 // In-memory engagement state flushed on page exit
 let maxScrollPct = 0;
@@ -50,8 +48,6 @@ const projectsViewed = new Set<string>();
 const linksClicked = new Set<string>();
 
 let lastFlushSignature = '';
-
-const MAX_MADHVA_LOGS_PER_SESSION = 40;
 
 function getWebhookUrl(): string {
   const raw = ((import.meta.env.VITE_SHEETS_WEBHOOK_URL as string | undefined) || '').trim();
@@ -114,46 +110,6 @@ function formatIST(date: Date): string {
     second: '2-digit',
     hour12: true,
   });
-}
-
-/** Transiently look up coarse city/region/country without ever storing the IP address */
-async function fetchCoarseGeo(): Promise<CoarseGeo> {
-  const tryEndpoint = async (url: string): Promise<CoarseGeo | null> => {
-    try {
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 2500);
-      const res = await fetch(url, { signal: controller.signal });
-      window.clearTimeout(timer);
-      if (!res.ok) return null;
-      const data = (await res.json()) as {
-        success?: boolean;
-        error?: boolean;
-        city?: string;
-        region?: string;
-        country?: string;
-        country_name?: string;
-      };
-      if (data.success === false || data.error === true) return null;
-      const country = data.country_name || data.country || '';
-      if (!country && !data.city) return null;
-      return {
-        city: data.city || 'Unknown',
-        region: data.region || 'Unknown',
-        country: country || 'Unknown',
-      };
-    } catch {
-      return null;
-    }
-  };
-
-  return (
-    (await tryEndpoint('https://ipwho.is/')) ||
-    (await tryEndpoint('https://ipapi.co/json/')) || {
-      city: 'Unknown',
-      region: 'Unknown',
-      country: 'Unknown',
-    }
-  );
 }
 
 /** Prevent Google Sheets formula/CSV injection and redact accidental emails/phone numbers */
@@ -231,13 +187,14 @@ function flushEngagementUpdate(): void {
   );
 }
 
-export async function initVisitorAnalytics(): Promise<void> {
+export function initVisitorAnalytics(): void {
   if (typeof window === 'undefined' || initialized) return;
   initialized = true;
   visitStartMs = Date.now();
 
   const ua = navigator.userAgent || '';
   cachedDeviceType = detectDeviceType(ua);
+  cachedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
 
   // Flush final engagement summary cleanly when leaving or backgrounding the tab
   window.addEventListener('pagehide', flushEngagementUpdate);
@@ -253,8 +210,6 @@ export async function initVisitorAnalytics(): Promise<void> {
     connection?: { effectiveType?: string };
   };
   const now = new Date();
-  cachedGeo = await fetchCoarseGeo();
-
   const prefersDark =
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -263,10 +218,7 @@ export async function initVisitorAnalytics(): Promise<void> {
     type: 'visit',
     sessionTag,
     istTime: formatIST(now),
-    city: cachedGeo.city,
-    region: cachedGeo.region,
-    country: cachedGeo.country,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
+    timezone: cachedTimezone,
     language: navigator.language || 'Unknown',
     deviceType: cachedDeviceType,
     os: detectOS(ua),
@@ -336,9 +288,8 @@ export function trackMadhvaInteraction(
     query,
     status: replyKind === 'fallback' ? 'FALLBACK' : 'MATCHED',
     replyKind: replyKind || 'general',
-    replyHeadline: replyHeadline || '—',
-    city: cachedGeo.city,
-    country: cachedGeo.country,
+    replyHeadline: neutralizeFormula(replyHeadline || '—'),
+    timezone: cachedTimezone,
     deviceType: cachedDeviceType,
   });
 }

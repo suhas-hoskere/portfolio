@@ -172,7 +172,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
 
   const submitQuery = useCallback(
     (raw: string) => {
-      const cleaned = raw.trim();
+      const cleaned = raw.trim().slice(0, 300);
       if (!cleaned) return;
 
       cosmicAudio.playTelemetryChirp(1220, 0.04);
@@ -252,7 +252,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
 
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setEntries((prev) => [
-        ...prev,
+        ...prev.slice(-59),
         {
           id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           query: cleaned,
@@ -839,6 +839,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             <input
               ref={inputRef}
               type="text"
+              maxLength={300}
               value={inputVal}
               onChange={(e) => {
                 setInputVal(e.target.value);
@@ -864,6 +865,10 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             <CornerDownLeft className="w-3 h-3" />
           </button>
         </form>
+
+        <div className="px-3 py-1.5 bg-black/95 border-t border-white/10 text-[10px] font-mono text-zinc-500">
+          Questions are logged anonymously to improve Madhva — avoid sharing personal info.
+        </div>
       </div>
     </div>
   );
