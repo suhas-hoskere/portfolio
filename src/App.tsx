@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, startTransition, Suspe
 import { SpaceFlightCanvas2D } from './components/SpaceFlightCanvas2D';
 import { FlightHUD } from './components/FlightHUD';
 import { FlightMissionOverlays } from './components/FlightMissionOverlays';
-import type { ProjectData } from './components/FlightMissionOverlays';
+import type { ProjectData } from './data/portfolioData';
 import { CustomCursor } from './components/CustomCursor';
 import { MonochromeLiftoffLoader } from './components/MonochromeLiftoffLoader';
 import { cosmicAudio } from './components/AudioEngine';
@@ -213,14 +213,32 @@ export const App: React.FC = () => {
       }
     };
 
+    const handleScrollKeyCancel = (e: KeyboardEvent) => {
+      if (
+        e.key === 'ArrowDown' ||
+        e.key === 'ArrowUp' ||
+        e.key === 'PageDown' ||
+        e.key === 'PageUp' ||
+        e.key === 'Home' ||
+        e.key === 'End' ||
+        e.key === ' '
+      ) {
+        const tag = (e.target as HTMLElement | null)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        cancelProgrammaticScroll();
+      }
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('wheel', cancelProgrammaticScroll, { passive: true });
     window.addEventListener('touchstart', cancelProgrammaticScroll, { passive: true });
+    window.addEventListener('keydown', handleScrollKeyCancel, { passive: true });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('wheel', cancelProgrammaticScroll);
       window.removeEventListener('touchstart', cancelProgrammaticScroll);
+      window.removeEventListener('keydown', handleScrollKeyCancel);
       if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
       if (trailingUiTimerRef.current) clearTimeout(trailingUiTimerRef.current);
     };
@@ -262,9 +280,18 @@ export const App: React.FC = () => {
     setAudioActive(active);
   }, []);
 
-  const handleOpenTerminal = useCallback(() => {
-    setIsTerminalOpen(true);
+  const stopAutoTour = useCallback(() => {
+    if (scrollAnimRaf.current) {
+      cancelAnimationFrame(scrollAnimRaf.current);
+      scrollAnimRaf.current = null;
+    }
+    setIsAutoTourActive(false);
   }, []);
+
+  const handleOpenTerminal = useCallback(() => {
+    stopAutoTour();
+    setIsTerminalOpen(true);
+  }, [stopAutoTour]);
 
   // Crisp sidebar click jump: scrolls directly to the exact transparent section anchor
   const handleJumpToStage = useCallback(
@@ -303,14 +330,6 @@ export const App: React.FC = () => {
     [animateScrollTo]
   );
 
-  const stopAutoTour = useCallback(() => {
-    if (scrollAnimRaf.current) {
-      cancelAnimationFrame(scrollAnimRaf.current);
-      scrollAnimRaf.current = null;
-    }
-    setIsAutoTourActive(false);
-  }, []);
-
   const handleSelectProject = useCallback(
     (proj: ProjectData) => {
       stopAutoTour();
@@ -332,12 +351,13 @@ export const App: React.FC = () => {
       setAudioActive(true);
     }
 
-    const maxScroll = Math.max(
-      (trackRef.current?.scrollHeight || document.documentElement.scrollHeight) - window.innerHeight,
-      1
-    );
+    const getMaxScroll = () =>
+      Math.max(
+        (trackRef.current?.scrollHeight || document.documentElement.scrollHeight) - window.innerHeight,
+        1
+      );
     let currentY = window.scrollY || window.pageYOffset || 0;
-    if (currentY >= maxScroll - 10) {
+    if (currentY >= getMaxScroll() - 10) {
       currentY = 0;
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     }
@@ -353,6 +373,7 @@ export const App: React.FC = () => {
       lastNow = now;
       elapsedSec += dt;
 
+      const maxScroll = getMaxScroll();
       const remaining = maxScroll - currentY;
       if (remaining <= 0.5) {
         window.scrollTo({ top: maxScroll, behavior: 'instant' as ScrollBehavior });
@@ -403,6 +424,7 @@ export const App: React.FC = () => {
         scrollProgress={uiScrollProgress}
         activeStageIndex={activeStageIndex}
         audioActive={audioActive}
+        isAutoTourActive={isAutoTourActive}
         onToggleAudio={handleToggleAudio}
         onJumpToStage={handleJumpToStage}
         onOpenTerminal={handleOpenTerminal}

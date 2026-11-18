@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X, ArrowUpRight, ExternalLink } from 'lucide-react';
 import { GithubIcon } from './Icons';
-import type { ProjectData } from './FlightMissionOverlays';
+import type { ProjectData } from '../data/portfolioData';
 import { cosmicAudio } from './AudioEngine';
 
 interface FlightMissionModalProps {
@@ -31,8 +31,8 @@ export const FlightMissionModal: React.FC<FlightMissionModalProps> = ({ project,
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 pointer-events-auto">
       <div onClick={onClose} className="absolute inset-0 bg-black/85" />
 
-      {/* Compact single-screen modal: fits comfortably without scrolling, with Visit Website & GitHub immediately visible */}
-      <div className="animate-modal-in relative w-full max-w-2xl overflow-hidden rounded-2xl bg-[#09090b] border border-white/25 p-5 sm:p-6 space-y-4 text-left selection:bg-white selection:text-black shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
+      {/* Compact single-screen modal: non-scrollable on desktop, safe fallback on tiny short screens */}
+      <div className="animate-modal-in relative w-full max-w-2xl max-h-[92vh] overflow-y-auto sm:overflow-hidden rounded-2xl bg-[#09090b] border border-white/25 p-4 sm:p-6 space-y-3 sm:space-y-4 text-left selection:bg-white selection:text-black shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
         {/* Top Bar */}
         <div className="flex items-center justify-between border-b border-white/15 pb-3">
           <div className="flex items-center gap-2.5 flex-wrap">

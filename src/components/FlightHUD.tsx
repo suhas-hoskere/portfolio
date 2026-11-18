@@ -1,29 +1,13 @@
 import React, { useState } from 'react';
 import { VolumeX, ChevronDown, ArrowUp, ArrowDown, Rocket, Terminal } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
-
-export interface StageWaypoint {
-  id: string;
-  code: string;
-  shortLabel: string;
-  stageName: string;
-  altitude: string;
-  scrollFraction: number;
-}
-
-export const STAGES: StageWaypoint[] = [
-  { id: 'pad', code: '00', shortLabel: 'Home', stageName: 'Suhas Hoskere', altitude: 'Writer · AIML · OSS', scrollFraction: 0.0 },
-  { id: 'ascent', code: '01', shortLabel: 'Origins', stageName: 'Davanagere Roots', altitude: '2012 – 2025 // School & PU', scrollFraction: 0.395 },
-  { id: 'orbit', code: '02', shortLabel: 'PESU', stageName: 'PES University, BLR', altitude: '2025 – 2029 // B.Tech AIML', scrollFraction: 0.645 },
-  { id: 'heritage', code: '03', shortLabel: 'Writing', stageName: 'Kannada Koota & Writing', altitude: 'PESU EC Campus', scrollFraction: 0.745 },
-  { id: 'missions', code: '04', shortLabel: 'Projects', stageName: 'Open-Source & Private R&D', altitude: 'Dlives · santypes · ntools', scrollFraction: 0.850 },
-  { id: 'signal', code: '05', shortLabel: 'Contact', stageName: 'Establish Uplink', altitude: 'Email · GitHub · LinkedIn', scrollFraction: 0.985 },
-];
+import { STAGES } from '../data/portfolioData';
 
 interface FlightHUDProps {
   scrollProgress: number;
   activeStageIndex: number;
   audioActive: boolean;
+  isAutoTourActive?: boolean;
   onToggleAudio: () => void;
   onJumpToStage: (stageIndex: number) => void;
   onOpenTerminal?: () => void;
@@ -33,6 +17,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
   scrollProgress,
   activeStageIndex,
   audioActive,
+  isAutoTourActive = false,
   onToggleAudio,
   onJumpToStage,
   onOpenTerminal,
@@ -78,6 +63,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
           {onOpenTerminal && (
             <button
+              type="button"
               onClick={() => {
                 cosmicAudio.playTelemetryChirp(1200, 0.04);
                 onOpenTerminal();
@@ -91,6 +77,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
           )}
 
           <button
+            type="button"
             onClick={onToggleAudio}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border font-mono text-[11px] transition-colors cursor-pointer ${
               audioActive
@@ -242,8 +229,8 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         </div>
       </nav>
 
-      {/* ===== INITIAL SCROLL PROMPT (fades out cleanly once flight begins) ===== */}
-      {scrollProgress < 0.035 && (
+      {/* ===== INITIAL SCROLL PROMPT (fades out cleanly once flight or auto-tour begins) ===== */}
+      {scrollProgress < 0.035 && !isAutoTourActive && (
         <div className="absolute bottom-3.5 sm:bottom-5 left-0 right-0 flex justify-center pointer-events-none px-3">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#050505]/95 border border-white/15 text-[10px] font-mono tracking-[0.2em] text-zinc-200 uppercase">
             <span>SCROLL TO LAUNCH</span>

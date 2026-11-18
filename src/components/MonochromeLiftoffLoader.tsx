@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Rocket } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
@@ -49,6 +49,13 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
   );
   const [isFadingOut, setIsFadingOut] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const completedRef = useRef(false);
+
+  const finishOnce = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    onComplete();
+  }, [onComplete]);
 
   useEffect(() => {
     const reducedMotion =
@@ -56,7 +63,7 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (reducedMotion) {
-      const fastTimer = setTimeout(() => onComplete(), 350);
+      const fastTimer = setTimeout(() => finishOnce(), 350);
       return () => clearTimeout(fastTimer);
     }
 
@@ -349,7 +356,7 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
       } else if (!fadeTriggered) {
         fadeTriggered = true;
         setIsFadingOut(true);
-        doneTimer = setTimeout(() => onComplete(), 280);
+        doneTimer = setTimeout(() => finishOnce(), 280);
       }
     };
 
@@ -359,24 +366,24 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
       cancelAnimationFrame(rafId);
       if (doneTimer) clearTimeout(doneTimer);
     };
-  }, [onComplete]);
+  }, [finishOnce]);
 
   const handleInstantEnter = () => {
     cosmicAudio.playTelemetryChirp(1200, 0.04);
     setIsFadingOut(true);
-    setTimeout(onComplete, 180);
+    setTimeout(finishOnce, 180);
   };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === 'Escape') {
         setIsFadingOut(true);
-        setTimeout(onComplete, 160);
+        setTimeout(finishOnce, 160);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onComplete]);
+  }, [finishOnce]);
 
   const countdownLabel =
     progress < 30
@@ -389,7 +396,7 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-[#050505] text-white flex flex-col items-center justify-center px-5 select-none transition-all duration-400 ease-out ${
+      className={`fixed inset-0 z-50 bg-[#050505] text-white flex flex-col items-center justify-center px-5 select-none transition-all duration-300 ease-out ${
         isFadingOut ? 'opacity-0 -translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0'
       }`}
     >
@@ -397,6 +404,7 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
       <div className="absolute top-5 left-5 right-5 flex items-center justify-between text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-widest">
         <span>SHAR // SRIHARIKOTA PAD-02</span>
         <button
+          type="button"
           onClick={handleInstantEnter}
           className="px-2.5 py-1 rounded border border-white/20 hover:border-white text-zinc-300 hover:text-white transition-colors cursor-pointer"
         >
@@ -422,11 +430,11 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
               <Rocket className="w-3.5 h-3.5 text-white" />
               <span>PRE-FLIGHT SEQUENCE</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-space font-bold text-white tracking-tight">
-              Suhas Hoskere
+            <h1 className="text-2xl sm:text-3xl font-kannada font-bold text-white tracking-tight">
+              ಸುಹಾಸ್ ಹೊಸಕೆರೆ
             </h1>
-            <div className="font-kannada text-xs sm:text-sm text-zinc-400">
-              ಸುಹಾಸ್ ಹೊಸಕೆರೆ · ಬೆಂಗಳೂರು
+            <div className="font-space text-xs sm:text-sm text-zinc-400">
+              Suhas Hoskere · Bangalore
             </div>
           </div>
 
