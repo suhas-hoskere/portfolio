@@ -15,59 +15,36 @@ const MissionTerminalModal = lazy(() =>
   import('./components/MissionTerminalModal').then((m) => ({ default: m.MissionTerminalModal }))
 );
 
-interface FlightStep {
-  sp: number;
-  stage: number;
-  launchStep: number;
-  cooldownMs: number;
-}
+const SECTION_IDS = [
+  'section-pad',
+  'section-ascent',
+  'section-orbit',
+  'section-missions',
+  'section-heritage',
+  'section-signal',
+] as const;
 
-/**
- * 10 discrete 1-scroll = 1-action mission waypoints:
- * Each wheel scroll / swipe / arrow press advances or rewinds EXACTLY ONE action so
- * cards and launch/staging milestones never stack or skip simultaneously.
- */
-const FLIGHT_STEPS: readonly FlightStep[] = [
-  { sp: 0.000, stage: 0, launchStep: -1, cooldownMs: 460 }, // 0: Launch Pad — Hero
-  { sp: 0.050, stage: 0, launchStep: 0, cooldownMs: 520 },  // 1: Step 01 — Main Engine Ignition
-  { sp: 0.086, stage: 0, launchStep: 1, cooldownMs: 520 },  // 2: Step 02 — Clamps & Umbilical Release
-  { sp: 0.122, stage: 0, launchStep: 2, cooldownMs: 540 },  // 3: Step 03 — Water Deluge & Trench Steam
-  { sp: 0.200, stage: 0, launchStep: 3, cooldownMs: 650 },  // 4: Step 04 — Vertical Liftoff & Tower Clearance
-  { sp: 0.395, stage: 1, launchStep: 3, cooldownMs: 880 },  // 5: Stage 01 — Davanagere Origins (Clouds & S200 Booster Sep)
-  { sp: 0.645, stage: 2, launchStep: 3, cooldownMs: 920 },  // 6: Stage 02 — Bangalore & PES (Fairing Split & Satellite Deploy)
-  { sp: 0.745, stage: 3, launchStep: 3, cooldownMs: 560 },  // 7: Stage 03 — Exploration Missions (4 Projects in LEO)
-  { sp: 0.850, stage: 4, launchStep: 3, cooldownMs: 560 },  // 8: Stage 04 — Kannada Heritage (Karnataka Pass)
-  { sp: 0.985, stage: 5, launchStep: 3, cooldownMs: 680 },  // 9: Stage 05 — Orbital Uplink (Enlarged Nadir Satellite & Downlink)
-];
-
-function findNearestStepIndex(fraction: number): number {
+function computeActiveStageFromDOM(): number {
+  const viewportMid = window.innerHeight * 0.5;
   let bestIdx = 0;
   let bestDist = Infinity;
-  for (let i = 0; i < FLIGHT_STEPS.length; i++) {
-    const d = Math.abs(FLIGHT_STEPS[i].sp - fraction);
-    if (d < bestDist) {
-      bestDist = d;
+
+  for (let i = 0; i < SECTION_IDS.length; i++) {
+    const el = document.getElementById(SECTION_IDS[i]);
+    if (!el) continue;
+    const rect = el.getBoundingClientRect();
+    const center = rect.top + rect.height * 0.5;
+    const dist = Math.abs(center - viewportMid);
+    if (dist < bestDist) {
+      bestDist = dist;
       bestIdx = i;
     }
   }
   return bestIdx;
 }
 
-function canInnerContainerScroll(target: EventTarget | null, deltaY: number): boolean {
-  let el = target as HTMLElement | null;
-  while (el && el !== document.body) {
-    const style = window.getComputedStyle(el);
-    const overflowY = style.overflowY;
-    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 2) {
-      if (deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 2) return true;
-      if (deltaY < 0 && el.scrollTop > 2) return true;
-    }
-    el = el.parentElement;
-  }
-  return false;
-}
-
 export const App: React.FC = () => {
+  // Guarantee clean startup at Ground Zero (top of page)
   useEffect(() => {
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
@@ -75,10 +52,8 @@ export const App: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Discrete Choreographed Flight State
   const [showLoader, setShowLoader] = useState(true);
   const [activeStageIndex, setActiveStageIndex] = useState(0);
-  const [launchStep, setLaunchStep] = useState(-1);
   const [uiScrollProgress, setUiScrollProgress] = useState(0);
   const [audioActive, setAudioActive] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
@@ -109,70 +84,68 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Prevent accidental scrolling while the intro liftoff loader plays
+  useEffect(() => {
+    if (showLoader) {
+      document.body.style.overflow = 'hidden';
+      window.scrollTo(0, 0);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showLoader]);
+
+  // Global Keyboard Shortcuts (~ or ` toggles Terminal, Escape closes)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '`' || e.key === '~') {
+        e.preventDefault();
+        setIsTerminalOpen((prev) => !prev);
+        cosmicAudio.playTelemetryChirp(1200, 0.04);
+      } else if (e.key === 'Escape' && isTerminalOpen) {
+        setIsTerminalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTerminalOpen]);
+
   // High-performance mutable refs read directly inside the 2D Canvas render loop
   const scrollProgressRef = useRef(0);
   const flightProgressRef = useRef(0);
   const scrollSpeedRef = useRef(0);
   const programmaticJumpTargetRef = useRef<number | null>(null);
-  const currentStepIdxRef = useRef(0);
-  const lastStepTimeRef = useRef(0);
-  const lastWheelEventTimeRef = useRef(0);
-  const activeCooldownRef = useRef(460);
-  const launchSequenceTimersRef = useRef<number[]>([]);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const lastScrollY = useRef(0);
+  const lastScrollTime = useRef(0);
+  const scrollAnimRaf = useRef<number | null>(null);
+  const lastStageRef = useRef(0);
   const lastUiCommitTimeRef = useRef(0);
   const lastUiProgressRef = useRef(0);
   const trailingUiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playedCallouts = useRef<Set<string>>(new Set());
 
-  const clearLaunchSequence = useCallback(() => {
-    for (const id of launchSequenceTimersRef.current) {
-      window.clearTimeout(id);
-    }
-    launchSequenceTimersRef.current = [];
-  }, []);
-
-  // Transitions cleanly to an exact step index (1 scroll = 1 action)
-  const goToStep = useCallback(
-    (nextIdx: number, fastSidebarJump = false) => {
-      const clamped = Math.min(Math.max(nextIdx, 0), FLIGHT_STEPS.length - 1);
-      const prevIdx = currentStepIdxRef.current;
-      if (clamped === prevIdx && !fastSidebarJump) return;
-
-      const step = FLIGHT_STEPS[clamped];
-      const prevStep = FLIGHT_STEPS[prevIdx];
-      currentStepIdxRef.current = clamped;
-      activeCooldownRef.current = step.cooldownMs;
-      lastStepTimeRef.current = performance.now();
-
-      scrollProgressRef.current = step.sp;
-      scrollSpeedRef.current = fastSidebarJump ? 1.8 : 1.0;
-      programmaticJumpTargetRef.current = fastSidebarJump ? step.sp : null;
-
-      // Crisp step acoustics
-      if (!fastSidebarJump) {
-        if (clamped === 0) {
-          playedCallouts.current.clear();
-        } else if (clamped === 2 && prevIdx < 2) {
-          cosmicAudio.playClampRelease();
-        } else if (clamped === 3 && prevIdx < 3) {
-          cosmicAudio.playDelugeSound();
-        } else if (step.stage !== prevStep.stage) {
-          cosmicAudio.playStagingSound();
-        }
-      }
-
-      setActiveStageIndex(step.stage);
-      setLaunchStep(step.launchStep);
-    },
-    []
-  );
-
-  // Syncs HUD telemetry & audio smoothly to the live canvas flight position
+  // Throttled HUD & acoustics updater driven by the Canvas's velocity-paced flight timeline
   const updateUI = useCallback((progress: number) => {
     flightProgressRef.current = progress;
-    const now = performance.now();
-    const boundaryHit = progress <= 0.001 || progress >= 0.984;
+    const isSidebarJump = programmaticJumpTargetRef.current !== null;
 
+    if (!isSidebarJump) {
+      if (progress < 0.02) {
+        playedCallouts.current.clear();
+      } else if (progress >= 0.068 && progress < 0.104 && !playedCallouts.current.has('umbilical')) {
+        playedCallouts.current.add('umbilical');
+        cosmicAudio.playClampRelease();
+      } else if (progress >= 0.104 && progress < 0.140 && !playedCallouts.current.has('deluge')) {
+        playedCallouts.current.add('deluge');
+        cosmicAudio.playDelugeSound();
+      }
+    }
+
+    const now = performance.now();
+    const boundaryHit = progress <= 0.001 || progress >= 0.999;
     const commitUi = (p: number) => {
       lastUiCommitTimeRef.current = performance.now();
       lastUiProgressRef.current = p;
@@ -199,116 +172,81 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Discrete 1-Scroll = 1-Action input controller (wheel, trackpad, touch swipe, keyboard)
+  // Native continuous passive scroll listener (0% CPU when idle, zero scroll-hijacking)
   useEffect(() => {
-    const isModalOrLoaderOpen = () => showLoader || isTerminalOpen || selectedProject !== null;
+    const cancelProgrammaticScroll = () => {
+      programmaticJumpTargetRef.current = null;
+      if (scrollAnimRaf.current) {
+        cancelAnimationFrame(scrollAnimRaf.current);
+        scrollAnimRaf.current = null;
+      }
+    };
 
-    const onWheel = (e: WheelEvent) => {
-      if (isModalOrLoaderOpen()) return;
-      if (canInnerContainerScroll(e.target, e.deltaY)) return;
-
-      e.preventDefault();
-      clearLaunchSequence();
+    const handleScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      const maxScroll = Math.max(
+        (trackRef.current?.scrollHeight || document.documentElement.scrollHeight) - window.innerHeight,
+        1
+      );
+      const progress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
+      scrollProgressRef.current = progress;
 
       const now = performance.now();
-      const absDelta = Math.abs(e.deltaY);
-      const gapSinceLastEvent = now - lastWheelEventTimeRef.current;
-      lastWheelEventTimeRef.current = now;
+      const dt = Math.max(now - lastScrollTime.current, 1);
+      const dy = Math.abs(scrollY - lastScrollY.current);
+      scrollSpeedRef.current = Math.min(dy / dt, 4.0);
+      lastScrollY.current = scrollY;
+      lastScrollTime.current = now;
 
-      // Ignore tiny trackpad residual drift
-      if (absDelta < 10) return;
-
-      // Cooldown prevents one wheel flick or trackpad inertia tail from firing multiple steps at once
-      const elapsedSinceStep = now - lastStepTimeRef.current;
-      if (elapsedSinceStep < activeCooldownRef.current) return;
-
-      // Guard against long decaying trackpad inertia tail: if events are still streaming continuously
-      // right after cooldown (< 95ms gap), require a stronger deliberate flick (>= 34px)
-      if (gapSinceLastEvent < 95 && elapsedSinceStep < activeCooldownRef.current + 360 && absDelta < 34) {
-        return;
-      }
-
-      const dir = e.deltaY > 0 ? 1 : -1;
-      goToStep(currentStepIdxRef.current + dir, false);
-    };
-
-    let touchStartY: number | null = null;
-    let touchStartX: number | null = null;
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (isModalOrLoaderOpen() || e.touches.length !== 1) return;
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (isModalOrLoaderOpen() || touchStartY === null || touchStartX === null) return;
-      const touch = e.changedTouches[0];
-      if (!touch) return;
-      const dy = touchStartY - touch.clientY;
-      const dx = Math.abs(touchStartX - touch.clientX);
-      touchStartY = null;
-      touchStartX = null;
-
-      if (Math.abs(dy) < 36 || Math.abs(dy) < dx) return;
-      if (canInnerContainerScroll(e.target, dy)) return;
-
-      const now = performance.now();
-      if (now - lastStepTimeRef.current < 420) return;
-
-      clearLaunchSequence();
-      goToStep(currentStepIdxRef.current + (dy > 0 ? 1 : -1), false);
-    };
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '`' || e.key === '~') {
-        e.preventDefault();
-        setIsTerminalOpen((prev) => !prev);
-        cosmicAudio.playTelemetryChirp(1200, 0.04);
-        return;
-      }
-      if (e.key === 'Escape' && isTerminalOpen) {
-        setIsTerminalOpen(false);
-        return;
-      }
-      if (isModalOrLoaderOpen()) return;
-
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-
-      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
-        e.preventDefault();
-        clearLaunchSequence();
-        goToStep(currentStepIdxRef.current + 1, false);
-      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        e.preventDefault();
-        clearLaunchSequence();
-        goToStep(currentStepIdxRef.current - 1, false);
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        clearLaunchSequence();
-        goToStep(0, true);
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        clearLaunchSequence();
-        goToStep(FLIGHT_STEPS.length - 1, true);
+      // Sync sidebar active page highlight cleanly to whichever transparent section is in view
+      if (programmaticJumpTargetRef.current === null) {
+        const visibleStage = computeActiveStageFromDOM();
+        if (visibleStage !== lastStageRef.current) {
+          lastStageRef.current = visibleStage;
+          cosmicAudio.playStagingSound();
+          startTransition(() => {
+            setActiveStageIndex(visibleStage);
+          });
+        }
       }
     };
 
-    window.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
-    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('wheel', cancelProgrammaticScroll, { passive: true });
+    window.addEventListener('touchstart', cancelProgrammaticScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('wheel', onWheel);
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchend', onTouchEnd);
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('wheel', cancelProgrammaticScroll);
+      window.removeEventListener('touchstart', cancelProgrammaticScroll);
+      if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
       if (trailingUiTimerRef.current) clearTimeout(trailingUiTimerRef.current);
-      clearLaunchSequence();
     };
-  }, [showLoader, isTerminalOpen, selectedProject, goToStep, clearLaunchSequence]);
+  }, []);
+
+  const animateScrollTo = useCallback((targetY: number, durationMs: number, easeOutOnly = false) => {
+    if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
+    const startY = window.scrollY || window.pageYOffset || 0;
+    const dist = targetY - startY;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+      const eased = easeOutOnly
+        ? 1 - Math.pow(1 - t, 3)
+        : t < 0.5
+          ? 4 * t * t * t
+          : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      window.scrollTo(0, startY + dist * eased);
+      if (t < 1) {
+        scrollAnimRaf.current = requestAnimationFrame(step);
+      } else {
+        scrollAnimRaf.current = null;
+      }
+    };
+    scrollAnimRaf.current = requestAnimationFrame(step);
+  }, []);
 
   const handleToggleAudio = useCallback(() => {
     const active = cosmicAudio.toggle();
@@ -319,19 +257,45 @@ export const App: React.FC = () => {
     setIsTerminalOpen(true);
   }, []);
 
-  // Instant-response sidebar navigation: jumps straight to the target page's waypoint
+  // Crisp sidebar click jump: scrolls directly to the exact transparent section anchor
   const handleJumpToStage = useCallback(
-    (fraction: number) => {
-      clearLaunchSequence();
-      const targetIdx = findNearestStepIndex(fraction);
-      goToStep(targetIdx, true);
+    (stageIndex: number) => {
+      const clampedIdx = Math.min(Math.max(stageIndex, 0), SECTION_IDS.length - 1);
+      const maxScroll = Math.max(
+        (trackRef.current?.scrollHeight || document.documentElement.scrollHeight) - window.innerHeight,
+        1
+      );
+
+      let targetY = 0;
+      if (clampedIdx === 0) {
+        targetY = 0;
+      } else if (clampedIdx === SECTION_IDS.length - 1) {
+        targetY = maxScroll;
+      } else {
+        const el = document.getElementById(SECTION_IDS[clampedIdx]);
+        if (el) {
+          targetY = Math.min(
+            Math.max(el.offsetTop + (el.offsetHeight - window.innerHeight) * 0.5, 0),
+            maxScroll
+          );
+        }
+      }
+
+      const targetFraction = targetY / maxScroll;
+      programmaticJumpTargetRef.current = targetFraction;
+      lastStageRef.current = clampedIdx;
+      setActiveStageIndex(clampedIdx);
+
+      const distFrac = Math.abs(targetFraction - scrollProgressRef.current);
+      const durationMs = Math.max(360, Math.min(680, Math.round(320 + distFrac * 420)));
+      animateScrollTo(targetY, durationMs, true);
     },
-    [goToStep, clearLaunchSequence]
+    [animateScrollTo]
   );
 
-  // "Ignite & Lift Off" button runs the 4 launchpad steps sequentially (Ignition -> Clamps -> Deluge -> Liftoff)
+  // "Ignite & Lift Off" button smoothly launches down past the launch sequence into Stage 01 Ascent
   const handleLaunch = useCallback(() => {
-    clearLaunchSequence();
+    programmaticJumpTargetRef.current = null;
     if (cosmicAudio.isMuted && !cosmicAudio.userExplicitlyMuted) {
       cosmicAudio.unmute();
       setAudioActive(true);
@@ -339,23 +303,32 @@ export const App: React.FC = () => {
     cosmicAudio.playQuindarTone(true);
     cosmicAudio.playRadioCallout('Initiating liftoff sequence. Dual Vikas core ignited.');
 
-    goToStep(1, false);
-    launchSequenceTimersRef.current = [
-      window.setTimeout(() => goToStep(2, false), 850),
-      window.setTimeout(() => goToStep(3, false), 1700),
-      window.setTimeout(() => goToStep(4, false), 2550),
-    ];
-  }, [goToStep, clearLaunchSequence]);
+    const maxScroll = Math.max(
+      (trackRef.current?.scrollHeight || document.documentElement.scrollHeight) - window.innerHeight,
+      1
+    );
+    const ascentEl = document.getElementById('section-ascent');
+    const targetY = ascentEl
+      ? Math.min(
+          Math.max(ascentEl.offsetTop + (ascentEl.offsetHeight - window.innerHeight) * 0.5, 0),
+          maxScroll
+        )
+      : maxScroll * 0.34;
+    animateScrollTo(targetY, 2800, false);
+  }, [animateScrollTo]);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#050505] text-white selection:bg-white selection:text-black">
+    <div
+      ref={trackRef}
+      className="relative min-h-screen bg-[#050505] text-white overflow-x-hidden selection:bg-white selection:text-black"
+    >
       {/* Pure Monochrome Liftoff Loading Screen (unmounts cleanly after launch) */}
       {showLoader && <MonochromeLiftoffLoader onComplete={handleLoaderComplete} />}
 
       {/* Redesigned Hairy Vintage Feather Quill Cursor + Floating Micro-Particles */}
       <CustomCursor />
 
-      {/* Ultra-lightweight 2.5D HTML5 Canvas Space Launch Engine */}
+      {/* Fixed Full-Viewport 2.5D HTML5 Canvas Space Launch Engine */}
       <SpaceFlightCanvas2D
         scrollProgressRef={scrollProgressRef}
         scrollSpeedRef={scrollSpeedRef}
@@ -365,25 +338,22 @@ export const App: React.FC = () => {
         blueprintMode={blueprintMode}
       />
 
-      {/* Immediate Dashboard & Flight HUD Overlays */}
-      <div className="opacity-100 pointer-events-auto">
-        <FlightHUD
-          scrollProgress={uiScrollProgress}
-          activeStageIndex={activeStageIndex}
-          audioActive={audioActive}
-          onToggleAudio={handleToggleAudio}
-          onJumpToStage={handleJumpToStage}
-          onOpenTerminal={handleOpenTerminal}
-        />
+      {/* Fixed Minimalist Monochrome HUD & Clickable Page Sidebar */}
+      <FlightHUD
+        scrollProgress={uiScrollProgress}
+        activeStageIndex={activeStageIndex}
+        audioActive={audioActive}
+        onToggleAudio={handleToggleAudio}
+        onJumpToStage={handleJumpToStage}
+        onOpenTerminal={handleOpenTerminal}
+      />
 
-        <FlightMissionOverlays
-          activeStageIndex={activeStageIndex}
-          launchStep={launchStep}
-          onLaunch={handleLaunch}
-          onSelectProject={setSelectedProject}
-          entered={!showLoader}
-        />
-      </div>
+      {/* Single Continuous Transparent Scrollable Editorial Page */}
+      <FlightMissionOverlays
+        onLaunch={handleLaunch}
+        onSelectProject={setSelectedProject}
+        entered={!showLoader}
+      />
 
       {/* Lazy Modals: Zero DOM or memory overhead until activated */}
       <Suspense fallback={null}>

@@ -25,7 +25,7 @@ interface FlightHUDProps {
   activeStageIndex: number;
   audioActive: boolean;
   onToggleAudio: () => void;
-  onJumpToStage: (fraction: number) => void;
+  onJumpToStage: (stageIndex: number) => void;
   onOpenTerminal?: () => void;
 }
 
@@ -141,7 +141,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
   const jumpToIndex = (idx: number) => {
     const clamped = Math.min(Math.max(idx, 0), STAGES.length - 1);
     cosmicAudio.playTelemetryChirp(1120 + clamped * 55, 0.04);
-    onJumpToStage(STAGES[clamped].scrollFraction);
+    onJumpToStage(clamped);
   };
 
   return (
