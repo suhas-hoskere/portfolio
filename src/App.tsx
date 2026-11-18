@@ -67,6 +67,28 @@ export const App: React.FC = () => {
     setShowLoader(false);
   }, []);
 
+  // Gently auto-start ambient soundtrack on first user gesture
+  useEffect(() => {
+    const startMusicOnce = (e: Event) => {
+      window.removeEventListener('pointerdown', startMusicOnce);
+      window.removeEventListener('keydown', startMusicOnce);
+      // Let the AUDIO button's own onClick handle toggling cleanly
+      if (e.target instanceof Element && e.target.closest('[aria-label="Toggle Sound"]')) {
+        return;
+      }
+      if (cosmicAudio.isMuted && !cosmicAudio.userExplicitlyMuted) {
+        const started = cosmicAudio.unmute();
+        if (started) setAudioActive(true);
+      }
+    };
+    window.addEventListener('pointerdown', startMusicOnce, { passive: true });
+    window.addEventListener('keydown', startMusicOnce, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', startMusicOnce);
+      window.removeEventListener('keydown', startMusicOnce);
+    };
+  }, []);
+
   // Prevent accidental scrolling while the intro liftoff loader plays
   useEffect(() => {
     if (showLoader) {
@@ -336,6 +358,10 @@ export const App: React.FC = () => {
       scrollAnimRaf.current = null;
     }
     programmaticJumpTargetRef.current = null;
+    if (cosmicAudio.isMuted && !cosmicAudio.userExplicitlyMuted) {
+      cosmicAudio.unmute();
+      setAudioActive(true);
+    }
 
     const getMaxScroll = () =>
       Math.max(
