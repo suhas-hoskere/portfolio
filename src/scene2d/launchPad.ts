@@ -46,24 +46,30 @@ let steamPool: VolumetricSmokePuff[] | null = null;
 let sparkPool: LiveSpark[] | null = null;
 let cryoPool: CryoMist[] | null = null;
 
-/** Lazily pre-rendered soft monochrome ignition light-bounce sprite (built ONCE only when ignition begins!) */
+/** Lazily pre-rendered soft monochrome ignition light-bounce sprite (100% feathered inside edges) */
 function getIgnitionGlowSprite(): HTMLCanvasElement {
   if (cachedIgnitionGlowSprite) return cachedIgnitionGlowSprite;
-  const w = 220;
-  const h = 140;
+  const w = 240;
+  const h = 160;
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
   const cx = w * 0.5;
-  const cy = h * 0.62;
-  const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, 108);
+  const cy = h * 0.5;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1, 0.62);
+  const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 112);
   g.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
   g.addColorStop(0.32, 'rgba(236, 236, 245, 0.22)');
-  g.addColorStop(0.68, 'rgba(205, 205, 220, 0.06)');
+  g.addColorStop(0.68, 'rgba(205, 205, 220, 0.05)');
   g.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
+  ctx.beginPath();
+  ctx.arc(0, 0, 112, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
   cachedIgnitionGlowSprite = canvas;
   return canvas;
 }

@@ -49,52 +49,60 @@ function getExhaustStreaks(): MonoExhaustStreak[] {
  */
 function getPlumeSprite(): HTMLCanvasElement {
   if (cachedPlumeSprite) return cachedPlumeSprite;
-  const w = 120;
-  const h = 280;
+  // Generous padded canvas (220x340) so every radial glow fades to 0.0 alpha WELL before all 4 edges (zero box border!)
+  const w = 220;
+  const h = 340;
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
   const cx = w * 0.5;
+  const nozzleY = 44;
 
-  // 1. Wide soft outer luminous atmospheric bloom around supersonic exhaust column
-  const bloom = ctx.createRadialGradient(cx, 54, 4, cx, 98, 128);
-  bloom.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
-  bloom.addColorStop(0.32, 'rgba(235, 235, 244, 0.22)');
-  bloom.addColorStop(0.68, 'rgba(200, 200, 214, 0.06)');
+  // 1. Wide soft elliptical outer atmospheric bloom (strictly inside [16..204, 8..304] -> zero clipping edges!)
+  ctx.save();
+  ctx.translate(cx, nozzleY + 96);
+  ctx.scale(1, 1.48);
+  const bloom = ctx.createRadialGradient(0, -14, 3, 0, 0, 92);
+  bloom.addColorStop(0.0, 'rgba(255, 255, 255, 0.44)');
+  bloom.addColorStop(0.28, 'rgba(235, 235, 244, 0.16)');
+  bloom.addColorStop(0.62, 'rgba(200, 200, 214, 0.04)');
   bloom.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = bloom;
-  ctx.fillRect(0, 0, w, h);
+  ctx.beginPath();
+  ctx.arc(0, 0, 92, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   // 2. Feathered expanding supersonic exhaust jet layers (zero stroke outlines!)
   const layers = [
-    { rx: 32, len: 264, a0: 0.30, a1: 0.08 },
-    { rx: 21, len: 212, a0: 0.56, a1: 0.16 },
-    { rx: 13, len: 152, a0: 0.88, a1: 0.28 },
-    { rx: 7.5, len: 92, a0: 1.0, a1: 0.42 },
+    { rx: 32, len: 256, a0: 0.30, a1: 0.08 },
+    { rx: 21, len: 206, a0: 0.56, a1: 0.16 },
+    { rx: 13, len: 148, a0: 0.88, a1: 0.28 },
+    { rx: 7.5, len: 90, a0: 1.0, a1: 0.42 },
   ];
   for (const l of layers) {
-    const grad = ctx.createLinearGradient(cx, 6, cx, l.len);
+    const grad = ctx.createLinearGradient(cx, nozzleY, cx, nozzleY + l.len);
     grad.addColorStop(0.0, `rgba(255, 255, 255, ${l.a0})`);
     grad.addColorStop(0.45, `rgba(244, 244, 250, ${l.a1})`);
     grad.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(cx - l.rx * 0.52, 6);
-    ctx.quadraticCurveTo(cx - l.rx * 1.15, l.len * 0.46, cx, l.len);
-    ctx.quadraticCurveTo(cx + l.rx * 1.15, l.len * 0.46, cx + l.rx * 0.52, 6);
+    ctx.moveTo(cx - l.rx * 0.52, nozzleY);
+    ctx.quadraticCurveTo(cx - l.rx * 1.15, nozzleY + l.len * 0.46, cx, nozzleY + l.len);
+    ctx.quadraticCurveTo(cx + l.rx * 1.15, nozzleY + l.len * 0.46, cx + l.rx * 0.52, nozzleY);
     ctx.closePath();
     ctx.fill();
   }
 
-  // 3. Blazing incandescent throat core right at nozzle exit
-  const throat = ctx.createRadialGradient(cx, 16, 1, cx, 20, 22);
+  // 3. Blazing incandescent throat core right at nozzle exit (strictly inside top margin!)
+  const throat = ctx.createRadialGradient(cx, nozzleY + 8, 1, cx, nozzleY + 12, 24);
   throat.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
-  throat.addColorStop(0.55, 'rgba(255, 255, 255, 0.72)');
+  throat.addColorStop(0.55, 'rgba(255, 255, 255, 0.68)');
   throat.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = throat;
   ctx.beginPath();
-  ctx.arc(cx, 20, 22, 0, Math.PI * 2);
+  ctx.arc(cx, nozzleY + 12, 24, 0, Math.PI * 2);
   ctx.fill();
 
   cachedPlumeSprite = canvas;
@@ -151,8 +159,8 @@ function drawLiveMonoPlume(
     ? 1
     : 0.91 + Math.sin(t * 58 + nx * 0.3) * 0.09 + Math.cos(t * 102 + nx) * 0.05;
   const turbW = reducedMotion ? 1 : 0.94 + Math.sin(t * 46 + nx) * 0.06;
-  const drawW = width * 2.85 * fireRamp * turbW;
-  const drawH = length * 1.18 * fireRamp * turbLen;
+  const drawW = width * 5.2 * fireRamp * turbW;
+  const drawH = length * 1.44 * fireRamp * turbLen;
 
   const plumeImg = getPlumeSprite();
 
@@ -160,8 +168,8 @@ function drawLiveMonoPlume(
   ctx.globalCompositeOperation = 'lighter';
   ctx.globalAlpha = clamp(fireRamp * 0.96, 0, 1);
 
-  // Primary roaring feathered volumetric plasma jet
-  ctx.drawImage(plumeImg, nx - drawW * 0.5, ny - drawH * 0.03, drawW, drawH);
+  // Primary roaring feathered volumetric plasma jet (nozzle aligned to padded y = 44/340)
+  ctx.drawImage(plumeImg, nx - drawW * 0.5, ny - drawH * 0.13, drawW, drawH);
 
   // Secondary turbulent shimmering inner core (subtle cross-flutter for living fire texture)
   const coreFlicker = reducedMotion ? 1 : 0.88 + Math.sin(t * 82 + nx * 0.7) * 0.12;
@@ -169,7 +177,7 @@ function drawLiveMonoPlume(
   ctx.drawImage(
     plumeImg,
     nx - drawW * 0.28,
-    ny - drawH * 0.02,
+    ny - drawH * 0.095,
     drawW * 0.56,
     drawH * 0.74
   );
