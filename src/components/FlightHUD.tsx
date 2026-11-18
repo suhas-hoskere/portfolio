@@ -53,7 +53,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         <button
           type="button"
           onClick={() => jumpToIndex(0)}
-          className="flex items-center gap-2.5 pointer-events-auto min-w-0 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/60 rounded-lg px-2.5 py-1.5 bg-[#050505]/85 border border-white/10"
+          className="flex items-center gap-2.5 pointer-events-auto min-w-0 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/60 rounded-lg px-2.5 py-1.5 bg-[#050505]/95 border border-white/15"
           aria-label="Return to Launch Pad"
         >
           <div className="flex items-center justify-center w-7 h-7 rounded-md bg-white text-black shrink-0 transition-transform duration-200 group-hover:scale-105">
@@ -245,7 +245,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
       {/* ===== INITIAL SCROLL PROMPT (fades out cleanly once flight begins) ===== */}
       {scrollProgress < 0.035 && (
         <div className="absolute bottom-3.5 sm:bottom-5 left-0 right-0 flex justify-center pointer-events-none px-3">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#050505]/85 border border-white/10 text-[10px] font-mono tracking-[0.2em] text-zinc-300 uppercase">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#050505]/95 border border-white/15 text-[10px] font-mono tracking-[0.2em] text-zinc-200 uppercase">
             <span>SCROLL TO LAUNCH</span>
             <ChevronDown className="w-3.5 h-3.5 text-white" />
           </div>

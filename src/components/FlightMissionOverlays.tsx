@@ -178,14 +178,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
     const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
 
     const textWell =
-      'bg-[#050505]/78 border border-white/[0.09] rounded-2xl px-5 py-6 sm:px-8 sm:py-7 shadow-[0_12px_40px_rgba(0,0,0,0.55)]';
+      'bg-[#050505]/92 border border-white/15 rounded-2xl px-5 py-6 sm:px-8 sm:py-7 shadow-[0_14px_44px_rgba(0,0,0,0.85)]';
 
     return (
       <>
         {/* Soft continuous feathered dark reading scrim behind the left editorial column (never clips hard!) */}
         <div
           aria-hidden="true"
-          className="fixed inset-y-0 left-0 z-[5] w-full md:w-[60vw] lg:w-[60vw] xl:w-[940px] pointer-events-none bg-gradient-to-r from-[#050505]/82 via-[#050505]/52 to-transparent"
+          className="fixed inset-y-0 left-0 z-[5] w-full md:w-[62vw] lg:w-[62vw] xl:w-[960px] pointer-events-none bg-gradient-to-r from-[#050505]/95 via-[#050505]/78 to-transparent"
         />
 
         <main
