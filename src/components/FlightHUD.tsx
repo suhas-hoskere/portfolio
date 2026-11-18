@@ -88,11 +88,11 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
         dynPressure: `${(101.3 - climbFrac * 45).toFixed(1)} KPA`,
         gForce: `${(1.62 + climbFrac * 0.4).toFixed(2)} G`,
       };
-    } else if (sp < 0.420) {
-      const ascFrac = (sp - 0.240) / 0.180;
-      const isMaxQ = sp >= 0.280 && sp <= 0.340;
-      const isBoosterSep = sp > 0.340 && sp < 0.380;
-      const isFairingSep = sp >= 0.380;
+    } else if (sp < 0.435) {
+      const ascFrac = (sp - 0.240) / 0.195;
+      const isMaxQ = sp >= 0.250 && sp <= 0.312;
+      const isBoosterSep = sp > 0.312 && sp < 0.395;
+      const isFairingSep = sp >= 0.395;
       const status = isFairingSep
         ? 'STAGE 01 // FAIRING JETTISON'
         : isBoosterSep
@@ -108,8 +108,14 @@ export const FlightHUD: React.FC<FlightHUDProps> = ({
         gForce: `${(2.10 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
       };
     } else if (sp < 0.600) {
+      const status =
+        sp < 0.490
+          ? 'STAGE 02 // STAGE SEP & SATELLITE RELEASE'
+          : sp < 0.585
+            ? 'STAGE 02 // SOLAR ARRAY DEPLOY'
+            : 'STAGE 02 // SATELLITE DEPLOYED (LEO)';
       return {
-        status: 'STAGE 02 // SATELLITE DEPLOYED (LEO)',
+        status,
         altitude: '420 KM',
         velocity: '7.66 KM/S',
         dynPressure: '0.00 KPA',

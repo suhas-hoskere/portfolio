@@ -1,6 +1,5 @@
 import {
   type Scene2DFrameContext,
-  clamp,
   easeOutCubic,
   lerp,
   smoothstep,
@@ -57,35 +56,62 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     mouseX,
     mouseY,
     vehicleAnchorX,
+    groundY,
     unit,
     cameraMode,
     blueprintMode,
     reducedMotion,
   } = frame;
 
-  if (sp < 0.380) return;
+  // Satellite begins revealing smoothly INSIDE the opening payload fairing at sp = 0.398!
+  if (sp < 0.398) return;
 
-  const deployRatio = clamp((sp - 0.380) / 0.115, 0, 1);
-  const deployEase = easeOutCubic(deployRatio);
+  // Slow, cinematic multi-phase deployment:
+  // - 0.398 -> 0.432: Satellite fades into view right inside the splitting fairing nose
+  // - 0.420 -> 0.555: Satellite gracefully floats out from fairing & scales up to LEO size
+  // - 0.475 -> 0.555: Inner solar wings unfold smoothly
+  // - 0.530 -> 0.605: Outer solar wings unfold smoothly
+  const revealAlpha = smoothstep(0.398, 0.432, sp);
+  const floatOut = smoothstep(0.420, 0.555, sp);
+  const floatEase = easeOutCubic(floatOut);
 
-  // Emerges from fairing into crisp LEO showcase scale, magnifies cleanly on final Orbital Uplink stage
-  let satScale = lerp(0.42, 1.04, deployEase);
+  // Match exact rocket fairing cavity world position so satellite physically emerges from inside the rocket!
+  const camZoom =
+    cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
+  const u = unit * camZoom;
+  let rocketBaseY = groundY - unit * 0.20 - unit * 0.56;
+  if (cameraMode === 'BOOSTER') rocketBaseY += unit * 0.32;
+  else if (cameraMode === 'CHASE') rocketBaseY -= unit * 0.22;
+  const pitchRad = 0.14;
+  // Fairing cavity center sits at local y = -(l110H + interstageH + c25H + 0.55 * fairingCylH) = -3.43u
+  const localCavityY = -u * 3.43;
+  const startX = vehicleAnchorX - mouseX * 10 - Math.sin(pitchRad) * localCavityY;
+  const startY = rocketBaseY + Math.cos(pitchRad) * localCavityY;
+
+  // Emerges smoothly from stowed fairing scale (0.30) -> full LEO showcase (1.02) -> terminal uplink zoom (1.38)
+  let satScale = lerp(0.30, 1.02, floatEase);
   if (sp >= 0.87) {
     const terminalZoom = easeOutCubic((sp - 0.87) / 0.10);
-    satScale = lerp(1.04, 1.42, terminalZoom);
+    satScale = lerp(1.02, 1.38, terminalZoom);
   }
   if (cameraMode === 'BOOSTER') satScale *= 1.18;
   else if (cameraMode === 'CHASE') satScale *= 1.10;
 
   const s = unit * satScale;
-  const bobY = reducedMotion ? 0 : Math.sin(t * 1.25) * s * 0.038;
-  const cx = vehicleAnchorX - mouseX * 10 - (sp >= 0.87 ? smoothstep(0.87, 0.96, sp) * unit * 0.18 : 0);
-  const cy = lerp(h * 0.43, h * 0.44, deployEase) + bobY - mouseY * 7;
+  const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.032 * floatEase;
+  const targetX =
+    vehicleAnchorX - mouseX * 10 - (sp >= 0.87 ? smoothstep(0.87, 0.96, sp) * unit * 0.18 : 0);
+  const targetY = h * 0.43 + bobY - mouseY * 6;
 
-  // Calm orbital attitude cruise over Earth's horizon
-  const bankRad = reducedMotion ? 0 : Math.sin(t * 0.50) * 0.028;
+  const cx = lerp(startX, targetX, floatEase);
+  const cy = lerp(startY, targetY, floatEase);
+
+  // Smoothly levels attitude from rocket's 0.14 rad pitch into calm horizontal orbital cruise
+  const bankRad =
+    lerp(pitchRad, 0, floatEase) + (reducedMotion ? 0 : Math.sin(t * 0.48) * 0.024 * floatEase);
 
   ctx.save();
+  ctx.globalAlpha = revealAlpha;
   ctx.translate(cx, cy);
   ctx.rotate(bankRad);
 
@@ -123,43 +149,46 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     }
   }
 
-  // 3. TWO-STAGE ARTICULATED MONOCHROME SOLAR ARRAY WINGS
-  const innerUnfold = easeOutCubic(clamp((deployRatio - 0.14) / 0.54, 0, 1));
-  const outerUnfold = easeOutCubic(clamp((deployRatio - 0.38) / 0.62, 0, 1));
+  // 3. TWO-STAGE ARTICULATED MONOCHROME SOLAR ARRAY WINGS (unfold gradually after clearing fairing!)
+  const innerUnfold = easeOutCubic(smoothstep(0.470, 0.555, sp));
+  const outerUnfold = easeOutCubic(smoothstep(0.530, 0.610, sp));
 
   const panelW = s * 0.70;
   const panelH = s * 0.52;
   const yokeLen = s * 0.15;
 
-  for (const side of [-1, 1] as const) {
-    ctx.save();
-    ctx.translate(side * busW * 0.5, 0);
+  if (innerUnfold > 0.01) {
+    for (const side of [-1, 1] as const) {
+      ctx.save();
+      ctx.translate(side * busW * 0.5, 0);
 
-    // Root yoke & hinge
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(side > 0 ? 0 : -yokeLen, -s * 0.025, yokeLen, s * 0.05);
-
-    // Segment 1: Inner Solar Panel
-    const seg1W = Math.max(2, panelW * innerUnfold);
-    const seg1X = side > 0 ? yokeLen + s * 0.02 : -(yokeLen + s * 0.02 + seg1W);
-    drawMonoSolarSegment(ctx, seg1X, -panelH * 0.5, seg1W, panelH, blueprintMode);
-
-    // Inter-panel mechanical hinges
-    const hingeX = side > 0 ? seg1X + seg1W + s * 0.022 : seg1X - s * 0.022;
-    if (innerUnfold > 0.35) {
+      // Root yoke & hinge
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(hingeX - s * 0.014, -panelH * 0.32, s * 0.028, s * 0.05);
-      ctx.fillRect(hingeX - s * 0.014, panelH * 0.32 - s * 0.05, s * 0.028, s * 0.05);
-    }
+      ctx.fillRect(side > 0 ? 0 : -yokeLen * innerUnfold, -s * 0.025, yokeLen * innerUnfold, s * 0.05);
 
-    // Segment 2: Outer Solar Panel
-    if (outerUnfold > 0.04) {
-      const seg2W = Math.max(2, panelW * outerUnfold);
-      const seg2X = side > 0 ? hingeX + s * 0.022 : hingeX - s * 0.022 - seg2W;
-      drawMonoSolarSegment(ctx, seg2X, -panelH * 0.5, seg2W, panelH, blueprintMode);
-    }
+      // Segment 1: Inner Solar Panel
+      const seg1W = Math.max(2, panelW * innerUnfold);
+      const seg1X =
+        side > 0 ? yokeLen * innerUnfold + s * 0.02 : -(yokeLen * innerUnfold + s * 0.02 + seg1W);
+      drawMonoSolarSegment(ctx, seg1X, -panelH * 0.5, seg1W, panelH, blueprintMode);
 
-    ctx.restore();
+      // Inter-panel mechanical hinges
+      const hingeX = side > 0 ? seg1X + seg1W + s * 0.022 : seg1X - s * 0.022;
+      if (innerUnfold > 0.35) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(hingeX - s * 0.014, -panelH * 0.32, s * 0.028, s * 0.05);
+        ctx.fillRect(hingeX - s * 0.014, panelH * 0.32 - s * 0.05, s * 0.028, s * 0.05);
+      }
+
+      // Segment 2: Outer Solar Panel
+      if (outerUnfold > 0.04) {
+        const seg2W = Math.max(2, panelW * outerUnfold);
+        const seg2X = side > 0 ? hingeX + s * 0.022 : hingeX - s * 0.022 - seg2W;
+        drawMonoSolarSegment(ctx, seg2X, -panelH * 0.5, seg2W, panelH, blueprintMode);
+      }
+
+      ctx.restore();
+    }
   }
 
   // 4. MAGNETOMETER BOOM & AFT THRUSTER NOZZLE

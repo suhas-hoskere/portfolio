@@ -89,7 +89,7 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       const targetSp = scrollProgressRef.current;
       const isScrolling =
         Math.abs(targetSp - smoothSp) > 0.0002 || scrollSpeedRef.current > 0.02;
-      const isLaunchActive = targetSp >= 0.035 && targetSp < 0.43;
+      const isLaunchActive = targetSp >= 0.035 && targetSp < 0.62;
 
       const minInterval = isScrolling || isLaunchActive ? 1 / 62 : 1 / 36;
       if (rawDt < minInterval) return;
@@ -98,7 +98,8 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       const dt = Math.min(rawDt, 0.05);
       elapsedSec += dt;
 
-      const spLerp = 1 - Math.exp(-16 * dt);
+      // Smooth cinematic inertia so scroll transitions (boosters, fairing, satellite) glide gracefully
+      const spLerp = 1 - Math.exp(-8.5 * dt);
       smoothSp += (targetSp - smoothSp) * spLerp;
       smoothSpeed += (scrollSpeedRef.current - smoothSpeed) * (1 - Math.exp(-10 * dt));
       scrollSpeedRef.current *= Math.pow(0.05, dt);

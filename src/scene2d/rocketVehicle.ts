@@ -296,7 +296,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     reducedMotion,
   } = frame;
 
-  if (sp >= 0.428) return;
+  if (sp >= 0.550) return;
 
   const camZoom =
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
@@ -308,17 +308,25 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
   // Smooth upward ascent glide during liftoff & climb (zero vibration/shaking anywhere!)
-  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.360, sp) * unit * 0.52 : 0;
+  const climbLift = sp >= 0.170 ? smoothstep(0.170, 0.380, sp) * unit * 0.56 : 0;
   baseY -= climbLift;
 
-  const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.380, sp) * 0.14 : 0;
+  const pitchRad = sp >= 0.220 ? smoothstep(0.220, 0.410, sp) * 0.14 : 0;
 
-  const isBurning = sp >= 0.035 && sp < 0.415;
-  const fireRamp = isBurning ? clamp((sp - 0.035) / 0.025, 0, 1) : 0;
+  // Core engines throttle down smoothly before stage separation (0.415 -> 0.445)
+  const coreCutoff = 1 - smoothstep(0.415, 0.445, sp);
+  const isBurning = sp >= 0.035 && sp < 0.448;
+  const fireRamp = isBurning ? clamp((sp - 0.035) / 0.025, 0, 1) * coreCutoff : 0;
+
+  // Booster solid motors burn out smoothly right before detaching (0.298 -> 0.322)
+  const boosterFireRamp =
+    isBurning && sp < 0.325
+      ? clamp((sp - 0.035) / 0.025, 0, 1) * (1 - smoothstep(0.298, 0.322, sp))
+      : 0;
 
   // High-speed atmospheric climb streamlines rushing downward past rocket (Step 04 -> Stage 01)
-  if (sp >= 0.175 && sp < 0.395 && !reducedMotion) {
-    const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.340, 0.395, sp));
+  if (sp >= 0.175 && sp < 0.405 && !reducedMotion) {
+    const speedIntensity = smoothstep(0.175, 0.230, sp) * (1 - smoothstep(0.340, 0.405, sp));
     ctx.save();
     ctx.strokeStyle = `rgba(255, 255, 255, ${0.20 * speedIntensity})`;
     ctx.lineWidth = 1;
@@ -336,10 +344,16 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  const isDeploying = sp >= 0.380;
-  const deployFrac = isDeploying ? clamp((sp - 0.380) / 0.045, 0, 1) : 0;
-  const coreDropY = deployFrac * u * 5.4;
-  const coreDropRot = deployFrac * 0.18;
+  // Slow, graceful multi-step separation:
+  // 1) Fairing clamshells peel open slowly across 0.395 -> 0.515 (12% scroll span!)
+  const isFairingOpening = sp >= 0.395;
+  const fairingProg = isFairingOpening ? smoothstep(0.395, 0.515, sp) : 0;
+
+  // 2) Spent rocket core detaches and drifts slowly downward after fairing opens (0.435 -> 0.548)
+  const coreSepProg = sp >= 0.435 ? smoothstep(0.435, 0.548, sp) : 0;
+  const coreDropY = Math.pow(coreSepProg, 1.35) * u * 5.2;
+  const coreDropRot = coreSepProg * 0.22;
+  const coreAlpha = 1 - smoothstep(0.495, 0.548, sp);
 
   ctx.save();
   ctx.translate(basePadX, baseY);
@@ -361,21 +375,22 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   // 1. LOWER ROCKET BODY + ROARING EXHAUST + LIVE SPARK STREAKS
   // =========================================================================
   ctx.save();
+  ctx.globalAlpha = coreAlpha;
   ctx.translate(0, coreDropY);
   ctx.rotate(coreDropRot);
 
   // Twin Core Vikas Roaring Plumes + Pulsing Mach Diamonds
-  if (isBurning) {
+  if (fireRamp > 0.01) {
     const thrustStretch = 1.0 + Math.min(scrollSpeed * 0.22, 0.42);
     const vikasSpread = coreR * 0.46;
     drawLiveMonoPlume(ctx, -vikasSpread, u * 0.18, coreR * 0.78, u * 1.92 * thrustStretch, fireRamp, t, true, reducedMotion);
     drawLiveMonoPlume(ctx, vikasSpread, u * 0.18, coreR * 0.78, u * 1.92 * thrustStretch, fireRamp, t, true, reducedMotion);
   }
 
-  // Live supersonic monochrome spark streaks streaming down from all 4 engine nozzles
-  if (isBurning && !reducedMotion) {
+  // Live supersonic monochrome spark streaks streaming down from active engine nozzles
+  if (fireRamp > 0.05 && !reducedMotion) {
     const streaks = getExhaustStreaks();
-    const boostersActive = sp < 0.340;
+    const boostersActive = boosterFireRamp > 0.1;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.3;
     for (let i = 0; i < streaks.length; i++) {
@@ -386,9 +401,9 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
         p.age = 0;
         const ox =
           p.nozzle === 0
-            ? -coreR * 1.95
+            ? -coreR * 1.92
             : p.nozzle === 1
-              ? coreR * 1.95
+              ? coreR * 1.92
               : p.nozzle === 2
                 ? -coreR * 0.46
                 : coreR * 0.46;
@@ -399,13 +414,13 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
         p.y += p.vy * u * dt * fireRamp;
       }
       const ratio = clamp(p.age / p.life, 0, 1);
-      ctx.globalAlpha = (1 - ratio) * 0.88 * fireRamp;
+      ctx.globalAlpha = (1 - ratio) * 0.88 * fireRamp * coreAlpha;
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
       ctx.lineTo(p.x - p.vx * 2, p.y + p.len);
       ctx.stroke();
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = coreAlpha;
   }
 
   if (blueprintMode) {
@@ -501,30 +516,47 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     }
   }
 
-  // Twin S200 Solid Boosters (separate cleanly at sp 0.340 -> 0.380)
-  if (sp < 0.382) {
-    const sepProg = sp >= 0.340 ? easeOutCubic((sp - 0.340) / 0.040) : 0;
+  // Twin S200 Solid Boosters — slow, gradual separation & gentle fade-out (sp 0.315 -> 0.425)
+  if (sp < 0.428) {
+    const sepProg = sp >= 0.315 ? smoothstep(0.315, 0.425, sp) : 0;
+    const boosterFade = 1 - smoothstep(0.382, 0.426, sp);
     const baseBoosterX = coreR + u * 0.17;
-    for (const side of [-1, 1] as const) {
-      ctx.save();
-      ctx.translate(side * (baseBoosterX + sepProg * u * 2.1), sepProg * u * 1.9);
-      ctx.rotate(side * sepProg * 0.44);
-      drawMonoS200Booster(ctx, side, u, isBurning, fireRamp, sepProg, t, blueprintMode, reducedMotion);
-      ctx.restore();
+    if (boosterFade > 0.01) {
+      for (const side of [-1, 1] as const) {
+        ctx.save();
+        ctx.globalAlpha = coreAlpha * boosterFade;
+        ctx.translate(
+          side * (baseBoosterX + Math.pow(sepProg, 1.15) * u * 2.35),
+          Math.pow(sepProg, 1.3) * u * 2.25
+        );
+        ctx.rotate(side * sepProg * 0.58);
+        drawMonoS200Booster(
+          ctx,
+          side,
+          u,
+          boosterFireRamp > 0.01,
+          boosterFireRamp,
+          sepProg,
+          t,
+          blueprintMode,
+          reducedMotion
+        );
+        ctx.restore();
+      }
     }
   }
 
-  // Breathing, Shimmering Prandtl-Glauert Max-Q Shock Cone (sp 0.280 -> 0.340)
-  if (sp >= 0.280 && sp <= 0.340) {
-    const qBell = Math.sin(((sp - 0.280) / 0.060) * Math.PI);
+  // Breathing, Shimmering Prandtl-Glauert Max-Q Shock Cone (sp 0.250 -> 0.312)
+  if (sp >= 0.250 && sp <= 0.312) {
+    const qBell = Math.sin(((sp - 0.250) / 0.062) * Math.PI);
     const shimmer = reducedMotion ? 1 : 1 + Math.sin(t * 54) * 0.05;
     const coneY = c25TopY - fairingCylH * 0.2;
-    const coneW = u * 1.28 * shimmer;
-    const coneH = u * 0.58;
+    const coneW = u * 1.15 * shimmer;
+    const coneH = u * 0.56;
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.20 * qBell})`;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.78 * qBell})`;
-    ctx.lineWidth = 1.25;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.18 * qBell})`;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.68 * qBell})`;
+    ctx.lineWidth = 1.1;
     ctx.beginPath();
     ctx.moveTo(-coreR * 1.05, coneY - u * 0.12);
     ctx.lineTo(-coneW * 0.82, coneY + coneH * 0.65);
@@ -538,11 +570,11 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   ctx.restore(); // End lower body
 
   // =========================================================================
-  // 2. MONOCHROME PAYLOAD FAIRING
+  // 2. MONOCHROME PAYLOAD FAIRING (slow clamshell split 0.395 -> 0.515)
   // =========================================================================
   const fairingBaseY = c25TopY;
 
-  if (!isDeploying) {
+  if (!isFairingOpening) {
     if (blueprintMode) {
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
@@ -593,15 +625,18 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.closePath();
       ctx.stroke();
     }
-  } else {
-    const fSep = easeOutCubic(deployFrac);
-    const fadeOut = 1 - smoothstep(0.65, 1.0, deployFrac);
+  } else if (sp < 0.518) {
+    const fSep = easeOutCubic(fairingProg);
+    const fadeOut = 1 - smoothstep(0.460, 0.515, sp);
     ctx.globalAlpha = fadeOut;
 
     for (const side of [-1, 1] as const) {
       ctx.save();
-      ctx.translate(side * fSep * u * 2.35, fairingBaseY + fSep * u * 1.2);
-      ctx.rotate(side * fSep * 0.76);
+      ctx.translate(
+        side * Math.pow(fSep, 1.1) * u * 2.55,
+        fairingBaseY + Math.pow(fSep, 1.3) * u * 1.45
+      );
+      ctx.rotate(side * fSep * 0.85);
       ctx.fillStyle = blueprintMode ? 'rgba(255,255,255,0.08)' : side > 0 ? '#ececef' : '#d0d0d8';
       ctx.strokeStyle = blueprintMode ? '#ffffff' : 'rgba(24, 24, 27, 0.38)';
       ctx.lineWidth = 0.9;
