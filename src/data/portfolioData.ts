@@ -94,7 +94,7 @@ export const STAGES: StageWaypoint[] = [
   { id: 'heritage', code: '02', shortLabel: 'Writing', stageName: 'ಬರಹಗಳು · Writings', altitude: 'Kannada & English' },
   { id: 'stack', code: '03', shortLabel: 'Stack', stageName: 'Tech Stack & Modules', altitude: 'Voice AI · Python · Web' },
   { id: 'missions', code: '04', shortLabel: 'Projects', stageName: 'Open-Source & Private R&D', altitude: 'Dlives · santypes · ntools' },
-  { id: 'signal', code: '05', shortLabel: 'Contact', stageName: 'Establish Uplink', altitude: 'Email · GitHub · LinkedIn' },
+  { id: 'signal', code: '05', shortLabel: 'Contact', stageName: 'Connect Now', altitude: 'Email · GitHub · LinkedIn' },
 ];
 
 export interface ProjectData {

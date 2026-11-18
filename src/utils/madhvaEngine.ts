@@ -1164,7 +1164,7 @@ function buildEducationReply(): MadhvaReply {
 function buildContactReply(): MadhvaReply {
   return {
     kind: 'contact',
-    headline: 'ESTABLISH UPLINK // DIRECT LINKS',
+    headline: 'CONNECT NOW // ಸಂಪರ್ಕಿಸಿ',
     lines: [
       'Open to online internships (alongside college / free time), open-source collaborations, AI/ML & software projects, and creative writing conversations.',
     ],

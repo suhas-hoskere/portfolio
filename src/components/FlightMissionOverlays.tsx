@@ -178,9 +178,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   <span className="text-white">2012 – 2029</span>
                 </div>
 
-                <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight">
-                  Education
-                </h2>
+                <div className="space-y-1">
+                  <h2 className="font-kannada text-3xl sm:text-4xl font-bold text-white leading-tight">
+                    ಶಿಕ್ಷಣ
+                  </h2>
+                  <div className="font-space text-base sm:text-lg font-medium text-zinc-300 tracking-wide">
+                    Education
+                  </div>
+                </div>
 
                 <div className="border-l border-white/20 pl-5 space-y-5">
                   <div className="relative space-y-1">
@@ -418,6 +423,15 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   <span>AI-ASSISTED DEV</span>
                 </div>
 
+                <div className="space-y-1">
+                  <h2 className="font-kannada text-3xl sm:text-4xl font-bold text-white leading-tight">
+                    ತಂತ್ರಜ್ಞಾನ
+                  </h2>
+                  <div className="font-space text-base sm:text-lg font-medium text-zinc-300 tracking-wide">
+                    Tech Stack
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   {SKILL_GROUPS.map((group) => (
                     <div key={group.label} className="space-y-2">
@@ -447,13 +461,16 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
             >
               <div className={`${textWell} space-y-5 text-left`}>
                 <div className="flex items-end justify-between gap-2">
-                  <div>
+                  <div className="space-y-1">
                     <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
                       STAGE 04 // SELECTED WORK
                     </span>
-                    <h2 className="text-3xl sm:text-4xl font-space text-white font-bold leading-tight tracking-tight mt-1">
-                      Projects
+                    <h2 className="font-kannada text-3xl sm:text-4xl font-bold text-white leading-tight pt-0.5">
+                      ಯೋಜನೆಗಳು
                     </h2>
+                    <div className="font-space text-base sm:text-lg font-medium text-zinc-300 tracking-wide">
+                      Projects
+                    </div>
                   </div>
                   <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider shrink-0">
                     Click for details
@@ -538,9 +555,14 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   <span>CONNECT // 05</span>
                 </div>
 
-                <h2 className="text-3xl sm:text-5xl font-space text-white font-bold leading-tight tracking-tight">
-                  Establish Uplink.
-                </h2>
+                <div className="space-y-1.5">
+                  <h2 className="font-kannada text-3xl sm:text-5xl font-bold text-white leading-tight">
+                    ಸಂಪರ್ಕಿಸಿ
+                  </h2>
+                  <div className="font-space text-lg sm:text-2xl font-semibold text-zinc-300 tracking-tight">
+                    Connect Now
+                  </div>
+                </div>
 
                 <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed max-w-xl">
                   Open to open-source collaborations, AI/ML &amp; software projects, and creative
