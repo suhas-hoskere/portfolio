@@ -93,7 +93,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 </div>
 
                 <div className={`space-y-1.5 ${enterCls}`} style={{ animationDelay: '75ms' }}>
-                  <h1 className="text-[clamp(2.2rem,5vw,4.35rem)] font-kannada font-bold text-white leading-[1.15] tracking-tight">
+                  <h1
+                    className="text-[clamp(2.75rem,5.8vw,5.1rem)] font-hubballi font-normal text-white leading-[1.12] tracking-wide"
+                    style={{ fontFamily: '"Hubballi", "Noto Sans Kannada", cursive' }}
+                  >
                     ಸುಹಾಸ್ ಹೊಸಕೆರೆ
                   </h1>
                   <div className="font-space text-base sm:text-lg font-medium text-zinc-300 tracking-wide">

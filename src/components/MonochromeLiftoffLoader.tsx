@@ -430,7 +430,10 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
               <Rocket className="w-3.5 h-3.5 text-white" />
               <span>PRE-FLIGHT SEQUENCE</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-kannada font-bold text-white tracking-tight">
+            <h1
+              className="text-3xl sm:text-4xl font-hubballi font-normal text-white tracking-wide leading-tight"
+              style={{ fontFamily: '"Hubballi", "Noto Sans Kannada", cursive' }}
+            >
               ಸುಹಾಸ್ ಹೊಸಕೆರೆ
             </h1>
             <div className="font-space text-xs sm:text-sm text-zinc-400">

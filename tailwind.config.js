@@ -12,6 +12,7 @@ export default {
         sans: ['system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
         kannada: ['"Noto Sans Kannada"', 'sans-serif'],
         akaya: ['"Akaya Kanadaka"', '"Noto Sans Kannada"', 'cursive', 'sans-serif'],
+        hubballi: ['"Hubballi"', '"Noto Sans Kannada"', 'cursive', 'sans-serif'],
         signature: ['"Cormorant Garamond"', 'Georgia', 'serif'],
       },
     },
