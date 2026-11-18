@@ -319,36 +319,36 @@ function drawMonoMiniSat(
 }
 
 /**
- * Pure Monochrome Continuous Earth-to-Orbit Horizon (sp 0.165 -> 1.000):
- * - Always keeps Earth visible below the climbing rocket & orbiting satellite
- * - Features geographically accurate India & Sri Lanka + real-coordinate Bangalore radar reticle
- * - Zero background/wireframe grid lines!
+ * Pure Monochrome Photorealistic Earth-to-Orbit Globe (sp 0.215 -> 1.000):
+ * - Smoothly reveals the full shaded monochrome Earth globe (soft glowing atmosphere, ocean depth,
+ *   accurate WGS84 India & Sri Lanka, orbital clouds, city lights) right below the climbing rocket
+ *   as the launchpad recedes — ZERO bare wireframe horizon line cutting through trees or gantry!
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
-  const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
+  const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
 
-  if (sp < 0.165) return;
+  // Enters smoothly right as the rocket clears the launchpad & climbs above the coastal ground
+  if (sp < 0.215) return;
 
-  const baseHorizonY = groundY - unit * 0.24;
   const baseEarthR = Math.max(w, h) * 0.58;
   // Keeps Earth's upper illuminated hemisphere + ALL of India generously visible above bottom HUD
   const leoTopY = Math.max(h * 0.56, h - baseEarthR * 0.48);
 
-  const climbCurve = smoothstep(0.175, 0.480, sp);
-  const earthFadeIn = smoothstep(0.165, 0.205, sp);
+  const climbCurve = smoothstep(0.215, 0.480, sp);
+  const earthFadeIn = smoothstep(0.215, 0.310, sp);
 
-  const earthR = baseEarthR * Math.pow(7.2, Math.pow(1 - climbCurve, 1.25));
+  // Smooth natural altitude zoom-out from wide upper-troposphere limb -> full 420 km LEO globe
+  const earthR = baseEarthR * Math.pow(3.2, Math.pow(1 - climbCurve, 1.25));
   const terminalDrop = smoothstep(0.84, 1.0, sp) * baseEarthR * 0.06;
-  const topLimbY = lerp(baseHorizonY, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
+  // Starts cleanly low below the receding pad & rises smoothly into LEO framing
+  const topLimbY = lerp(h * 0.86, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
 
   const leoCenterX = lerp(w * 0.62, vehicleAnchorX + unit * 0.15, 0.55);
   const centerX = lerp(vehicleAnchorX, leoCenterX, climbCurve) - mouseX * (5 + 5 * climbCurve);
   const centerY = topLimbY + earthR;
 
-  const atmoGlow = smoothstep(0.20, 0.42, sp);
-  const globeDetailAlpha = smoothstep(0.25, 0.45, sp);
-  const blrReticleAlpha = smoothstep(0.34, 0.47, sp);
-  const orbitRingAlpha = smoothstep(0.35, 0.48, sp);
+  const blrReticleAlpha = smoothstep(0.35, 0.47, sp);
+  const orbitRingAlpha = smoothstep(0.36, 0.48, sp);
 
   const orbitAdvance = (sp - 0.35) * 3.0 + (reducedMotion ? 0 : t * 0.20);
 
@@ -387,30 +387,11 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  // 2. Seamless early-ascent dark Earth horizon arc
-  if (globeDetailAlpha < 0.99) {
-    ctx.fillStyle = '#09090b';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, earthR, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = `rgba(255, 255, 255, ${lerp(0.16, 0.72, atmoGlow)})`;
-    ctx.lineWidth = lerp(1.0, 1.5, climbCurve);
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, earthR, Math.PI * 1.05, Math.PI * 1.95);
-    ctx.stroke();
-  }
-
-  // 3. Cached Photorealistic Monochrome LEO Earth Globe Sprite (accurate India + Sri Lanka, zero grid!)
-  if (globeDetailAlpha > 0.01) {
-    const earthImg = getEarthSprite();
-    const drawScale = earthR / EARTH_SPRITE_R;
-    const drawSize = EARTH_SPRITE_SIZE * drawScale;
-    ctx.save();
-    ctx.globalAlpha = earthFadeIn * globeDetailAlpha;
-    ctx.drawImage(earthImg, centerX - drawSize * 0.5, centerY - drawSize * 0.5, drawSize, drawSize);
-    ctx.restore();
-  }
+  // 2. Full Cached Photorealistic Monochrome Earth Globe Sprite (silky glowing atmosphere + shaded ocean + India!)
+  const earthImg = getEarthSprite();
+  const drawScale = earthR / EARTH_SPRITE_R;
+  const drawSize = EARTH_SPRITE_SIZE * drawScale;
+  ctx.drawImage(earthImg, centerX - drawSize * 0.5, centerY - drawSize * 0.5, drawSize, drawSize);
 
   // 4. BANGALORE ISRO GROUND STATION RETICLE (exact projected 12.97° N, 77.59° E!)
   if (blrReticleAlpha > 0.01) {

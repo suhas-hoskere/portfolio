@@ -368,8 +368,8 @@ export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
 
   ctx.save();
 
-  // 1. Flat ground plane & soft distant coastal treeline silhouette (hands off cleanly to Earth arc)
-  const flatGroundFade = 1 - smoothstep(0.170, 0.215, sp);
+  // 1. Flat coastal ground plane & distant treeline ridge (pans down smoothly with the launchpad)
+  const flatGroundFade = alpha;
   if (flatGroundFade > 0.01) {
     ctx.globalAlpha = flatGroundFade;
 
@@ -407,33 +407,26 @@ export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
     }
   }
 
-  // 2. Perspective zoom-out transform around pad anchor on Earth's receding horizon
+  // 2. Transform around pad anchor on the receding ground plane
   const padOriginX = vehicleAnchorX - mouseX * 8 * scale;
-  const zoomOut = smoothstep(0.170, 0.480, sp);
-  const baseEarthR = Math.max(w, h) * 0.56;
-  const currentEarthR = baseEarthR * Math.pow(8.6, Math.pow(1 - zoomOut, 1.25));
 
   ctx.globalAlpha = alpha;
   ctx.translate(padOriginX, anchorY);
   ctx.scale(scale, scale);
 
-  // Coastal trees fade slightly earlier than central pad & hug Earth's curvature sagitta (zero floating!)
-  const treeAlpha = alpha * (1 - smoothstep(0.185, 0.255, sp));
-  if (treeAlpha > 0.01) {
+  // Coastal trees stay firmly rooted on the receding ground plane
+  if (alpha > 0.01) {
     for (let i = 0; i < trees.length; i++) {
       const tr = trees[i];
       const img = sprites[tr.species];
       const drawH = tr.scale * unit * 1.08;
       const drawW = drawH * (img.width / img.height);
       const tx = tr.offsetX * unit;
-      // Curve drop along Earth's sphere so far-left/right trees stay firmly rooted on the curving limb
-      const worldDx = tx * scale;
-      const curveDrop = sp > 0.170 ? (worldDx * worldDx) / (2 * Math.max(currentEarthR, 400)) / scale : 0;
-      const ty = (tr.layer === 0 ? -unit * 0.16 : unit * 0.05) + curveDrop;
+      const ty = tr.layer === 0 ? -unit * 0.16 : unit * 0.05;
       const sway = reducedMotion ? 0 : Math.sin(t * 1.0 + i * 1.7) * 0.014;
 
       ctx.save();
-      ctx.globalAlpha = treeAlpha * (tr.layer === 0 ? 0.34 : 0.62);
+      ctx.globalAlpha = alpha * (tr.layer === 0 ? 0.34 : 0.62);
       ctx.translate(tx, ty);
       ctx.rotate(sway);
       if (tr.flipX) ctx.scale(-1, 1);
