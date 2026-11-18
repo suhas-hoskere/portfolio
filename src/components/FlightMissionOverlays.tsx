@@ -513,49 +513,62 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 border-t border-white/15 pt-2">
-                  {PROJECTS.map((proj) => (
-                    <button
-                      key={proj.id}
-                      type="button"
-                      onClick={() => {
-                        cosmicAudio.playTelemetryChirp(1380, 0.05);
-                        onSelectProject(proj);
-                      }}
-                      className="w-full py-4 px-2.5 -mx-2.5 rounded-lg border-b border-white/15 text-left hover:bg-white/[0.06] transition-colors cursor-pointer group flex flex-col justify-between gap-2"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
-                          <span className="font-semibold text-white tracking-wide">
-                            {proj.name}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full bg-black/70 border border-white/20 text-zinc-200">
-                            {proj.badge}
-                          </span>
+                <div className="grid grid-cols-1 lg:grid-cols-2 border-y border-white/20">
+                  {PROJECTS.map((proj, idx) => {
+                    const isLeftCol = idx % 2 === 0;
+                    const isTopRow = idx < PROJECTS.length - 2;
+                    const isLast = idx === PROJECTS.length - 1;
+                    return (
+                      <button
+                        key={proj.id}
+                        type="button"
+                        onClick={() => {
+                          cosmicAudio.playTelemetryChirp(1380, 0.05);
+                          onSelectProject(proj);
+                        }}
+                        className={`w-full py-5 px-4 text-left hover:bg-white/[0.06] transition-colors cursor-pointer group flex flex-col justify-between gap-2.5 ${
+                          isLeftCol ? 'lg:pr-6 lg:border-r lg:border-white/20' : 'lg:pl-6'
+                        } ${
+                          isTopRow
+                            ? 'border-b border-white/20'
+                            : !isLast
+                              ? 'border-b border-white/20 lg:border-b-0'
+                              : ''
+                        }`}
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
+                            <span className="font-semibold text-white tracking-wide">
+                              {proj.name}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/20 text-zinc-200">
+                              {proj.badge}
+                            </span>
+                          </div>
+
+                          <div className="text-base font-space text-white font-bold flex items-center justify-between gap-2 tracking-tight">
+                            <span>{proj.title}</span>
+                            <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                          </div>
+
+                          <p className="text-xs text-zinc-300 font-sans font-light leading-relaxed">
+                            {proj.description}
+                          </p>
                         </div>
 
-                        <div className="text-base font-space text-white font-bold flex items-center justify-between gap-2 tracking-tight">
-                          <span>{proj.title}</span>
-                          <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                        <div className="flex items-center justify-between pt-1.5 text-[10px] font-mono">
+                          <span className="text-zinc-400">
+                            {proj.metrics[0].label}:{' '}
+                            <span className="text-white">{proj.metrics[0].value}</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-white font-medium">
+                            <span>{proj.demo ? 'Live App & Specs' : 'View Specs'}</span>
+                            <ArrowUpRight className="w-3 h-3" />
+                          </span>
                         </div>
-
-                        <p className="text-xs text-zinc-300 font-sans font-light leading-relaxed">
-                          {proj.description}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1 text-[10px] font-mono">
-                        <span className="text-zinc-400">
-                          {proj.metrics[0].label}:{' '}
-                          <span className="text-white">{proj.metrics[0].value}</span>
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-white font-medium">
-                          <span>{proj.demo ? 'Live App & Specs' : 'View Specs'}</span>
-                          <ArrowUpRight className="w-3 h-3" />
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Private Repositories / Ongoing R&D Showcase */}
