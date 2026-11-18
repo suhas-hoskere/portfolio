@@ -380,7 +380,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   </a>
                 </div>
 
-                <div className="pt-4 border-t border-white/15 flex items-center justify-center">
+                <div className="pt-6 sm:pt-7 border-t border-white/15 flex items-center justify-center text-center">
                   <span className="font-kannada text-sm sm:text-base font-semibold text-white inline-flex items-center justify-center gap-2 leading-none">
                     <Sparkles className="w-4 h-4 text-zinc-300 shrink-0 -translate-y-[1.5px]" />
                     <span>ಜೀವ, ಜೀವನ ಎರಡೂ ಕನ್ನಡದ್ದೇ</span>
