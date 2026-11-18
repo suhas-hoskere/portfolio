@@ -360,9 +360,10 @@ function drawMonoS200Booster(
 
 /**
  * Shared physical rocket trajectory pose (used by both rocketVehicle & heroSatellite):
- * - Stays 100% FULL SIZE on the launch pad AND while lifting off & clearing the gantry tower (0.140 -> 0.210)!
- * - Only AFTER clearing the tower (0.210 -> 0.540) does it smoothly shrink smaller as it climbs high
- *   into the clouds and curves far right toward orbit!
+ * - Stays 100% FULL SIZE & pure vertical (0°) on the pad and while clearing the gantry tower (0.140 -> 0.210).
+ * - After clearing the tower (0.210 -> 0.510), executes a real orbital gravity turn:
+ *   smoothly shrinking smaller as it climbs high, curving downrange, and pitching all the way to
+ *   HORIZONTAL (~88°, parallel to Earth's curved orbital horizon!) for orbital insertion!
  */
 export function getRocketPose(
   sp: number,
@@ -376,23 +377,25 @@ export function getRocketPose(
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
 
   // Stays 100% FULL SIZE while on the pad and clearing the tower (sp <= 0.210);
-  // begins shrinking smoothly ONLY once clear in the sky climbing toward the clouds & orbit!
-  const shrinkProg = smoothstep(0.210, 0.540, sp);
-  const altitudeScale = lerp(1.0, 0.16, shrinkProg);
+  // smoothly shrinks down to distant orbital vehicle scale (0.18) as it climbs into space!
+  const shrinkProg = smoothstep(0.210, 0.520, sp);
+  const altitudeScale = lerp(1.0, 0.18, shrinkProg);
   const u = unit * camZoom * altitudeScale;
 
-  // Vertical tower clearance first, then curves smoothly far right once clear of the tower (0.220 -> 0.540)
-  const turnProg = smoothstep(0.220, 0.540, sp);
-  const pitchRad = Math.pow(turnProg, 1.1) * 0.34;
-  const x = vehicleAnchorX - mouseX * 10 + Math.pow(turnProg, 1.2) * unit * 0.72;
+  // Real gravity turn: vertical (0°) -> 45° climbing through atmosphere -> horizontal (88°, parallel to orbit!)
+  const turnProg = smoothstep(0.215, 0.500, sp);
+  const pitchRad = turnProg * (Math.PI * 0.49);
 
-  // Rocket blasts straight UPWARD off the pad first (0.140 -> 0.220) at full size, then climbs high into space
+  // Subtle horizontal arc rightward into orbital insertion framing (keeping horizontal rocket & plume cleanly in view)
+  const x = vehicleAnchorX - mouseX * 10 + Math.sin(turnProg * Math.PI * 0.72) * unit * 0.36;
+
+  // Vertical tower clearance first (0.140 -> 0.230), then climbs cleanly into orbital altitude above Earth's curve
   let baseY = groundY - unit * 0.14;
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
   else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
   const towerClearRise = sp >= 0.140 ? smoothstep(0.140, 0.230, sp) * unit * 1.15 : 0;
-  const skyClimbRise = sp >= 0.210 ? smoothstep(0.210, 0.490, sp) * unit * 1.55 : 0;
+  const skyClimbRise = sp >= 0.210 ? smoothstep(0.210, 0.490, sp) * unit * 2.10 : 0;
   const y = baseY - towerClearRise - skyClimbRise;
 
   return { x, y, u, pitchRad };

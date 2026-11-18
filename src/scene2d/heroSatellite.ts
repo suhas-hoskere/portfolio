@@ -89,7 +89,7 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const floatOut = smoothstep(0.510, 0.655, sp);
   const floatEase = easeOutCubic(floatOut);
 
-  // Match exact rocket fairing cavity world position using shared getRocketPose
+  // Match exact horizontal rocket fairing cavity world position using shared getRocketPose
   const rocketPose = getRocketPose(
     Math.min(sp, 0.525),
     mouseX,
@@ -103,8 +103,10 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const startY = rocketPose.y + Math.cos(rocketPose.pitchRad) * localCavityY;
   const pitchRad = rocketPose.pitchRad;
 
-  // Emerges smoothly from the tiny distant orbital fairing scale (0.08) -> clean LEO showcase (0.94) -> terminal zoom (1.28)
-  let satScale = lerp(0.08, 0.94, floatEase);
+  // Stays tiny matching the fairing as it slides forward out of the horizontal nose cone,
+  // then smoothly zooms into clean LEO showcase framing once clear of the spent rocket stage!
+  const scaleEase = Math.pow(floatOut, 1.45);
+  let satScale = lerp(0.08, 0.94, scaleEase);
   if (sp >= 0.90) {
     const terminalZoom = easeOutCubic((sp - 0.90) / 0.08);
     satScale = lerp(0.94, 1.28, terminalZoom);
@@ -121,6 +123,7 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);
 
+  // Smoothly rotates from horizontal orbital insertion attitude (~88°) upright into 0° orbital cruise!
   const bankRad =
     lerp(pitchRad, 0, floatEase) + (reducedMotion ? 0 : Math.sin(t * 0.48) * 0.024 * floatEase);
 
