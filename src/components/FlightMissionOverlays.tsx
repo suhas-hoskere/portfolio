@@ -10,7 +10,7 @@ import {
   Code2,
   BookOpen,
 } from 'lucide-react';
-import { GithubIcon, LinkedinIcon } from './Icons';
+import { GithubIcon, LinkedinIcon, InstagramIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
 
 export interface ProjectData {
@@ -509,6 +509,47 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   bringing together cultural storytelling and engineering curiosity.
                 </p>
 
+                {/* Writing Instagram Pages */}
+                <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <a
+                    href="https://www.instagram.com/mugulnage_manasu_10/"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => cosmicAudio.playTelemetryChirp(1240, 0.05)}
+                    className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                        <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
+                        <span>Kannada Writings</span>
+                      </div>
+                      <div className="text-sm font-mono font-semibold text-white truncate">
+                        @mugulnage_manasu_10
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white shrink-0 mt-0.5" />
+                  </a>
+
+                  <a
+                    href="https://www.instagram.com/unofficial_overthinker_/"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => cosmicAudio.playTelemetryChirp(1280, 0.05)}
+                    className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                        <InstagramIcon className="w-3.5 h-3.5 text-white shrink-0" />
+                        <span>English &amp; Tech</span>
+                      </div>
+                      <div className="text-sm font-mono font-semibold text-white truncate">
+                        @unofficial_overthinker_
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white shrink-0 mt-0.5" />
+                  </a>
+                </div>
+
                 <div className="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
                   <span className="font-kannada text-sm sm:text-base font-semibold text-white flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
@@ -516,7 +557,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 uppercase tracking-wider shrink-0">
                     <BookOpen className="w-3 h-3" />
-                    <span>Writings &amp; Pages</span>
+                    <span>Published Pages</span>
                   </span>
                 </div>
               </div>
@@ -552,16 +593,16 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     <span>suhashoskere@gmail.com</span>
                   </a>
 
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <a
                       href="https://github.com/suhas-hoskere"
                       target="_blank"
                       rel="noreferrer"
                       className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <GithubIcon className="w-4 h-4" />
+                      <GithubIcon className="w-4 h-4 shrink-0" />
                       <span>GitHub</span>
-                      <ExternalLink className="w-3 h-3 text-zinc-400" />
+                      <ExternalLink className="w-3 h-3 text-zinc-400 shrink-0" />
                     </a>
 
                     <a
@@ -570,9 +611,20 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       rel="noreferrer"
                       className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <LinkedinIcon className="w-4 h-4" />
+                      <LinkedinIcon className="w-4 h-4 shrink-0" />
                       <span>LinkedIn</span>
-                      <ExternalLink className="w-3 h-3 text-zinc-400" />
+                      <ExternalLink className="w-3 h-3 text-zinc-400 shrink-0" />
+                    </a>
+
+                    <a
+                      href="https://www.instagram.com/suhas__112123/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <InstagramIcon className="w-4 h-4 shrink-0" />
+                      <span>Instagram</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-400 shrink-0" />
                     </a>
                   </div>
                 </div>
