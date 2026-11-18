@@ -33,15 +33,18 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
   ({ onLaunch, onSelectProject, entered = true }) => {
     const [copiedEmail, setCopiedEmail] = useState(false);
     const [activeQuoteIndex, setActiveQuoteIndex] = useState(0);
+    const [quoteDirection, setQuoteDirection] = useState<'next' | 'prev'>('next');
     const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
 
     const showPrevQuote = () => {
       cosmicAudio.playTelemetryChirp(1180, 0.04);
+      setQuoteDirection('prev');
       setActiveQuoteIndex((prev) => (prev - 1 + KANNADA_WRITINGS.length) % KANNADA_WRITINGS.length);
     };
 
     const showNextQuote = () => {
       cosmicAudio.playTelemetryChirp(1260, 0.04);
+      setQuoteDirection('next');
       setActiveQuoteIndex((prev) => (prev + 1) % KANNADA_WRITINGS.length);
     };
 
@@ -332,10 +335,12 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     </span>
                   </div>
 
-                  <div className="min-h-[104px] sm:min-h-[116px] flex items-center py-1">
+                  <div className="min-h-[104px] sm:min-h-[116px] flex items-center py-1 overflow-hidden">
                     <blockquote
                       key={activeQuoteIndex}
-                      className="animate-stage-in font-kannada text-sm sm:text-base lg:text-[17px] leading-[1.9] text-white/95 whitespace-pre-line"
+                      className={`${
+                        quoteDirection === 'next' ? 'animate-quote-next' : 'animate-quote-prev'
+                      } font-kannada text-sm sm:text-base lg:text-[17px] leading-[1.9] text-white/95 whitespace-pre-line`}
                     >
                       &ldquo;{KANNADA_WRITINGS[activeQuoteIndex]}&rdquo;
                     </blockquote>
@@ -362,6 +367,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                             aria-label={`Read quote ${idx + 1}`}
                             onClick={() => {
                               cosmicAudio.playTelemetryChirp(1220, 0.03);
+                              setQuoteDirection(idx < activeQuoteIndex ? 'prev' : 'next');
                               setActiveQuoteIndex(idx);
                             }}
                             className={`h-1.5 rounded-full transition-all cursor-pointer ${
