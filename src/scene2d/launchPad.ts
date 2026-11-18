@@ -240,8 +240,9 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
   ctx.translate(padX, anchorY);
   ctx.scale(scale, scale);
 
-  // 1. TWO DISTANT LIGHTNING NEEDLE SPIRES WITH LUMINOUS GLOWING BEACON TIPS
-  for (const ox of [-2.25, 2.15]) {
+  // 1. RIGHT LIGHTNING NEEDLE SPIRE WITH LUMINOUS GLOWING BEACON TIP
+  // (Left spire omitted so it never intersects the editorial Hero box)
+  for (const ox of [2.15]) {
     const mx = ox * unit;
     const baseY = -unit * 0.04;
     const topY = baseY - unit * 3.15;
