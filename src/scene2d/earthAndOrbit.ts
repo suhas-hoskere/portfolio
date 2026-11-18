@@ -4,6 +4,7 @@ import {
   smoothstep,
   mulberry32,
 } from './types';
+import { INDIA_EXACT_OUTLINE } from './indiaExactPath';
 
 interface OrbitalSatSpec {
   rxScale: number;
@@ -22,118 +23,25 @@ let cachedEarthSprite: HTMLCanvasElement | null = null;
 const EARTH_SPRITE_SIZE = 820;
 const EARTH_SPRITE_R = 344; // leaves 66px silky outer atmospheric glow margin
 
-/**
- * Real geographic (lon°E, lat°N) -> normalized globe coordinates [-1..1]
- * Centered on India (81.5°E, 21.0°N) and positioned cleanly in the visible upper crown of Earth!
- */
-function projectGeoToGlobe(lon: number, lat: number): [number, number] {
-  const lon0 = 81.5;
-  const lat0 = 20.5;
-  const scale = 0.0132;
-  const cosLat = Math.cos((lat * Math.PI) / 180);
-  const nx = (lon - lon0) * cosLat * scale + 0.03;
-  // Gentle spherical curvature compression near northern limb
-  const dLat = lat - lat0;
-  const ny = -0.75 - dLat * scale * (1 - Math.max(0, dLat) * 0.004);
-  return [nx, ny];
+// Placement of exact India map on Earth's visible upper orbital crown
+const INDIA_CX_NORM = 0.04;
+const INDIA_CY_NORM = -0.75;
+const INDIA_SPAN_NORM = 0.41;
+
+/** Maps exact normalized India-map space ([-0.45..0.45], [-0.5..0.5]) onto globe [-1..1] */
+function indiaToGlobe(ux: number, uy: number): [number, number] {
+  return [
+    INDIA_CX_NORM + ux * INDIA_SPAN_NORM,
+    INDIA_CY_NORM + uy * INDIA_SPAN_NORM,
+  ];
 }
 
-// Accurate real-world WGS84 longitude/latitude outline of India (68°E..97.4°E, 8.08°N..36.8°N)
-const INDIA_LON_LAT: [number, number][] = [
-  // Jammu, Kashmir & Ladakh Crown
-  [74.2, 32.8],
-  [73.7, 34.1],
-  [73.8, 35.1],
-  [74.6, 36.8], // Gilgit / Northernmost tip
-  [76.0, 36.2],
-  [77.6, 35.5], // Karakoram / Siachen
-  [79.2, 34.7], // Aksai Chin
-  [79.8, 33.8],
-  [78.9, 32.7], // Ladakh South
-  [78.5, 31.3], // Himachal border
-  // Uttarakhand & Nepal Border
-  [80.2, 30.5],
-  [80.9, 30.2],
-  [80.1, 29.0],
-  [81.3, 28.1],
-  [83.8, 27.4],
-  [86.5, 26.5],
-  [88.1, 26.6],
-  // Sikkim & Siliguri / Bhutan Border
-  [88.1, 27.9], // Sikkim peak
-  [88.9, 27.8],
-  [88.9, 27.1],
-  [89.9, 26.8],
-  [91.6, 26.9],
-  // Northeast Seven Sisters (Arunachal, Nagaland, Manipur, Mizoram, Tripura, Meghalaya)
-  [91.7, 27.8], // Tawang / Arunachal West
-  [93.6, 28.6],
-  [95.5, 29.3], // Arunachal North
-  [97.3, 28.2], // Kibithu / Easternmost tip
-  [96.8, 27.2],
-  [95.4, 26.8], // Nagaland
-  [94.7, 25.6],
-  [94.4, 24.4], // Manipur
-  [93.3, 23.8],
-  [93.1, 22.0], // Mizoram South tip
-  [92.5, 22.4],
-  [92.3, 23.9], // Tripura
-  [91.7, 23.0],
-  [91.2, 23.8],
-  [91.8, 24.9], // Meghalaya
-  [90.0, 25.2],
-  [89.8, 26.2], // Siliguri Chicken's Neck
-  [88.8, 26.3],
-  // West Bengal & East Coast (Bay of Bengal)
-  [88.4, 25.2],
-  [88.9, 22.4],
-  [88.8, 21.6], // Sundarbans
-  [87.6, 21.6],
-  [87.0, 20.8], // Odisha
-  [86.5, 19.9], // Puri
-  [85.2, 19.4], // Chilika
-  [84.0, 18.3],
-  [83.3, 17.7], // Visakhapatnam
-  [82.2, 16.8], // Kakinada
-  [81.1, 16.0], // Machilipatnam
-  [80.2, 15.1], // Ongole
-  [80.23, 13.72], // Sriharikota (SHAR)
-  [80.28, 13.08], // Chennai
-  [79.85, 11.9], // Pondicherry
-  [79.86, 10.3], // Point Calimere
-  [79.25, 9.28], // Rameshwaram
-  [78.2, 8.75], // Tuticorin
-  [77.55, 8.08], // Kanyakumari Southernmost tip
-  // West Coast (Arabian Sea)
-  [76.9, 8.5], // Thiruvananthapuram
-  [76.25, 9.95], // Kochi
-  [75.7, 11.3], // Kozhikode
-  [74.85, 12.9], // Mangalore
-  [74.1, 14.8], // Karwar
-  [73.8, 15.4], // Goa
-  [73.25, 17.0], // Ratnagiri
-  [72.85, 19.07], // Mumbai
-  [72.8, 20.9], // Surat
-  // Gujarat (Gulf of Khambhat -> Saurashtra/Kathiawar -> Gulf of Kutch -> Rann of Kutch)
-  [72.5, 22.3], // Gulf of Khambhat top
-  [72.15, 21.6], // Bhavnagar
-  [71.1, 20.75], // Diu / Veraval
-  [69.6, 21.6], // Porbandar
-  [68.96, 22.24], // Dwarka
-  [70.35, 22.9], // Gulf of Kutch indent
-  [69.4, 22.85],
-  [68.45, 23.6], // Westernmost Kutch tip
-  [68.9, 24.3], // Rann of Kutch
-  [70.8, 24.6],
-  // Rajasthan & Punjab (Western Border)
-  [70.5, 25.7], // Barmer
-  [69.5, 26.9], // Jaisalmer bulge
-  [70.8, 27.9],
-  [72.8, 29.1], // Bikaner
-  [73.9, 30.1], // Ganganagar
-  [74.5, 31.1], // Ferozepur
-  [74.8, 32.0], // Amritsar
-];
+/** Converts real WGS84 (lon°E, lat°N) to exact normalized India-map space aligned with INDIA_EXACT_OUTLINE */
+function lonLatToIndiaNorm(lon: number, lat: number): [number, number] {
+  const ux = -0.447 + ((lon - 68.1) / (97.4 - 68.1)) * 0.894;
+  const uy = 0.50 - (lat - 8.08) / (37.0 - 8.08);
+  return [ux, uy];
+}
 
 const SRI_LANKA_LON_LAT: [number, number][] = [
   [80.05, 9.8],
@@ -151,7 +59,7 @@ const SRI_LANKA_LON_LAT: [number, number][] = [
  * Pre-renders a photorealistic monochrome LEO Earth globe sprite ONCE (820x820, 0ms per-frame cost!):
  * - ZERO wireframe grid lines!
  * - Silky zero-banding radial atmospheric limb glow
- * - Geographically accurate India & Sri Lanka coastlines (real WGS84 coordinates!)
+ * - Pixel-exact official India map extracted directly from the user-provided outline + Sri Lanka
  * - Soft swirling orbital cloud cover + glowing Indian metro city lights
  */
 function getEarthSprite(): HTMLCanvasElement {
@@ -193,43 +101,49 @@ function getEarthSprite(): HTMLCanvasElement {
   ctx.fillStyle = ocean;
   ctx.fillRect(c - r, c - r, r * 2, r * 2);
 
-  // Helper to trace real-coordinate geographic polygons smoothly onto the globe
-  const drawGeoPolygon = (
-    lonLatPts: [number, number][],
-    fillA: number,
-    strokeA: number,
-    lineW = 1.25
-  ) => {
-    ctx.fillStyle = `rgba(235, 235, 244, ${fillA})`;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${strokeA})`;
-    ctx.lineWidth = lineW;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    lonLatPts.forEach(([lon, lat], idx) => {
-      const [nx, ny] = projectGeoToGlobe(lon, lat);
-      const x = c + nx * r;
-      const y = c + ny * r;
-      if (idx === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-  };
+  // 3. Exact Official India Map Outline (167-vertex exact contour)
+  ctx.fillStyle = 'rgba(235, 235, 244, 0.14)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+  ctx.lineWidth = 1.35;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  INDIA_EXACT_OUTLINE.forEach(([ux, uy], idx) => {
+    const [gx, gy] = indiaToGlobe(ux, uy);
+    const x = c + gx * r;
+    const y = c + gy * r;
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 
-  // Accurate India + Sri Lanka!
-  drawGeoPolygon(INDIA_LON_LAT, 0.16, 0.68, 1.3);
-  drawGeoPolygon(SRI_LANKA_LON_LAT, 0.17, 0.62, 1.15);
+  // Sri Lanka nestled naturally below Tamil Nadu
+  ctx.fillStyle = 'rgba(235, 235, 244, 0.15)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  SRI_LANKA_LON_LAT.forEach(([lon, lat], idx) => {
+    const [ux, uy] = lonLatToIndiaNorm(lon, lat);
+    const [gx, gy] = indiaToGlobe(ux, uy);
+    const x = c + gx * r;
+    const y = c + gy * r;
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 
-  // Subtle soft orbital cloud wisps across the Indian Ocean & Bay of Bengal (keeping India clearly legible!)
-  for (let cl = 0; cl < 20; cl++) {
+  // Subtle soft orbital cloud wisps across the Indian Ocean & Bay of Bengal
+  for (let cl = 0; cl < 18; cl++) {
     const cxPos = c + (rand() - 0.5) * r * 1.50;
     const cyPos = c - r * 0.42 - rand() * r * 0.52;
-    const rw = 24 + rand() * 58;
-    const rh = 6 + rand() * 14;
+    const rw = 24 + rand() * 54;
+    const rh = 6 + rand() * 13;
     const rot = (rand() - 0.5) * 0.55;
-    const a = 0.05 + rand() * 0.09;
+    const a = 0.045 + rand() * 0.085;
 
     ctx.save();
     ctx.translate(cxPos, cyPos);
@@ -246,28 +160,29 @@ function getEarthSprite(): HTMLCanvasElement {
     ctx.restore();
   }
 
-  // Real-coordinate Indian metro city-light clusters
+  // Real-coordinate Indian metro city-light clusters mapped onto exact India contour
   const cities: [number, number, number][] = [
-    [77.59, 12.97, 2.8], // Bangalore
-    [80.27, 13.08, 2.2], // Chennai
+    [77.59, 12.97, 2.7], // Bangalore
+    [80.27, 13.08, 2.1], // Chennai
     [80.23, 13.72, 1.8], // Sriharikota
-    [75.92, 14.46, 1.6], // Davanagere
-    [78.48, 17.38, 2.2], // Hyderabad
-    [72.88, 19.07, 2.6], // Mumbai
-    [77.21, 28.61, 2.8], // Delhi NCR
-    [88.36, 22.57, 2.2], // Kolkata
+    [75.92, 14.46, 1.5], // Davanagere
+    [78.48, 17.38, 2.1], // Hyderabad
+    [72.88, 19.07, 2.5], // Mumbai
+    [77.21, 28.61, 2.6], // Delhi NCR
+    [88.36, 22.57, 2.1], // Kolkata
   ];
   for (const [lon, lat, cr] of cities) {
-    const [nx, ny] = projectGeoToGlobe(lon, lat);
-    const lx = c + nx * r;
-    const ly = c + ny * r;
-    const lg = ctx.createRadialGradient(lx, ly, 0.4, lx, ly, cr * 4.0);
-    lg.addColorStop(0.0, 'rgba(255, 255, 255, 0.85)');
-    lg.addColorStop(0.35, 'rgba(240, 240, 248, 0.28)');
+    const [ux, uy] = lonLatToIndiaNorm(lon, lat);
+    const [gx, gy] = indiaToGlobe(ux, uy);
+    const lx = c + gx * r;
+    const ly = c + gy * r;
+    const lg = ctx.createRadialGradient(lx, ly, 0.4, lx, ly, cr * 3.8);
+    lg.addColorStop(0.0, 'rgba(255, 255, 255, 0.82)');
+    lg.addColorStop(0.35, 'rgba(240, 240, 248, 0.26)');
     lg.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = lg;
     ctx.beginPath();
-    ctx.arc(lx, ly, cr * 4.0, 0, Math.PI * 2);
+    ctx.arc(lx, ly, cr * 3.8, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -320,27 +235,22 @@ function drawMonoMiniSat(
 
 /**
  * Pure Monochrome Photorealistic Earth-to-Orbit Globe (sp 0.215 -> 1.000):
- * - Smoothly reveals the full shaded monochrome Earth globe (soft glowing atmosphere, ocean depth,
- *   accurate WGS84 India & Sri Lanka, orbital clouds, city lights) right below the climbing rocket
- *   as the launchpad recedes — ZERO bare wireframe horizon line cutting through trees or gantry!
+ * - Smoothly reveals the full shaded monochrome Earth globe right below the climbing rocket
+ *   with pixel-exact India map, Sri Lanka, glowing city lights & Bangalore ISRO radar reticle!
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
 
-  // Enters smoothly right as the rocket clears the launchpad & climbs above the coastal ground
   if (sp < 0.215) return;
 
   const baseEarthR = Math.max(w, h) * 0.58;
-  // Keeps Earth's upper illuminated hemisphere + ALL of India generously visible above bottom HUD
   const leoTopY = Math.max(h * 0.56, h - baseEarthR * 0.48);
 
   const climbCurve = smoothstep(0.215, 0.480, sp);
   const earthFadeIn = smoothstep(0.215, 0.310, sp);
 
-  // Smooth natural altitude zoom-out from wide upper-troposphere limb -> full 420 km LEO globe
   const earthR = baseEarthR * Math.pow(3.2, Math.pow(1 - climbCurve, 1.25));
   const terminalDrop = smoothstep(0.84, 1.0, sp) * baseEarthR * 0.06;
-  // Starts cleanly low below the receding pad & rises smoothly into LEO framing
   const topLimbY = lerp(h * 0.86, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
 
   const leoCenterX = lerp(w * 0.62, vehicleAnchorX + unit * 0.15, 0.55);
@@ -387,17 +297,18 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  // 2. Full Cached Photorealistic Monochrome Earth Globe Sprite (silky glowing atmosphere + shaded ocean + India!)
+  // 2. Full Cached Photorealistic Monochrome Earth Globe Sprite
   const earthImg = getEarthSprite();
   const drawScale = earthR / EARTH_SPRITE_R;
   const drawSize = EARTH_SPRITE_SIZE * drawScale;
   ctx.drawImage(earthImg, centerX - drawSize * 0.5, centerY - drawSize * 0.5, drawSize, drawSize);
 
-  // 4. BANGALORE ISRO GROUND STATION RETICLE (exact projected 12.97° N, 77.59° E!)
+  // 3. BANGALORE ISRO GROUND STATION RETICLE (exact projected 12.97° N, 77.59° E!)
   if (blrReticleAlpha > 0.01) {
-    const [blrNx, blrNy] = projectGeoToGlobe(77.59, 12.97);
-    const blrX = centerX + blrNx * earthR;
-    const blrY = centerY + blrNy * earthR;
+    const [blrUx, blrUy] = lonLatToIndiaNorm(77.59, 12.97);
+    const [blrGx, blrGy] = indiaToGlobe(blrUx, blrUy);
+    const blrX = centerX + blrGx * earthR;
+    const blrY = centerY + blrGy * earthR;
     if (blrY < h - 32 && blrY > topLimbY) {
       ctx.save();
       ctx.globalAlpha = earthFadeIn * blrReticleAlpha;
@@ -438,7 +349,7 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     }
   }
 
-  // 5. Front orbital trace arcs & monochrome Keplerian satellites
+  // 4. Front orbital trace arcs & monochrome Keplerian satellites
   if (orbitRingAlpha > 0.01) {
     ctx.save();
     ctx.globalAlpha = earthFadeIn * orbitRingAlpha;

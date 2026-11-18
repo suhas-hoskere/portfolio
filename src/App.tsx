@@ -36,6 +36,25 @@ export const App: React.FC = () => {
     setShowLoader(false);
   }, []);
 
+  // Gently auto-start the continuous satisfying ambient soundtrack on the user's very first interaction
+  // (browsers block audio autoplay until a click/keypress; user can mute/unmute anytime via the AUDIO button)
+  useEffect(() => {
+    const startMusicOnce = () => {
+      if (cosmicAudio.isMuted && !cosmicAudio.userExplicitlyMuted) {
+        const started = cosmicAudio.unmute();
+        if (started) setAudioActive(true);
+      }
+      window.removeEventListener('pointerdown', startMusicOnce);
+      window.removeEventListener('keydown', startMusicOnce);
+    };
+    window.addEventListener('pointerdown', startMusicOnce, { passive: true });
+    window.addEventListener('keydown', startMusicOnce, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', startMusicOnce);
+      window.removeEventListener('keydown', startMusicOnce);
+    };
+  }, []);
+
   // Prevent accidental wheel scrolling while the liftoff loader plays
   useEffect(() => {
     if (showLoader) {

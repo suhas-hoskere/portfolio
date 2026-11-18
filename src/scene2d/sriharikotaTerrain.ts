@@ -1,6 +1,6 @@
 import { type Scene2DFrameContext, smoothstep, mulberry32 } from './types';
 
-type TreeSpecies = 'casuarina' | 'coconut' | 'palmyra';
+type TreeSpecies = 'casuarina' | 'coconut' | 'banyan';
 
 interface TreePlacement {
   species: TreeSpecies;
@@ -13,7 +13,7 @@ interface TreePlacement {
 interface FloraSpriteCache {
   casuarina: HTMLCanvasElement;
   coconut: HTMLCanvasElement;
-  palmyra: HTMLCanvasElement;
+  banyan: HTMLCanvasElement;
 }
 
 let cachedSprites: FloraSpriteCache | null = null;
@@ -207,76 +207,139 @@ function buildCoconutSprite(): HTMLCanvasElement {
 }
 
 /**
- * Authentic monochrome South Indian Palmyra Palm (130x195):
- * Tall stately tapered trunk + full, natural starburst crown of radiating fan fronds (no mushroom cap!).
+ * Majestic monochrome Indian Banyan Tree (220x185):
+ * Wide gnarled spreading trunk, sweeping arched boughs, iconic hanging aerial prop roots
+ * reaching down to the ground, and a lush multi-domed sunlit canopy silhouette!
  */
-function buildPalmyraSprite(): HTMLCanvasElement {
-  const w = 130;
-  const h = 195;
+function buildBanyanSprite(): HTMLCanvasElement {
+  const w = 220;
+  const h = 185;
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
   const cx = w * 0.5;
-  const topY = 58;
+  const groundLine = h - 2;
 
-  // Tapered stately trunk
-  ctx.fillStyle = '#222228';
+  // 1. Thick gnarled main trunk with wide grounded buttress roots
+  ctx.fillStyle = '#1e1e23';
   ctx.beginPath();
-  ctx.moveTo(cx - 4.4, h - 2);
-  ctx.lineTo(cx - 2.0, topY);
-  ctx.lineTo(cx + 2.0, topY);
-  ctx.lineTo(cx + 4.4, h - 2);
+  ctx.moveTo(cx - 18, groundLine);
+  ctx.quadraticCurveTo(cx - 10, h - 28, cx - 9, h - 66);
+  ctx.lineTo(cx + 9, h - 66);
+  ctx.quadraticCurveTo(cx + 11, h - 28, cx + 19, groundLine);
   ctx.closePath();
   ctx.fill();
 
-  ctx.strokeStyle = 'rgba(216, 216, 224, 0.34)';
-  ctx.lineWidth = 0.9;
+  // Subtle sunlit highlight on right bark edge
+  ctx.strokeStyle = 'rgba(216, 216, 224, 0.30)';
+  ctx.lineWidth = 1.1;
   ctx.beginPath();
-  ctx.moveTo(cx + 3.8, h - 2);
-  ctx.lineTo(cx + 1.8, topY);
+  ctx.moveTo(cx + 17, groundLine);
+  ctx.quadraticCurveTo(cx + 10, h - 30, cx + 8.5, h - 66);
   ctx.stroke();
 
-  // Full starburst of 11 radiating palmate fan stalks (360-degree natural tropical crown)
-  const fans = [
-    { a: -2.8, len: 22 },
-    { a: -2.35, len: 26 },
-    { a: -1.9, len: 27 },
-    { a: -1.5, len: 25 },
-    { a: -1.05, len: 27 },
-    { a: -0.6, len: 26 },
-    { a: -0.15, len: 24 },
-    { a: 0.35, len: 21 },
-    { a: 0.85, len: 18 },
-    { a: 2.35, len: 18 },
-    { a: 2.85, len: 21 },
+  // 2. Wide sweeping arched primary boughs spreading left & right
+  const boughs = [
+    { ex: cx - 64, ey: h - 94, ctrlX: cx - 34, ctrlY: h - 86, lw: 6.5 },
+    { ex: cx + 66, ey: h - 96, ctrlX: cx + 36, ctrlY: h - 88, lw: 6.5 },
+    { ex: cx - 38, ey: h - 114, ctrlX: cx - 22, ctrlY: h - 98, lw: 5.0 },
+    { ex: cx + 40, ey: h - 116, ctrlX: cx + 22, ctrlY: h - 98, lw: 5.0 },
+    { ex: cx, ey: h - 122, ctrlX: cx + 3, ctrlY: h - 94, lw: 5.5 },
   ];
-
-  for (const f of fans) {
-    const fx = cx + Math.cos(f.a) * f.len;
-    const fy = topY + Math.sin(f.a) * f.len;
-    const isLit = f.a > -1.65 && f.a < 0.8;
-
-    ctx.strokeStyle = isLit ? 'rgba(180, 180, 190, 0.65)' : 'rgba(54, 54, 62, 0.88)';
-    ctx.lineWidth = 1.3;
+  ctx.lineCap = 'round';
+  for (const b of boughs) {
+    ctx.strokeStyle = '#202026';
+    ctx.lineWidth = b.lw;
     ctx.beginPath();
-    ctx.moveTo(cx, topY);
-    ctx.lineTo(fx, fy);
+    ctx.moveTo(cx, h - 64);
+    ctx.quadraticCurveTo(b.ctrlX, b.ctrlY, b.ex, b.ey);
+    ctx.stroke();
+  }
+
+  // 3. Iconic Indian Banyan hanging aerial prop roots draping down from the wide boughs!
+  const propRoots = [
+    { x: cx - 56, topY: h - 94, botY: groundLine, lw: 2.1, curve: -3 },
+    { x: cx - 44, topY: h - 90, botY: groundLine, lw: 2.8, curve: 2 },
+    { x: cx - 30, topY: h - 84, botY: groundLine, lw: 3.4, curve: -2 },
+    { x: cx - 20, topY: h - 80, botY: groundLine - 14, lw: 1.4, curve: 1.5 },
+    { x: cx + 22, topY: h - 82, botY: groundLine - 10, lw: 1.6, curve: -1.5 },
+    { x: cx + 32, topY: h - 86, botY: groundLine, lw: 3.3, curve: 2 },
+    { x: cx + 47, topY: h - 92, botY: groundLine, lw: 2.6, curve: -2.5 },
+    { x: cx + 60, topY: h - 96, botY: groundLine, lw: 1.9, curve: 3 },
+    { x: cx - 68, topY: h - 96, botY: groundLine - 22, lw: 1.2, curve: -2 },
+    { x: cx + 72, topY: h - 98, botY: groundLine - 26, lw: 1.2, curve: 2 },
+  ];
+  for (const pr of propRoots) {
+    ctx.strokeStyle = pr.x > cx ? '#2b2b33' : '#1d1d22';
+    ctx.lineWidth = pr.lw;
+    ctx.beginPath();
+    ctx.moveTo(pr.x, pr.topY);
+    ctx.quadraticCurveTo(pr.x + pr.curve, (pr.topY + pr.botY) * 0.5, pr.x + pr.curve * 0.6, pr.botY);
     ctx.stroke();
 
-    // Jagged pleated palmate fan blades radiating from stalk tip
-    for (let b = 0; b < 9; b++) {
-      const frac = (b / 8) - 0.5;
-      const ba = f.a + frac * 1.45;
-      const bladeLen = 14 + (1 - Math.abs(frac) * 1.5) * 8;
-      ctx.strokeStyle = isLit ? 'rgba(220, 220, 228, 0.58)' : 'rgba(64, 64, 72, 0.84)';
-      ctx.lineWidth = 1.25;
+    if (pr.x > cx && pr.lw >= 2.2) {
+      ctx.strokeStyle = 'rgba(210, 210, 220, 0.24)';
+      ctx.lineWidth = 0.7;
       ctx.beginPath();
-      ctx.moveTo(fx, fy);
-      ctx.lineTo(fx + Math.cos(ba) * bladeLen, fy + Math.sin(ba) * bladeLen);
+      ctx.moveTo(pr.x + pr.lw * 0.4, pr.topY + 6);
+      ctx.quadraticCurveTo(
+        pr.x + pr.curve + pr.lw * 0.4,
+        (pr.topY + pr.botY) * 0.5,
+        pr.x + pr.curve * 0.6 + pr.lw * 0.4,
+        pr.botY
+      );
       ctx.stroke();
     }
   }
+
+  // 4. Lush broad multi-domed Banyan leaf canopy (dark shaded underside + silver sunlit upper crowns)
+  const canopyMass = [
+    { x: cx - 66, y: h - 106, rx: 32, ry: 22 },
+    { x: cx - 38, y: h - 122, rx: 40, ry: 28 },
+    { x: cx, y: h - 134, rx: 46, ry: 32 },
+    { x: cx + 40, y: h - 122, rx: 40, ry: 28 },
+    { x: cx + 68, y: h - 108, rx: 32, ry: 22 },
+    { x: cx - 50, y: h - 98, rx: 30, ry: 18 },
+    { x: cx + 52, y: h - 100, rx: 30, ry: 18 },
+    { x: cx, y: h - 106, rx: 48, ry: 22 },
+  ];
+  for (const dome of canopyMass) {
+    ctx.fillStyle = '#19191f';
+    ctx.beginPath();
+    ctx.ellipse(dome.x, dome.y, dome.rx, dome.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Soft sunlit silver-gray upper foliage clusters (gives rich botanical leaf texture!)
+  const litCrowns = [
+    { x: cx - 32, y: h - 132, rx: 28, ry: 17, a: 0.24 },
+    { x: cx + 4, y: h - 144, rx: 34, ry: 20, a: 0.34 },
+    { x: cx + 42, y: h - 130, rx: 30, ry: 18, a: 0.42 },
+    { x: cx + 68, y: h - 114, rx: 22, ry: 14, a: 0.38 },
+    { x: cx - 62, y: h - 112, rx: 20, ry: 13, a: 0.18 },
+  ];
+  for (const lc of litCrowns) {
+    const lg = ctx.createRadialGradient(lc.x + 6, lc.y - 5, 2, lc.x, lc.y, lc.rx);
+    lg.addColorStop(0.0, `rgba(232, 232, 240, ${lc.a})`);
+    lg.addColorStop(0.60, `rgba(148, 148, 160, ${lc.a * 0.42})`);
+    lg.addColorStop(1.0, 'rgba(60, 60, 70, 0)');
+    ctx.fillStyle = lg;
+    ctx.beginPath();
+    ctx.ellipse(lc.x, lc.y, lc.rx, lc.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Crisp sunlit upper leaf rim arc along right-facing crown
+  ctx.strokeStyle = 'rgba(226, 226, 234, 0.42)';
+  ctx.lineWidth = 1.05;
+  ctx.beginPath();
+  ctx.arc(cx + 6, h - 134, 34, -Math.PI * 0.62, -Math.PI * 0.08);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx + 44, h - 122, 27, -Math.PI * 0.55, 0.05);
+  ctx.stroke();
+
   return canvas;
 }
 
@@ -285,7 +348,7 @@ function getFloraSprites(): FloraSpriteCache {
   cachedSprites = {
     casuarina: buildCasuarinaSprite(),
     coconut: buildCoconutSprite(),
-    palmyra: buildPalmyraSprite(),
+    banyan: buildBanyanSprite(),
   };
   return cachedSprites;
 }
@@ -300,14 +363,13 @@ function getTreePlacements(): TreePlacement[] {
     2.9, 4.1, 5.4, 6.8,
   ];
   offsets.forEach((ox, idx) => {
-    // Prioritize graceful Coconut palms & Casuarina pines with natural Palmyra accents
     const species: TreeSpecies =
-      idx % 3 === 0 ? 'coconut' : idx % 3 === 1 ? 'casuarina' : 'palmyra';
+      idx % 3 === 0 ? 'coconut' : idx % 3 === 1 ? 'casuarina' : 'banyan';
     list.push({
       species,
       offsetX: ox + (rand() - 0.5) * 0.18,
       layer: idx % 2 === 0 ? 1 : 0,
-      scale: 0.88 + rand() * 0.28,
+      scale: species === 'banyan' ? 1.05 + rand() * 0.22 : 0.88 + rand() * 0.28,
       flipX: rand() > 0.5,
     });
   });
