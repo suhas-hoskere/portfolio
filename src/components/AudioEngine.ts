@@ -529,6 +529,19 @@ class CosmicAudio {
     this.triggerSoftSwellChime(mellowFreq, 0.016, 0.9);
   }
 
+  public stopImmediate() {
+    this.isMuted = true;
+    this.userExplicitlyMuted = true;
+    this.stopSynthesizer();
+    if (this.ctx && this.ctx.state !== 'closed') {
+      this.ctx.close().catch(() => {});
+    }
+    this.ctx = null;
+    this.masterGain = null;
+    this.musicBus = null;
+    this.echoInput = null;
+  }
+
   public playQuindarTone(_isIntro = true) {
     // Silent so deep space swells flow uninterrupted
   }
@@ -543,3 +556,9 @@ function lerpNum(x: number, y: number, t: number) {
 }
 
 export const cosmicAudio = new CosmicAudio();
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    cosmicAudio.stopImmediate();
+  });
+}

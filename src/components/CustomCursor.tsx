@@ -587,17 +587,3 @@ export const CustomCursor: React.FC = () => {
     </>
   );
 };
-
-// Lightweight Magnetic Button wrapper for legacy components
-export const MagneticButton: React.FC<{
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-  strength?: number;
-}> = ({ children, className = '', onClick }) => {
-  return (
-    <div onClick={onClick} className={`inline-block cursor-pointer ${className}`}>
-      {children}
-    </div>
-  );
-};
