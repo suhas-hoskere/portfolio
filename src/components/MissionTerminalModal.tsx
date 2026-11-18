@@ -67,9 +67,9 @@ const VIRTUAL_FILES = [
 
 const INITIAL_WELCOME: MadhvaReply = {
   kind: 'greeting',
-  headline: 'MADHVA // OFFLINE ASSISTANT READY',
+  headline: 'MADHVA // READY',
   lines: [
-    `ನಮಸ್ಕಾರ! I'm Madhva — ${PROFILE.name}'s local portfolio bot (100% offline, zero API keys).`,
+    `ನಮಸ್ಕಾರ! I'm Madhva — ${PROFILE.name}'s portfolio assistant.`,
     `Ask me anything in plain English or Kannada (even follow-ups like "tell me more" or "open it"), or run CLI commands like "neofetch", "ls", "goto writing", or "help".`,
   ],
   suggestions: STARTER_PROMPTS,
@@ -124,7 +124,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
   const [entries, setEntries] = useState<TerminalEntry[]>(() => [
     {
       id: 'madhva-init',
-      query: 'madhva --init --offline',
+      query: 'madhva --init',
       reply: INITIAL_WELCOME,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       animate: false,
@@ -459,7 +459,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
 {`      /\\
      /  \\    MADHVA
     | () |   ------
-    | || |   OFFLINE
+    | || |   SUHAS
    /| || |\\  BOT CLI
   /_| || |_\\
     /_||_\\
@@ -729,7 +729,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             <Terminal className="w-4 h-4 text-white shrink-0" />
             <span className="font-bold tracking-wider truncate">MADHVA // ASSISTANT CLI</span>
             <span className="px-1.5 py-0.5 rounded bg-white text-[10px] text-black font-bold shrink-0">
-              OFFLINE · 0 API
+              READY
             </span>
           </div>
 

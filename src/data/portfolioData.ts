@@ -54,7 +54,7 @@ export const EDUCATION = [
 ] as const;
 
 export const PERSONAL_QA = {
-  whyMadhva: 'Madhva is Suhas’s favorite name — so he named his personal offline portfolio assistant after it.',
+  whyMadhva: 'Madhva is Suhas’s favorite name — so he named his personal portfolio assistant after it.',
   writingThemes:
     'He mostly writes about love — and pain, of course. He loves pain as a raw, honest lens for creative expression in both Kannada and English.',
   whyAiMl:

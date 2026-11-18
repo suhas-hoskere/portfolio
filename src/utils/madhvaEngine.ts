@@ -695,7 +695,7 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
       kind: 'greeting',
       headline: 'ನಮಸ್ಕಾರ // NAMASKARA — I AM MADHVA',
       lines: [
-        `Welcome to ${PROFILE.name}'s portfolio! I'm Madhva — Suhas's favorite name, and his 100% offline portfolio assistant (zero API keys).`,
+        `Welcome to ${PROFILE.name}'s portfolio! I'm Madhva — Suhas's personal portfolio assistant.`,
         `Ask me anything about Suhas — his writings on love & pain, projects, voice pipelines, startup vision, or online internship availability.`,
       ],
       suggestions: ['Who is Suhas?', 'What does he write about?', 'Show projects', 'Is he open to internships?'],
@@ -733,11 +733,11 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   ) {
     return {
       kind: 'who-are-you',
-      headline: 'MADHVA // SUHAS’S FAVORITE NAME & OFFLINE BOT',
+      headline: 'MADHVA // PORTFOLIO ASSISTANT',
       lines: [
         PERSONAL_QA.whyMadhva,
-        `I run 100% locally inside your browser — zero API keys, zero external servers, instant responses.`,
-        `Ask natural questions in English/Kannada (even follow-ups like "tell me more" or "open it") or run CLI commands like "neofetch", "ls", "goto writing", or "tour".`,
+        `I can answer questions about Suhas's writings, projects, skills, education, and startup vision — or control the site directly.`,
+        `Ask naturally in English/Kannada (even follow-ups like "tell me more" or "open it") or run CLI commands like "neofetch", "ls", "goto writing", or "tour".`,
       ],
       suggestions: ['Who is Suhas?', 'What does he write about?', 'What is his future goal?', 'help'],
     };
@@ -1045,9 +1045,9 @@ export function runMadhvaQuery(rawInput: string, ctx: MadhvaContext): MadhvaRepl
   // Graceful Fallback (Honest & helpful)
   return {
     kind: 'fallback',
-    headline: 'MADHVA // OUTSIDE MY OFFLINE KNOWLEDGE BASE',
+    headline: 'MADHVA // TRY ASKING ABOUT SUHAS',
     lines: [
-      `I didn't find a direct match for "${trimmed}". Since I run 100% locally with zero API keys, I specialize in everything about ${PROFILE.name} and controlling this portfolio.`,
+      `I didn't find a direct match for "${trimmed}". I specialize in everything about ${PROFILE.name} and navigating this portfolio.`,
       `Try clicking one of the questions below or typing "help" to see all commands!`,
     ],
     suggestions: ['Who is Suhas?', 'What does he write about?', 'What is his future goal?', 'Is he open to internships?'],
