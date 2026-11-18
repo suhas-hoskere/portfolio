@@ -156,15 +156,16 @@ const CLOUD_LAYERS: CloudLayerItem[] = [
 export function renderAtmosphericClouds(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, unit, reducedMotion } = frame;
 
-  if (sp > 0.395) return;
+  // Extended cloud ascent span (0.140 -> 0.500) so the rocket has many silky frames punching through clouds!
+  if (sp > 0.505) return;
 
   const sprites = getCloudSprites();
-  const climbProg = clamp((sp - 0.165) / (0.395 - 0.165), 0, 1);
-  const fadeOut = 1 - smoothstep(0.330, 0.395, sp);
+  const climbProg = clamp((sp - 0.140) / (0.500 - 0.140), 0, 1);
+  const fadeOut = 1 - smoothstep(0.415, 0.500, sp);
 
   const punchPeak =
-    sp >= 0.245 && sp <= 0.315
-      ? Math.sin(((sp - 0.245) / 0.070) * Math.PI)
+    sp >= 0.240 && sp <= 0.340
+      ? Math.sin(((sp - 0.240) / 0.100) * Math.PI)
       : 0;
 
   ctx.save();
@@ -175,17 +176,17 @@ export function renderAtmosphericClouds(frame: Scene2DFrameContext): void {
     let alpha = c.alpha * fadeOut;
 
     if (c.layer === 0) {
-      y = c.baseY * h + climbProg * h * 1.45;
-      alpha *= 1 - smoothstep(0.24, 0.32, sp);
+      y = c.baseY * h + climbProg * h * 1.65;
+      alpha *= 1 - smoothstep(0.26, 0.38, sp);
     } else if (c.layer === 1) {
-      y = c.baseY * h + climbProg * h * 2.15;
+      y = c.baseY * h + climbProg * h * 2.25;
       alpha *= 1 + punchPeak * 0.28;
     } else if (c.layer === 2) {
-      y = c.baseY * h + climbProg * h * 2.75;
+      y = c.baseY * h + climbProg * h * 2.85;
     } else {
-      if (sp < 0.235) continue;
-      const seaIn = smoothstep(0.235, 0.280, sp);
-      y = c.baseY * h + smoothstep(0.235, 0.395, sp) * h * 0.24;
+      if (sp < 0.250) continue;
+      const seaIn = smoothstep(0.250, 0.320, sp);
+      y = c.baseY * h + smoothstep(0.250, 0.500, sp) * h * 0.26;
       alpha = c.alpha * seaIn * fadeOut;
     }
 

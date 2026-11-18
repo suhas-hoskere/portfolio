@@ -108,11 +108,11 @@ export const App: React.FC = () => {
     scrollProgressRef.current = progress;
 
     let stage = 0;
-    if (progress >= 0.88) stage = 5;
-    else if (progress >= 0.76) stage = 4;
-    else if (progress >= 0.60) stage = 3;
-    else if (progress >= 0.42) stage = 2;
-    else if (progress >= 0.24) stage = 1;
+    if (progress >= 0.90) stage = 5;
+    else if (progress >= 0.81) stage = 4;
+    else if (progress >= 0.70) stage = 3;
+    else if (progress >= 0.56) stage = 2;
+    else if (progress >= 0.22) stage = 1;
     else stage = 0;
 
     const stageChanged = stage !== lastStageRef.current;
@@ -122,32 +122,21 @@ export const App: React.FC = () => {
       setActiveStageIndex(stage);
     }
 
-    // VHF Radio Voice Callouts & Acoustic Triggers across Earth-to-Orbit milestones
+    // Acoustic triggers across expanded launch-to-orbit timeline
     if (progress < 0.02) {
       playedCallouts.current.clear();
-    } else if (progress >= 0.035 && progress < 0.080 && !playedCallouts.current.has('ignition')) {
+    } else if (progress >= 0.032 && progress < 0.068 && !playedCallouts.current.has('ignition')) {
       playedCallouts.current.add('ignition');
-      cosmicAudio.playRadioCallout('Engine ignition confirmed. Full thrust nominal.');
-    } else if (progress >= 0.080 && progress < 0.125 && !playedCallouts.current.has('umbilical')) {
+    } else if (progress >= 0.068 && progress < 0.104 && !playedCallouts.current.has('umbilical')) {
       playedCallouts.current.add('umbilical');
       cosmicAudio.playClampRelease();
-      cosmicAudio.playRadioCallout('Umbilical lines decoupled. Service arms clear.');
-    } else if (progress >= 0.125 && progress < 0.170 && !playedCallouts.current.has('deluge')) {
+    } else if (progress >= 0.104 && progress < 0.140 && !playedCallouts.current.has('deluge')) {
       playedCallouts.current.add('deluge');
       cosmicAudio.playDelugeSound();
-      cosmicAudio.playRadioCallout('Water deluge active. Acoustic dampening nominal.');
-    } else if (progress >= 0.170 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
+    } else if (progress >= 0.140 && progress < 0.220 && !playedCallouts.current.has('liftoff')) {
       playedCallouts.current.add('liftoff');
-      cosmicAudio.playRadioCallout('Vehicle has cleared the tower. Trajectory is nominal.');
-    } else if (progress >= 0.250 && progress < 0.312 && !playedCallouts.current.has('maxq')) {
-      playedCallouts.current.add('maxq');
-      cosmicAudio.playRadioCallout('Passing Max-Q. Aerodynamic pressures nominal.');
-    } else if (progress >= 0.420 && progress < 0.480 && !playedCallouts.current.has('orbit')) {
+    } else if (progress >= 0.560 && !playedCallouts.current.has('orbit')) {
       playedCallouts.current.add('orbit');
-      cosmicAudio.playRadioCallout('Fairing jettisoned. Satellite deployed in low Earth orbit.');
-    } else if (progress >= 0.880 && !playedCallouts.current.has('uplink')) {
-      playedCallouts.current.add('uplink');
-      cosmicAudio.playRadioCallout('Orbital uplink established. Carrier signal locked.');
     }
 
     const now = performance.now();
@@ -263,13 +252,13 @@ export const App: React.FC = () => {
     cosmicAudio.playRadioCallout('Initiating liftoff sequence. Dual Vikas core ignited.');
 
     const maxScroll = trackRef.current.scrollHeight - window.innerHeight;
-    animateScrollTo(0.25 * maxScroll, 2800);
+    animateScrollTo(0.24 * maxScroll, 3200);
   };
 
   return (
     <div
       ref={trackRef}
-      className="relative min-h-[850vh] bg-[#050505] text-white overflow-x-hidden selection:bg-white selection:text-black"
+      className="relative min-h-[1200vh] bg-[#050505] text-white overflow-x-hidden selection:bg-white selection:text-black"
     >
       {/* Pure Monochrome Liftoff Loading Screen (unmounts cleanly after launch) */}
       {showLoader && <MonochromeLiftoffLoader onComplete={handleLoaderComplete} />}

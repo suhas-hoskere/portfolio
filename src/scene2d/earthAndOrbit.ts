@@ -146,26 +146,27 @@ function drawMonoMiniSat(
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
 
-  if (sp < 0.215) return;
+  // Rises gradually across the expanded ascent-to-orbit span (0.255 -> 0.560)
+  if (sp < 0.255) return;
 
   const baseEarthR = Math.max(w, h) * 0.58;
   const leoTopY = Math.max(h * 0.58, h - baseEarthR * 0.46);
 
-  const climbCurve = smoothstep(0.215, 0.480, sp);
-  const earthFadeIn = smoothstep(0.215, 0.310, sp);
+  const climbCurve = smoothstep(0.255, 0.560, sp);
+  const earthFadeIn = smoothstep(0.255, 0.365, sp);
 
   const earthR = baseEarthR * Math.pow(3.2, Math.pow(1 - climbCurve, 1.25));
-  const terminalDrop = smoothstep(0.84, 1.0, sp) * baseEarthR * 0.06;
-  const topLimbY = lerp(h * 0.86, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
+  const terminalDrop = smoothstep(0.88, 1.0, sp) * baseEarthR * 0.06;
+  const topLimbY = lerp(h * 0.88, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
 
   const leoCenterX = lerp(w * 0.62, vehicleAnchorX + unit * 0.15, 0.55);
   const centerX = lerp(vehicleAnchorX, leoCenterX, climbCurve) - mouseX * (5 + 5 * climbCurve);
   const centerY = topLimbY + earthR;
 
-  const blrReticleAlpha = smoothstep(0.35, 0.47, sp);
-  const orbitRingAlpha = smoothstep(0.36, 0.48, sp);
+  const blrReticleAlpha = smoothstep(0.46, 0.57, sp);
+  const orbitRingAlpha = smoothstep(0.47, 0.58, sp);
 
-  const orbitAdvance = (sp - 0.35) * 3.0 + (reducedMotion ? 0 : t * 0.20);
+  const orbitAdvance = (sp - 0.45) * 3.0 + (reducedMotion ? 0 : t * 0.20);
 
   const satPos = (sat: OrbitalSatSpec, angle: number) => {
     const lx = Math.cos(angle) * earthR * sat.rxScale;

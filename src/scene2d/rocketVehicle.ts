@@ -359,8 +359,8 @@ function drawMonoS200Booster(
 
 /**
  * Shared physical rocket trajectory pose (used by both rocketVehicle & heroSatellite):
- * - On liftoff (0.170+): Rocket accelerates upward off the pad, already shrinking small by the time
- *   it reaches the clouds (0.25 -> ~0.34 scale), and down to a tiny distant vehicle (~0.16) approaching orbit!
+ * - Immediately starts shrinking smaller once it launches (0.140+) and curves far right across a
+ *   generous, multi-screen launch-to-orbit ascent span (0.140 -> 0.540) for silky frame-by-frame motion!
  */
 export function getRocketPose(
   sp: number,
@@ -373,23 +373,23 @@ export function getRocketPose(
   const camZoom =
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
 
-  // Exponential distance perspective: shrinks rapidly as it climbs into the clouds (0.25 -> ~0.32)
-  // and becomes a small distant orbital vehicle (0.16) as it reaches outer atmosphere & LEO!
-  const climbDist = smoothstep(0.170, 0.420, sp);
-  const altitudeScale = Math.max(0.16, Math.pow(0.16, Math.pow(climbDist, 0.68)));
+  // Starts shrinking immediately on liftoff (0.140) across a long, smooth ascent to space (0.540):
+  // 0.14 -> 1.00 | 0.26 (clouds) -> ~0.36 | 0.42 (boosters) -> ~0.20 | 0.52 (orbit) -> 0.15
+  const climbDist = smoothstep(0.140, 0.540, sp);
+  const altitudeScale = Math.max(0.15, Math.pow(0.15, Math.pow(climbDist, 0.72)));
   const u = unit * camZoom * altitudeScale;
 
-  // Realistic gravity-turn lateral arc + pitch eastward into LEO
-  const turnProg = smoothstep(0.210, 0.425, sp);
-  const pitchRad = turnProg * 0.30;
-  const x = vehicleAnchorX - mouseX * 10 + turnProg * unit * 0.28;
+  // Smooth gravity turn curving far right across the sky as rocket accelerates downrange toward orbit!
+  const turnProg = smoothstep(0.180, 0.540, sp);
+  const pitchRad = Math.pow(turnProg, 1.1) * 0.34;
+  const x = vehicleAnchorX - mouseX * 10 + Math.pow(turnProg, 1.2) * unit * 0.72;
 
-  // Rocket physically blasts UPWARD off the pad into the clouds and high above Earth's limb
+  // Physically blasts UPWARD off the pad (0.140 -> 0.480) high above Earth's limb
   let baseY = groundY - unit * 0.14;
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
   else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
-  const liftoffRise = sp >= 0.170 ? Math.pow(smoothstep(0.170, 0.360, sp), 0.92) * unit * 2.55 : 0;
+  const liftoffRise = sp >= 0.140 ? Math.pow(smoothstep(0.140, 0.480, sp), 0.90) * unit * 2.65 : 0;
   const y = baseY - liftoffRise;
 
   return { x, y, u, pitchRad };
@@ -398,7 +398,7 @@ export function getRocketPose(
 /**
  * Pure monochrome Black & White LIVE 2.5D LVM3 Launch Vehicle:
  * Taller, slimmer sleek silhouette, radiant volumetric fire plumes (zero hard outlines),
- * zero shaking, realistic upward liftoff + gravity turn + smooth multi-phase staging!
+ * zero shaking, long smooth upward liftoff & far-right gravity turn + multi-phase staging!
  */
 export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const {
@@ -416,7 +416,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     reducedMotion,
   } = frame;
 
-  if (sp >= 0.550) return;
+  if (sp >= 0.648) return;
 
   const { x: basePadX, y: baseY, u, pitchRad } = getRocketPose(
     sp,
@@ -427,27 +427,27 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     cameraMode
   );
 
-  // Core engines throttle down smoothly before stage separation (0.415 -> 0.445)
-  const coreCutoff = 1 - smoothstep(0.415, 0.445, sp);
-  const isBurning = sp >= 0.035 && sp < 0.448;
-  const fireRamp = isBurning ? clamp((sp - 0.035) / 0.025, 0, 1) * coreCutoff : 0;
+  // Core engines throttle down smoothly before stage separation (0.505 -> 0.535)
+  const coreCutoff = 1 - smoothstep(0.505, 0.535, sp);
+  const isBurning = sp >= 0.032 && sp < 0.538;
+  const fireRamp = isBurning ? clamp((sp - 0.032) / 0.022, 0, 1) * coreCutoff : 0;
 
-  // Booster solid motors burn out smoothly right before detaching (0.298 -> 0.322)
+  // Booster solid motors burn out smoothly right before detaching (0.365 -> 0.390)
   const boosterFireRamp =
-    isBurning && sp < 0.325
-      ? clamp((sp - 0.035) / 0.025, 0, 1) * (1 - smoothstep(0.298, 0.322, sp))
+    isBurning && sp < 0.394
+      ? clamp((sp - 0.032) / 0.022, 0, 1) * (1 - smoothstep(0.365, 0.390, sp))
       : 0;
 
-  // Slow, graceful multi-step separation:
-  // 1) Fairing clamshells peel open slowly across 0.395 -> 0.515 (12% scroll span!)
-  const isFairingOpening = sp >= 0.395;
-  const fairingProg = isFairingOpening ? smoothstep(0.395, 0.515, sp) : 0;
+  // Slow, graceful multi-step separation across spacious orbital insertion window:
+  // 1) Fairing clamshells peel open slowly across 0.485 -> 0.610 (12.5% of 1200vh!)
+  const isFairingOpening = sp >= 0.485;
+  const fairingProg = isFairingOpening ? smoothstep(0.485, 0.610, sp) : 0;
 
-  // 2) Spent rocket core detaches and drifts slowly downward after fairing opens (0.435 -> 0.548)
-  const coreSepProg = sp >= 0.435 ? smoothstep(0.435, 0.548, sp) : 0;
+  // 2) Spent rocket core detaches and drifts slowly downward after fairing opens (0.520 -> 0.642)
+  const coreSepProg = sp >= 0.520 ? smoothstep(0.520, 0.642, sp) : 0;
   const coreDropY = Math.pow(coreSepProg, 1.35) * u * 5.2;
   const coreDropRot = coreSepProg * 0.22;
-  const coreAlpha = 1 - smoothstep(0.495, 0.548, sp);
+  const coreAlpha = 1 - smoothstep(0.585, 0.642, sp);
 
   ctx.save();
   ctx.translate(basePadX, baseY);
@@ -609,10 +609,10 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
     }
   }
 
-  // Twin S200 Solid Boosters — slow, gradual separation & gentle fade-out (sp 0.315 -> 0.425)
-  if (sp < 0.428) {
-    const sepProg = sp >= 0.315 ? smoothstep(0.315, 0.425, sp) : 0;
-    const boosterFade = 1 - smoothstep(0.382, 0.426, sp);
+  // Twin S200 Solid Boosters — slow, gradual separation & gentle fade-out (sp 0.380 -> 0.515)
+  if (sp < 0.520) {
+    const sepProg = sp >= 0.380 ? smoothstep(0.380, 0.515, sp) : 0;
+    const boosterFade = 1 - smoothstep(0.465, 0.515, sp);
     const baseBoosterX = coreR + u * 0.17;
     if (boosterFade > 0.01) {
       for (const side of [-1, 1] as const) {
@@ -642,7 +642,7 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   ctx.restore(); // End lower body
 
   // =========================================================================
-  // 2. MONOCHROME PAYLOAD FAIRING (slow clamshell split 0.395 -> 0.515)
+  // 2. MONOCHROME PAYLOAD FAIRING (slow clamshell split 0.485 -> 0.610)
   // =========================================================================
   const fairingBaseY = c25TopY;
 
@@ -697,9 +697,9 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
       ctx.closePath();
       ctx.stroke();
     }
-  } else if (sp < 0.518) {
+  } else if (sp < 0.615) {
     const fSep = easeOutCubic(fairingProg);
-    const fadeOut = 1 - smoothstep(0.460, 0.515, sp);
+    const fadeOut = 1 - smoothstep(0.550, 0.610, sp);
     ctx.globalAlpha = fadeOut;
 
     for (const side of [-1, 1] as const) {

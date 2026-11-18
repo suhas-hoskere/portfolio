@@ -392,19 +392,19 @@ class CosmicAudio {
     if (!this.ctx || !this.isRunning) return;
     const t = this.ctx.currentTime;
 
-    if (flightProgress < 0.035) {
+    if (flightProgress < 0.032) {
       this.subGain?.gain.setTargetAtTime(0.0001, t, 0.12);
       this.noiseGain?.gain.setTargetAtTime(0.0001, t, 0.12);
       this.padFilter?.frequency.setTargetAtTime(520, t, 0.4);
       this.padGain?.gain.setTargetAtTime(0.062, t, 0.4);
-    } else if (flightProgress < 0.170) {
-      const r = (flightProgress - 0.035) / 0.135;
+    } else if (flightProgress < 0.140) {
+      const r = (flightProgress - 0.032) / 0.108;
       this.subGain?.gain.setTargetAtTime(lerpNum(0.008, 0.026, r), t, 0.12);
       this.noiseFilter?.frequency.setTargetAtTime(lerpNum(110, 190, r), t, 0.12);
       this.noiseGain?.gain.setTargetAtTime(lerpNum(0.006, 0.022, r), t, 0.12);
       this.padFilter?.frequency.setTargetAtTime(lerpNum(520, 680, r), t, 0.4);
-    } else if (flightProgress < 0.390) {
-      const r = (flightProgress - 0.170) / 0.220;
+    } else if (flightProgress < 0.510) {
+      const r = (flightProgress - 0.140) / 0.370;
       const bell = Math.sin(r * Math.PI);
       this.subGain?.gain.setTargetAtTime(lerpNum(0.014, 0.032, bell), t, 0.12);
       this.noiseFilter?.frequency.setTargetAtTime(lerpNum(140, 230, bell), t, 0.12);

@@ -10,8 +10,8 @@ interface Stage00ScrollCardsProps {
 
 const MILESTONES = [
   {
-    min: 0.035,
-    max: 0.080,
+    min: 0.032,
+    max: 0.068,
     step: 'STEP 01 // MAIN ENGINE IGNITION',
     time: 'T-00:03',
     Icon: Flame,
@@ -25,8 +25,8 @@ const MILESTONES = [
     hint: 'SCROLL FURTHER TO RELEASE UMBILICAL LOCKS',
   },
   {
-    min: 0.080,
-    max: 0.125,
+    min: 0.068,
+    max: 0.104,
     step: 'STEP 02 // UMBILICAL & CLAMP RELEASE',
     time: 'T-00:01',
     Icon: Unlock,
@@ -40,8 +40,8 @@ const MILESTONES = [
     hint: 'SCROLL FURTHER FOR WATER DELUGE & TRENCH STEAM',
   },
   {
-    min: 0.125,
-    max: 0.170,
+    min: 0.104,
+    max: 0.140,
     step: 'STEP 03 // WATER DELUGE & TRENCH STEAM',
     time: 'T-00:00',
     Icon: Waves,
@@ -55,7 +55,7 @@ const MILESTONES = [
     hint: 'SCROLL FURTHER FOR VERTICAL LIFTOFF CLEARANCE',
   },
   {
-    min: 0.170,
+    min: 0.140,
     max: 1.000,
     step: 'STEP 04 // VERTICAL LIFTOFF',
     time: 'T+00:03',
@@ -79,7 +79,7 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
     (m) => scrollProgress >= m.min && scrollProgress < m.max
   );
 
-  if (scrollProgress < 0.035) {
+  if (scrollProgress < 0.032) {
     return (
       <div className="space-y-3.5 sm:space-y-5 text-left">
         <div className="flex flex-wrap items-center gap-2">

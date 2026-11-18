@@ -77,29 +77,27 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
     reducedMotion,
   } = frame;
 
-  // Satellite begins revealing smoothly INSIDE the opening payload fairing at sp = 0.398!
-  if (sp < 0.398) return;
+  // Satellite begins revealing smoothly INSIDE the opening distant payload fairing at sp = 0.490!
+  if (sp < 0.490) return;
 
-  // Slow, cinematic multi-phase deployment:
-  // - 0.398 -> 0.432: Satellite fades into view right inside the splitting fairing nose
-  // - 0.420 -> 0.555: Satellite gracefully floats out from fairing & scales up to LEO size
-  // - 0.475 -> 0.555: Inner solar wings unfold smoothly
-  // - 0.530 -> 0.605: Outer solar wings unfold smoothly
-  const revealAlpha = smoothstep(0.398, 0.432, sp);
-  const floatOut = smoothstep(0.420, 0.555, sp);
+  // Slow, cinematic multi-phase deployment across spacious orbital window:
+  // - 0.490 -> 0.525: Satellite fades into view right inside the splitting fairing nose
+  // - 0.510 -> 0.655: Satellite gracefully floats out from far-right fairing into clean LEO showcase
+  // - 0.565 -> 0.645: Inner solar wings unfold smoothly
+  // - 0.615 -> 0.695: Outer solar wings unfold smoothly
+  const revealAlpha = smoothstep(0.490, 0.525, sp);
+  const floatOut = smoothstep(0.510, 0.655, sp);
   const floatEase = easeOutCubic(floatOut);
 
-  // Match exact rocket fairing cavity world position using shared getRocketPose so satellite
-  // physically emerges from inside the splitting nose cone!
+  // Match exact rocket fairing cavity world position using shared getRocketPose
   const rocketPose = getRocketPose(
-    Math.min(sp, 0.425),
+    Math.min(sp, 0.525),
     mouseX,
     vehicleAnchorX,
     groundY,
     unit,
     cameraMode
   );
-  // Fairing cavity center sits at local y = -(l110H + interstageH + c25H + 0.55 * fairingCylH) = -3.43u
   const localCavityY = -rocketPose.u * 3.43;
   const startX = rocketPose.x - Math.sin(rocketPose.pitchRad) * localCavityY;
   const startY = rocketPose.y + Math.cos(rocketPose.pitchRad) * localCavityY;
@@ -107,8 +105,8 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
 
   // Emerges smoothly from the tiny distant orbital fairing scale (0.08) -> clean LEO showcase (0.94) -> terminal zoom (1.28)
   let satScale = lerp(0.08, 0.94, floatEase);
-  if (sp >= 0.87) {
-    const terminalZoom = easeOutCubic((sp - 0.87) / 0.10);
+  if (sp >= 0.90) {
+    const terminalZoom = easeOutCubic((sp - 0.90) / 0.08);
     satScale = lerp(0.94, 1.28, terminalZoom);
   }
   if (cameraMode === 'BOOSTER') satScale *= 1.18;
@@ -117,13 +115,12 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const s = unit * satScale;
   const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.032 * floatEase;
   const targetX =
-    vehicleAnchorX - mouseX * 10 - (sp >= 0.87 ? smoothstep(0.87, 0.96, sp) * unit * 0.18 : 0);
+    vehicleAnchorX - mouseX * 10 - (sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.18 : 0);
   const targetY = h * 0.40 + bobY - mouseY * 6;
 
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);
 
-  // Smoothly levels attitude from rocket's 0.14 rad pitch into calm horizontal orbital cruise
   const bankRad =
     lerp(pitchRad, 0, floatEase) + (reducedMotion ? 0 : Math.sin(t * 0.48) * 0.024 * floatEase);
 
@@ -136,8 +133,8 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const busH = s * 0.74;
 
   // 1. STAGE 05 ORBITAL DOWNLINK CONTINUOUSLY EXPANDING RF SIGNAL ARCS & CARRIER BEAM
-  if (sp >= 0.875) {
-    const txAlpha = smoothstep(0.875, 0.915, sp);
+  if (sp >= 0.900) {
+    const txAlpha = smoothstep(0.900, 0.935, sp);
     const dishTipY = -busH * 0.5 - s * 0.42;
 
     ctx.strokeStyle = `rgba(255, 255, 255, ${0.20 * txAlpha})`;
@@ -167,8 +164,8 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   }
 
   // 3. TWO-STAGE ARTICULATED MONOCHROME SOLAR ARRAY WINGS (unfold gradually after clearing fairing!)
-  const innerUnfold = easeOutCubic(smoothstep(0.470, 0.555, sp));
-  const outerUnfold = easeOutCubic(smoothstep(0.530, 0.610, sp));
+  const innerUnfold = easeOutCubic(smoothstep(0.565, 0.645, sp));
+  const outerUnfold = easeOutCubic(smoothstep(0.615, 0.695, sp));
 
   const panelW = s * 0.70;
   const panelH = s * 0.52;

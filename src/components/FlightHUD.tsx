@@ -11,11 +11,11 @@ export interface StageWaypoint {
 
 export const STAGES: StageWaypoint[] = [
   { id: 'pad', stageName: 'Launch Pad', altitude: '0 km (Ground Zero)', scrollFraction: 0.0 },
-  { id: 'ascent', stageName: 'Outer Atmosphere', altitude: '65 km (Max-Q)', scrollFraction: 0.30 },
-  { id: 'orbit', stageName: 'Satellite Deploy', altitude: '420 km (LEO)', scrollFraction: 0.46 },
-  { id: 'missions', stageName: 'Orbital Missions', altitude: '420 km (Payload)', scrollFraction: 0.66 },
-  { id: 'heritage', stageName: 'Karnataka Pass', altitude: '420 km (BLR Track)', scrollFraction: 0.80 },
-  { id: 'signal', stageName: 'Orbital Uplink', altitude: '420 km (Signal Lock)', scrollFraction: 0.94 },
+  { id: 'ascent', stageName: 'Outer Atmosphere', altitude: '65 km (Ascent)', scrollFraction: 0.34 },
+  { id: 'orbit', stageName: 'Satellite Deploy', altitude: '420 km (LEO)', scrollFraction: 0.60 },
+  { id: 'missions', stageName: 'Orbital Missions', altitude: '420 km (Payload)', scrollFraction: 0.74 },
+  { id: 'heritage', stageName: 'Karnataka Pass', altitude: '420 km (BLR Track)', scrollFraction: 0.85 },
+  { id: 'signal', stageName: 'Orbital Uplink', altitude: '420 km (Signal Lock)', scrollFraction: 0.95 },
 ];
 
 interface FlightHUDProps {
@@ -47,7 +47,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
 
   const telemetry = useMemo(() => {
     const sp = scrollProgress;
-    if (sp < 0.035) {
+    if (sp < 0.032) {
       return {
         status: 'STANDBY // HOLD-DOWN ACTIVE',
         altitude: '0.0 KM',
@@ -55,7 +55,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '101.3 KPA',
         gForce: '1.00 G',
       };
-    } else if (sp < 0.080) {
+    } else if (sp < 0.068) {
       return {
         status: 'STEP 01 // ENGINE IGNITION',
         altitude: '0.0 KM',
@@ -63,7 +63,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '101.3 KPA',
         gForce: '1.25 G',
       };
-    } else if (sp < 0.125) {
+    } else if (sp < 0.104) {
       return {
         status: 'STEP 02 // CLAMPS RELEASE',
         altitude: '0.0 KM',
@@ -71,7 +71,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '101.3 KPA',
         gForce: '1.40 G',
       };
-    } else if (sp < 0.170) {
+    } else if (sp < 0.140) {
       return {
         status: 'STEP 03 // WATER DELUGE',
         altitude: '0.0 KM',
@@ -79,39 +79,36 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '101.3 KPA',
         gForce: '1.50 G',
       };
-    } else if (sp < 0.240) {
-      const climbFrac = (sp - 0.170) / 0.070;
+    } else if (sp < 0.220) {
+      const climbFrac = (sp - 0.140) / 0.080;
       return {
         status: 'STEP 04 // LIFTOFF CLIMB',
-        altitude: `${(0.1 + climbFrac * 11.9).toFixed(1)} KM`,
-        velocity: `${Math.round(climbFrac * 420)} M/S`,
-        dynPressure: `${(101.3 - climbFrac * 45).toFixed(1)} KPA`,
-        gForce: `${(1.62 + climbFrac * 0.4).toFixed(2)} G`,
+        altitude: `${(0.1 + climbFrac * 14.9).toFixed(1)} KM`,
+        velocity: `${Math.round(climbFrac * 460)} M/S`,
+        dynPressure: `${(101.3 - climbFrac * 48).toFixed(1)} KPA`,
+        gForce: `${(1.62 + climbFrac * 0.42).toFixed(2)} G`,
       };
-    } else if (sp < 0.435) {
-      const ascFrac = (sp - 0.240) / 0.195;
-      const isMaxQ = sp >= 0.250 && sp <= 0.312;
-      const isBoosterSep = sp > 0.312 && sp < 0.395;
-      const isFairingSep = sp >= 0.395;
+    } else if (sp < 0.560) {
+      const ascFrac = (sp - 0.220) / 0.340;
+      const isBoosterSep = sp >= 0.380 && sp < 0.485;
+      const isFairingSep = sp >= 0.485;
       const status = isFairingSep
         ? 'STAGE 01 // FAIRING JETTISON'
         : isBoosterSep
           ? 'STAGE 01 // S200 BOOSTER SEP'
-          : isMaxQ
-            ? 'STAGE 01 // TRANSONIC MAX-Q'
-            : 'STAGE 01 // OUTER ATMOSPHERE';
+          : 'STAGE 01 // OUTER ATMOSPHERE';
       return {
         status,
-        altitude: `${Math.round(12 + ascFrac * 408)} KM`,
-        velocity: `${(0.42 + ascFrac * 7.24).toFixed(2)} KM/S`,
-        dynPressure: isMaxQ ? '35.8 KPA (MAX-Q)' : `${(56.3 * Math.exp(-ascFrac * 5.0)).toFixed(2)} KPA`,
-        gForce: `${(2.10 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
+        altitude: `${Math.round(15 + ascFrac * 405)} KM`,
+        velocity: `${(0.46 + ascFrac * 7.20).toFixed(2)} KM/S`,
+        dynPressure: `${(53.3 * Math.exp(-ascFrac * 5.2)).toFixed(2)} KPA`,
+        gForce: `${(2.05 + Math.sin(ascFrac * Math.PI) * 0.85).toFixed(2)} G`,
       };
-    } else if (sp < 0.600) {
+    } else if (sp < 0.700) {
       const status =
-        sp < 0.490
+        sp < 0.610
           ? 'STAGE 02 // STAGE SEP & SATELLITE RELEASE'
-          : sp < 0.585
+          : sp < 0.680
             ? 'STAGE 02 // SOLAR ARRAY DEPLOY'
             : 'STAGE 02 // SATELLITE DEPLOYED (LEO)';
       return {
@@ -121,7 +118,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
-    } else if (sp < 0.760) {
+    } else if (sp < 0.810) {
       return {
         status: 'STAGE 03 // ORBITAL PAYLOAD OPS',
         altitude: '420 KM',
@@ -129,7 +126,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
         dynPressure: '0.00 KPA',
         gForce: '0.00 G',
       };
-    } else if (sp < 0.880) {
+    } else if (sp < 0.900) {
       return {
         status: 'STAGE 04 // BANGALORE GROUND PASS',
         altitude: '420 KM',

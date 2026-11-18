@@ -257,43 +257,7 @@ function buildBanyanSprite(): HTMLCanvasElement {
     ctx.stroke();
   }
 
-  // 3. Iconic Indian Banyan hanging aerial prop roots draping down from the wide boughs!
-  const propRoots = [
-    { x: cx - 56, topY: h - 94, botY: groundLine, lw: 2.1, curve: -3 },
-    { x: cx - 44, topY: h - 90, botY: groundLine, lw: 2.8, curve: 2 },
-    { x: cx - 30, topY: h - 84, botY: groundLine, lw: 3.4, curve: -2 },
-    { x: cx - 20, topY: h - 80, botY: groundLine - 14, lw: 1.4, curve: 1.5 },
-    { x: cx + 22, topY: h - 82, botY: groundLine - 10, lw: 1.6, curve: -1.5 },
-    { x: cx + 32, topY: h - 86, botY: groundLine, lw: 3.3, curve: 2 },
-    { x: cx + 47, topY: h - 92, botY: groundLine, lw: 2.6, curve: -2.5 },
-    { x: cx + 60, topY: h - 96, botY: groundLine, lw: 1.9, curve: 3 },
-    { x: cx - 68, topY: h - 96, botY: groundLine - 22, lw: 1.2, curve: -2 },
-    { x: cx + 72, topY: h - 98, botY: groundLine - 26, lw: 1.2, curve: 2 },
-  ];
-  for (const pr of propRoots) {
-    ctx.strokeStyle = pr.x > cx ? '#2b2b33' : '#1d1d22';
-    ctx.lineWidth = pr.lw;
-    ctx.beginPath();
-    ctx.moveTo(pr.x, pr.topY);
-    ctx.quadraticCurveTo(pr.x + pr.curve, (pr.topY + pr.botY) * 0.5, pr.x + pr.curve * 0.6, pr.botY);
-    ctx.stroke();
-
-    if (pr.x > cx && pr.lw >= 2.2) {
-      ctx.strokeStyle = 'rgba(210, 210, 220, 0.24)';
-      ctx.lineWidth = 0.7;
-      ctx.beginPath();
-      ctx.moveTo(pr.x + pr.lw * 0.4, pr.topY + 6);
-      ctx.quadraticCurveTo(
-        pr.x + pr.curve + pr.lw * 0.4,
-        (pr.topY + pr.botY) * 0.5,
-        pr.x + pr.curve * 0.6 + pr.lw * 0.4,
-        pr.botY
-      );
-      ctx.stroke();
-    }
-  }
-
-  // 4. Lush broad multi-domed Banyan leaf canopy (dark shaded underside + silver sunlit upper crowns)
+  // 3. Lush broad multi-domed Banyan leaf canopy (clean silhouette, zero hanging vertical lines!)
   const canopyMass = [
     { x: cx - 66, y: h - 106, rx: 32, ry: 22 },
     { x: cx - 38, y: h - 122, rx: 40, ry: 28 },
@@ -393,34 +357,33 @@ export function getPadZoomTransform(
   unit: number
 ): { scale: number; anchorY: number; alpha: number; horizonY: number } {
   const baseHorizonY = groundY - unit * 0.24;
-  if (sp <= 0.170) {
+  if (sp <= 0.140) {
     return { scale: 1, anchorY: groundY, alpha: 1, horizonY: baseHorizonY };
   }
 
-  // Gentle natural parallax drop as the camera pans up tracking the rising rocket
-  const panUp = smoothstep(0.175, 0.305, sp);
-  const dropPx = Math.pow(panUp, 1.55) * (h * 0.58 + unit * 1.4);
-  const scale = 1 - panUp * 0.22; // very subtle natural distance perspective only
+  // Gentle natural parallax drop as the camera pans up tracking the rising rocket across many frames
+  const panUp = smoothstep(0.148, 0.310, sp);
+  const dropPx = Math.pow(panUp, 1.55) * (h * 0.62 + unit * 1.4);
+  const scale = 1 - panUp * 0.22;
   const anchorY = groundY + dropPx;
   const horizonY = baseHorizonY + dropPx * 0.65;
-  const alpha = 1 - smoothstep(0.235, 0.295, sp);
+  const alpha = 1 - smoothstep(0.240, 0.305, sp);
 
   return { scale, anchorY, alpha, horizonY };
 }
 
 /** Legacy drop offset retained for compatibility */
 export function getLaunchPadDropPx(sp: number, h: number): number {
-  if (sp < 0.170) return 0;
-  return smoothstep(0.170, 0.315, sp) * h * 0.04;
+  if (sp < 0.140) return 0;
+  return smoothstep(0.140, 0.310, sp) * h * 0.04;
 }
 
 /**
- * Refined, whisper-light monochrome Sriharikota coastal horizon, soft ground pad & natural palm/pine groves.
- * Trees gently hug Earth's curving horizon during early liftoff zoom-out so none ever float in mid-air!
+ * Refined, whisper-light monochrome Sriharikota coastal horizon, soft ground pad & natural groves.
  */
 export function renderSriharikotaTerrain(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, vehicleAnchorX, groundY, unit, reducedMotion } = frame;
-  if (sp > 0.295) return;
+  if (sp > 0.315) return;
 
   const { scale, anchorY, alpha, horizonY } = getPadZoomTransform(sp, w, h, groundY, unit);
   if (alpha < 0.01) return;

@@ -245,9 +245,9 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
   const trenchW = unit * 0.54;
 
   const fireRamp =
-    sp >= 0.035 && sp < 0.255
-      ? clamp((sp - 0.035) / 0.025, 0, 1) *
-        (sp < 0.170 ? 1 : Math.max(0, 1 - (sp - 0.170) / 0.085))
+    sp >= 0.032 && sp < 0.255
+      ? clamp((sp - 0.032) / 0.022, 0, 1) *
+        (sp < 0.140 ? 1 : Math.max(0, 1 - (sp - 0.140) / 0.115))
       : 0;
 
   if (fireRamp > 0.03) {
@@ -298,7 +298,7 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
   ctx.scale(scale, scale);
 
   // 1. TWO SIMPLE, LIGHT HOLD-DOWN CLAMPS
-  const clampOpen = sp < 0.080 ? 0 : easeOutCubic((sp - 0.080) / 0.045);
+  const clampOpen = sp < 0.068 ? 0 : easeOutCubic((sp - 0.068) / 0.036);
   for (const side of [-1, 1] as const) {
     const cx = side * unit * 0.33;
     ctx.save();
@@ -321,7 +321,7 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
   }
 
   // 2. TWO SLENDER UMBILICAL ARMS (retract cleanly at Step 02)
-  const armRetract = sp < 0.080 ? 0 : easeOutCubic((sp - 0.080) / 0.045);
+  const armRetract = sp < 0.068 ? 0 : easeOutCubic((sp - 0.068) / 0.036);
   const towerRightEdge = towerCx + unit * 0.14;
 
   for (const hU of [1.62, 2.58]) {
@@ -343,8 +343,8 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
     ctx.fillRect(visualLen - 2, -2.5, 2.2, 5);
     ctx.restore();
 
-    if (sp >= 0.080 && sp < 0.135) {
-      const qdProg = (sp - 0.080) / 0.055;
+    if (sp >= 0.068 && sp < 0.115) {
+      const qdProg = (sp - 0.068) / 0.047;
       const qdAlpha = Math.sin(qdProg * Math.PI) * 0.48 * alpha;
       const qdX = towerRightEdge + visualLen + qdProg * unit * 0.18;
       const qdY = pivotY - qdProg * unit * 0.14;
@@ -355,9 +355,9 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
     }
   }
 
-  // 3. SOFT STANDBY CRYOGENIC VAPOUR MIST (sp < 0.085)
-  if (sp < 0.085) {
-    const cryoFade = 1 - smoothstep(0.055, 0.085, sp);
+  // 3. SOFT STANDBY CRYOGENIC VAPOUR MIST (sp < 0.072)
+  if (sp < 0.072) {
+    const cryoFade = 1 - smoothstep(0.048, 0.072, sp);
     const originX = unit * 0.17;
     const originY = towerBaseY - unit * 2.55;
 
@@ -390,14 +390,14 @@ export function renderLaunchPadFront(frame: Scene2DFrameContext): void {
     ctx.globalAlpha = alpha;
   }
 
-  // 4. VOLUMETRIC BILLOWING MONOCHROME SMOKE & DELUGE STEAM (Step 01 -> Liftoff zoom-out)
-  if (sp >= 0.045 && sp < 0.295) {
+  // 4. VOLUMETRIC BILLOWING MONOCHROME SMOKE & DELUGE STEAM (Step 01 -> Liftoff climb)
+  if (sp >= 0.038 && sp < 0.290) {
     const density =
-      sp < 0.125
-        ? smoothstep(0.045, 0.125, sp) * 0.46
-        : sp < 0.170
-          ? 0.46 + smoothstep(0.125, 0.168, sp) * 0.54
-          : 1 - smoothstep(0.190, 0.295, sp);
+      sp < 0.104
+        ? smoothstep(0.038, 0.104, sp) * 0.46
+        : sp < 0.142
+          ? 0.46 + smoothstep(0.104, 0.140, sp) * 0.54
+          : 1 - smoothstep(0.165, 0.290, sp);
 
     for (let i = 0; i < puffs.length; i++) {
       const p = puffs[i];

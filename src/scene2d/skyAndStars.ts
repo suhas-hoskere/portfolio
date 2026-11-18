@@ -119,14 +119,14 @@ function getSunSprite(): HTMLCanvasElement {
 export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, reducedMotion } = frame;
 
-  // 1. Crisp monochrome background (subtle dark charcoal at ground zero -> pure obsidian in space, zero grid)
-  const spaceBlend = smoothstep(0.16, 0.36, sp);
+  // 1. Crisp monochrome background (subtle dark charcoal at ground zero -> pure obsidian in space across long ascent)
+  const spaceBlend = smoothstep(0.15, 0.46, sp);
   const bgLum = Math.round(lerp(13, 5, spaceBlend));
   ctx.fillStyle = `rgb(${bgLum},${bgLum},${bgLum + 1})`;
   ctx.fillRect(0, 0, w, h);
 
   // 2. Crisp monochrome starfield with gentle subtle twinkle (clean pinpoints, zero rain/warp streaks!)
-  const starVis = lerp(0.24, 1.0, smoothstep(0.14, 0.34, sp));
+  const starVis = lerp(0.24, 1.0, smoothstep(0.16, 0.44, sp));
   const stars = getStars();
   const driftY = sp * h * 1.45;
 
@@ -135,7 +135,7 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
 
   for (let i = 0; i < stars.length; i++) {
     const s = stars[i];
-    const dawnMask = sp < 0.24 ? smoothstep(0.62, 0.08, s.ny) : 1.0;
+    const dawnMask = sp < 0.30 ? smoothstep(0.62, 0.08, s.ny) : 1.0;
     const twinkle = reducedMotion ? 1 : 0.84 + 0.16 * Math.sin(t * 2.2 + s.twinklePhase);
     const alpha = s.alpha * starVis * dawnMask * twinkle;
     if (alpha < 0.05) continue;
