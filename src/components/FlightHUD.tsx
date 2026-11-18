@@ -61,11 +61,11 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-space text-sm sm:text-base font-bold text-white tracking-tight truncate">
-                Suhas Hoskere
-              </span>
-              <span className="hidden sm:inline font-kannada text-xs font-medium text-zinc-400">
+              <span className="font-kannada text-sm sm:text-base font-bold text-white tracking-tight truncate">
                 ಸುಹಾಸ್ ಹೊಸಕೆರೆ
+              </span>
+              <span className="hidden sm:inline font-space text-xs font-medium text-zinc-400">
+                Suhas Hoskere
               </span>
             </div>
             <p className="text-[10px] font-mono text-zinc-400 tracking-wider uppercase truncate">
