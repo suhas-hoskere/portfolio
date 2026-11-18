@@ -21,7 +21,7 @@ interface BarbStrand {
   color: string;
 }
 
-const PARTICLE_POOL_SIZE = 22;
+const PARTICLE_POOL_SIZE = 28;
 
 /**
  * Generates an authentic, naturally hairy monochrome bird-feather plume ONCE at module load:
@@ -238,34 +238,39 @@ export const CustomCursor: React.FC = () => {
       const idx = poolCursor;
       poolCursor = (poolCursor + 1) % PARTICLE_POOL_SIZE;
 
-      // Spawn directly along the diagonal feathery plume (from lower fluff to wispy tip!)
+      // Spawn right along the outer feathery plume barbs (so particles cleanly leave the feather silhouette!)
       const along =
         mode === 'burst'
-          ? 0.10 + Math.random() * 0.65
-          : 0.24 + Math.random() * 0.68;
-      const perp = (Math.random() - 0.5) * 14;
+          ? 0.14 + Math.random() * 0.72
+          : 0.24 + Math.random() * 0.74;
+      const sideSign = Math.random() > 0.5 ? 1 : -1;
+      const edgeOffset = sideSign * (6 + Math.random() * 9);
 
       p.active = true;
-      p.x = originX + along * 38 + perp * 0.7;
-      p.y = originY - along * 38 + perp * 0.7;
+      // Diagonal feather spine runs (+38, -38); perpendicular normal is (-0.707, -0.707) / (+0.707, +0.707)
+      p.x = originX + along * 40 + edgeOffset * 0.707;
+      p.y = originY - along * 40 + edgeOffset * 0.707;
 
-      const angle = Math.random() * Math.PI * 2;
-      const speed =
+      // Drift genuinely outward away from the feather barbs + gentle buoyant upward float
+      const outSpeed =
         mode === 'burst'
-          ? 28 + Math.random() * 38
+          ? 34 + Math.random() * 42
           : mode === 'ambient'
-            ? 8 + Math.random() * 14
-            : 14 + Math.random() * 24;
+            ? 24 + Math.random() * 24
+            : 20 + Math.random() * 26;
+      const spreadAngle = (Math.random() - 0.5) * 1.1;
+      const baseAngle = sideSign > 0 ? Math.PI * 0.25 : -Math.PI * 0.75;
+      const emitAngle = baseAngle + spreadAngle;
 
-      p.vx = Math.cos(angle) * speed - moveDx * 0.32 + (Math.random() - 0.4) * 12;
-      p.vy = Math.sin(angle) * speed - moveDy * 0.32 - (14 + Math.random() * 16);
+      p.vx = Math.cos(emitAngle) * outSpeed - moveDx * 0.28 + (Math.random() - 0.35) * 10;
+      p.vy = Math.sin(emitAngle) * outSpeed - moveDy * 0.28 - (12 + Math.random() * 14);
       p.age = 0;
       p.life =
         mode === 'burst'
-          ? 0.62 + Math.random() * 0.32
+          ? 0.75 + Math.random() * 0.35
           : mode === 'ambient'
-            ? 0.95 + Math.random() * 0.45
-            : 0.78 + Math.random() * 0.40;
+            ? 1.15 + Math.random() * 0.55
+            : 0.90 + Math.random() * 0.45;
       p.isWisp = idx % 3 === 0;
       p.rot = -45 + (Math.random() - 0.5) * 110;
       p.vRot = (Math.random() - 0.5) * 105;
@@ -297,10 +302,10 @@ export const CustomCursor: React.FC = () => {
       tiltDeg += (targetTilt - tiltDeg) * (1 - Math.exp(-15 * dt));
       applyTransform();
 
-      // Gentle ambient trickle so small particles always softly drift out from the feather
+      // Continuous steady emission (~7 particles/sec) even when holding the feather completely still
       if (!reducedMotion) {
         ambientAccum += dt;
-        if (ambientAccum >= 0.42) {
+        if (ambientAccum >= 0.14) {
           ambientAccum = 0;
           spawnParticle(mouseX, mouseY, 0, 0, 'ambient');
         }
@@ -318,23 +323,23 @@ export const CustomCursor: React.FC = () => {
           continue;
         }
 
-        const drag = Math.pow(0.24, dt);
+        const drag = Math.pow(0.54, dt);
         p.vx *= drag;
-        p.vy = p.vy * drag - 11 * dt;
-        const sway = Math.sin(p.age * 6.8 + p.swayPhase) * 15;
+        p.vy = p.vy * drag - 8 * dt;
+        const sway = Math.sin(p.age * 5.8 + p.swayPhase) * 13;
         p.x += (p.vx + sway) * dt;
         p.y += p.vy * dt;
         p.rot += p.vRot * dt;
 
         const progress = p.age / p.life;
         const alpha =
-          progress < 0.14
-            ? progress / 0.14
-            : Math.pow(1 - (progress - 0.14) / 0.86, 1.35);
-        const scale = 1 - progress * 0.45;
+          progress < 0.12
+            ? progress / 0.12
+            : Math.pow(1 - (progress - 0.12) / 0.88, 1.25);
+        const scale = 1 - progress * 0.40;
 
         if (el) {
-          el.style.opacity = (alpha * (p.isWisp ? 0.85 : 0.92)).toFixed(3);
+          el.style.opacity = (alpha * (p.isWisp ? 0.88 : 0.95)).toFixed(3);
           el.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0) rotate(${p.rot.toFixed(1)}deg) scale(${scale.toFixed(2)})`;
         }
       }
