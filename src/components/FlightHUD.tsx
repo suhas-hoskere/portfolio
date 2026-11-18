@@ -73,7 +73,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#09090b]/95 border border-white/25 hover:border-white text-zinc-200 hover:text-white font-mono text-[11px] transition-colors cursor-pointer"
               title="Ask Madhva — Assistant CLI (~ key)"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0" aria-hidden="true" />
               <Terminal className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">MADHVA</span>
             </button>
