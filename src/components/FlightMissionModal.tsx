@@ -3,6 +3,7 @@ import { X, ArrowUpRight, ExternalLink } from 'lucide-react';
 import { GithubIcon } from './Icons';
 import type { ProjectData } from '../data/portfolioData';
 import { cosmicAudio } from './AudioEngine';
+import { trackLinkClicked } from '../utils/visitorLogger';
 
 interface FlightMissionModalProps {
   project: ProjectData | null;
@@ -109,7 +110,10 @@ export const FlightMissionModal: React.FC<FlightMissionModalProps> = ({ project,
               href={project.demo}
               target="_blank"
               rel="noreferrer"
-              onClick={() => cosmicAudio.playTelemetryChirp(1320, 0.05)}
+              onClick={() => {
+                cosmicAudio.playTelemetryChirp(1320, 0.05);
+                trackLinkClicked(`${project.name} Live`);
+              }}
               className="px-4 py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2 transition-colors cursor-pointer"
             >
               <span>Visit Website</span>
@@ -121,7 +125,10 @@ export const FlightMissionModal: React.FC<FlightMissionModalProps> = ({ project,
             href={project.github}
             target="_blank"
             rel="noreferrer"
-            onClick={() => cosmicAudio.playTelemetryChirp(1180, 0.05)}
+            onClick={() => {
+              cosmicAudio.playTelemetryChirp(1180, 0.05);
+              trackLinkClicked(`${project.name} GitHub`);
+            }}
             className={`px-4 py-2.5 rounded-lg font-mono text-xs inline-flex items-center gap-2 transition-colors cursor-pointer ${
               project.demo
                 ? 'bg-black hover:bg-white/10 border border-white/25 hover:border-white text-white'

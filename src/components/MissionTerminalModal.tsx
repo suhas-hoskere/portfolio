@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
+import { trackMadhvaInteraction, trackPortfolioAction } from '../utils/visitorLogger';
 import {
   EDUCATION,
   PERSONAL_QA,
@@ -190,6 +191,8 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
         lastQuoteIndex: lastQuoteIndexRef.current,
       });
 
+      trackMadhvaInteraction(cleaned, reply.kind, reply.headline);
+
       const effect = reply.sideEffect;
       if (effect) {
         switch (effect.type) {
@@ -206,6 +209,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
             copyEmailToClipboard();
             break;
           case 'resume':
+            trackPortfolioAction('resume');
             triggerResumeDownload();
             break;
           case 'open-url':

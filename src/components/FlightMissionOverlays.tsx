@@ -18,6 +18,7 @@ import {
 import { GithubIcon, LinkedinIcon, InstagramIcon } from './Icons';
 import { cosmicAudio } from './AudioEngine';
 import { KANNADA_WRITINGS, PROJECTS, SKILL_GROUPS, type ProjectData } from '../data/portfolioData';
+import { trackLinkClicked, trackPortfolioAction } from '../utils/visitorLogger';
 
 const KANNADA_DIGITS = ['೦', '೧', '೨', '೩', '೪', '೫', '೬', '೭', '೮', '೯'] as const;
 const toKannadaNumber = (n: number) =>
@@ -44,18 +45,21 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
 
     const showPrevQuote = () => {
       cosmicAudio.playTelemetryChirp(1180, 0.04);
+      trackPortfolioAction('writing_browse');
       setQuoteDirection('prev');
       setActiveQuoteIndex((prev) => (prev - 1 + KANNADA_WRITINGS.length) % KANNADA_WRITINGS.length);
     };
 
     const showNextQuote = () => {
       cosmicAudio.playTelemetryChirp(1260, 0.04);
+      trackPortfolioAction('writing_browse');
       setQuoteDirection('next');
       setActiveQuoteIndex((prev) => (prev + 1) % KANNADA_WRITINGS.length);
     };
 
     const handleCopyEmail = () => {
       cosmicAudio.playTelemetryChirp(1320, 0.04);
+      trackLinkClicked('Copy Email');
       navigator.clipboard?.writeText('suhashoskere@gmail.com');
       setCopiedEmail(true);
       window.setTimeout(() => setCopiedEmail(false), 1800);
@@ -158,7 +162,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   <a
                     href="/resume.pdf"
                     download="Suhas_Hoskere_Resume.pdf"
-                    onClick={() => cosmicAudio.playTelemetryChirp(1260, 0.05)}
+                    onClick={() => {
+                      cosmicAudio.playTelemetryChirp(1260, 0.05);
+                      trackPortfolioAction('resume');
+                    }}
                     className="px-4 py-2.5 sm:py-3 rounded-lg bg-black/70 hover:bg-white/10 border border-white/30 hover:border-white text-white font-mono text-xs flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -169,7 +176,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     href="https://github.com/suhas-hoskere"
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => cosmicAudio.playTelemetryChirp(1200, 0.05)}
+                    onClick={() => {
+                      cosmicAudio.playTelemetryChirp(1200, 0.05);
+                      trackLinkClicked('GitHub');
+                    }}
                     className="px-4 py-2.5 sm:py-3 rounded-lg bg-transparent hover:bg-white/10 border border-white/20 hover:border-white/60 text-zinc-200 hover:text-white font-mono text-xs flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <GithubIcon className="w-4 h-4" />
@@ -181,7 +191,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     href="https://www.linkedin.com/in/suhas-hoskere/"
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => cosmicAudio.playTelemetryChirp(1240, 0.05)}
+                    onClick={() => {
+                      cosmicAudio.playTelemetryChirp(1240, 0.05);
+                      trackLinkClicked('LinkedIn');
+                    }}
                     className="px-4 py-2.5 sm:py-3 rounded-lg bg-transparent hover:bg-white/10 border border-white/20 hover:border-white/60 text-zinc-200 hover:text-white font-mono text-xs flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <LinkedinIcon className="w-4 h-4" />
@@ -389,7 +402,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     href="https://www.instagram.com/mugulnage_manasu_10/"
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => cosmicAudio.playTelemetryChirp(1240, 0.05)}
+                    onClick={() => {
+                      cosmicAudio.playTelemetryChirp(1240, 0.05);
+                      trackLinkClicked('Instagram (@mugulnage_manasu_10)');
+                    }}
                     className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
                   >
                     <div className="space-y-1 min-w-0">
@@ -408,7 +424,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     href="https://www.instagram.com/unofficial_overthinker_/"
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => cosmicAudio.playTelemetryChirp(1280, 0.05)}
+                    onClick={() => {
+                      cosmicAudio.playTelemetryChirp(1280, 0.05);
+                      trackLinkClicked('Instagram (@unofficial_overthinker_)');
+                    }}
                     className="p-3.5 rounded-xl bg-black/75 border border-white/15 hover:border-white/55 hover:bg-white/[0.06] transition-colors cursor-pointer group flex items-start justify-between gap-2"
                   >
                     <div className="space-y-1 min-w-0">
@@ -592,7 +611,10 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       href="https://mail.google.com/mail/?view=cm&fs=1&to=suhashoskere@gmail.com&su=Hello%20Suhas"
                       target="_blank"
                       rel="noreferrer"
-                      onClick={() => cosmicAudio.playTelemetryChirp(1260, 0.05)}
+                      onClick={() => {
+                        cosmicAudio.playTelemetryChirp(1260, 0.05);
+                        trackLinkClicked('Email');
+                      }}
                       className="flex-1 py-3.5 px-5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
                       style={{ textShadow: 'none' }}
                     >
@@ -627,6 +649,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       href="https://github.com/suhas-hoskere"
                       target="_blank"
                       rel="noreferrer"
+                      onClick={() => trackLinkClicked('GitHub')}
                       className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <GithubIcon className="w-4 h-4 shrink-0" />
@@ -638,6 +661,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       href="https://www.linkedin.com/in/suhas-hoskere/"
                       target="_blank"
                       rel="noreferrer"
+                      onClick={() => trackLinkClicked('LinkedIn')}
                       className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <LinkedinIcon className="w-4 h-4 shrink-0" />
@@ -649,6 +673,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       href="https://www.instagram.com/suhas__112123/"
                       target="_blank"
                       rel="noreferrer"
+                      onClick={() => trackLinkClicked('Instagram (@suhas__112123)')}
                       className="py-3 px-4 rounded-lg bg-black/70 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <InstagramIcon className="w-4 h-4 shrink-0" />

@@ -6,7 +6,12 @@ import type { ProjectData } from './data/portfolioData';
 import { CustomCursor } from './components/CustomCursor';
 import { MonochromeLiftoffLoader } from './components/MonochromeLiftoffLoader';
 import { cosmicAudio } from './components/AudioEngine';
-import { logVisitorToSheets } from './utils/visitorLogger';
+import {
+  initVisitorAnalytics,
+  trackPortfolioAction,
+  trackProjectViewed,
+  trackScrollAndSection,
+} from './utils/visitorLogger';
 
 // Lazy-load modals so their heavy DOM and icon sets are never loaded until opened
 const FlightMissionModal = lazy(() =>
@@ -68,9 +73,9 @@ export const App: React.FC = () => {
     setShowLoader(false);
   }, []);
 
-  // Log passive visitor device/location metadata to Google Sheets once per session (when configured)
+  // Start strictly anonymous, non-PII visitor & engagement logger (when configured)
   useEffect(() => {
-    void logVisitorToSheets();
+    void initVisitorAnalytics();
   }, []);
 
   // Gently auto-start ambient soundtrack on first user gesture
@@ -161,6 +166,7 @@ export const App: React.FC = () => {
       lastUiCommitTimeRef.current = performance.now();
       lastUiProgressRef.current = p;
       cosmicAudio.updateFallIntensity(p);
+      trackScrollAndSection(p, lastStageRef.current);
       startTransition(() => {
         setUiScrollProgress(p);
       });
@@ -288,6 +294,7 @@ export const App: React.FC = () => {
   const handleToggleAudio = useCallback(() => {
     const active = cosmicAudio.toggle();
     setAudioActive(active);
+    trackPortfolioAction('audio');
   }, []);
 
   const handleSetAudio = useCallback((enabled: boolean) => {
@@ -308,6 +315,7 @@ export const App: React.FC = () => {
 
   const handleOpenTerminal = useCallback(() => {
     stopAutoTour();
+    trackPortfolioAction('madhva_open');
     setIsTerminalOpen(true);
   }, [stopAutoTour]);
 
@@ -351,6 +359,7 @@ export const App: React.FC = () => {
   const handleSelectProject = useCallback(
     (proj: ProjectData) => {
       stopAutoTour();
+      trackProjectViewed(proj.name);
       setSelectedProject(proj);
     },
     [stopAutoTour]
@@ -359,6 +368,7 @@ export const App: React.FC = () => {
   // "Explore Journey" button: hands-free slow reading cruise across the entire page (~88 px/sec)
   // so visitors can read every section & watch the entire launch-to-orbit flight without touching scroll!
   const handleLaunch = useCallback(() => {
+    trackPortfolioAction('explore_journey');
     if (scrollAnimRaf.current) {
       cancelAnimationFrame(scrollAnimRaf.current);
       scrollAnimRaf.current = null;
