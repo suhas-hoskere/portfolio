@@ -360,7 +360,7 @@ function drawMonoS200Booster(
 /**
  * Shared physical rocket trajectory pose (used by both rocketVehicle & heroSatellite):
  * - On liftoff (0.170+): Rocket genuinely accelerates UPWARD off the pad, clears the gantry,
- *   scales slightly smaller with altitude (1.0 -> 0.72), and curves along a realistic gravity turn!
+ *   shrinks dramatically as it climbs far away from Earth (1.0 -> 0.36!), and curves along a realistic gravity turn!
  */
 export function getRocketPose(
   sp: number,
@@ -373,24 +373,23 @@ export function getRocketPose(
   const camZoom =
     cameraMode === 'BOOSTER' ? 1.42 : cameraMode === 'CHASE' ? 1.22 : 1.0;
 
-  // Vehicle naturally recedes slightly in scale as it climbs into outer atmosphere (1.0 -> 0.72)
-  const altitudeScale = 1 - smoothstep(0.180, 0.420, sp) * 0.28;
+  // Rocket realistically shrinks much smaller as it flies high and far away from Earth (1.00 -> 0.36)
+  const climbDist = smoothstep(0.175, 0.425, sp);
+  const altitudeScale = 1 - Math.pow(climbDist, 0.88) * 0.64;
   const u = unit * camZoom * altitudeScale;
 
   // Realistic gravity-turn lateral arc + pitch eastward into LEO
-  const turnProg = smoothstep(0.215, 0.420, sp);
-  const pitchRad = turnProg * 0.24;
-  const x = vehicleAnchorX - mouseX * 10 + turnProg * unit * 0.18;
+  const turnProg = smoothstep(0.215, 0.425, sp);
+  const pitchRad = turnProg * 0.28;
+  const x = vehicleAnchorX - mouseX * 10 + turnProg * unit * 0.24;
 
-  // Rocket physically blasts UPWARD off the pad during liftoff (0.170 -> 0.280), clearing the gantry!
+  // Rocket physically blasts UPWARD off the pad during liftoff (0.170 -> 0.290) and climbs high above Earth!
   let baseY = groundY - unit * 0.14;
   if (cameraMode === 'BOOSTER') baseY += unit * 0.32;
   else if (cameraMode === 'CHASE') baseY -= unit * 0.22;
 
-  const liftoffRise = sp >= 0.170 ? Math.pow(smoothstep(0.170, 0.290, sp), 1.15) * unit * 1.45 : 0;
-  // Settles slightly into clean orbital staging altitude above glowing Earth limb
-  const orbitalSettle = sp >= 0.290 ? smoothstep(0.290, 0.420, sp) * unit * 0.35 : 0;
-  const y = baseY - liftoffRise + orbitalSettle;
+  const liftoffRise = sp >= 0.170 ? Math.pow(smoothstep(0.170, 0.360, sp), 1.05) * unit * 2.15 : 0;
+  const y = baseY - liftoffRise;
 
   return { x, y, u, pitchRad };
 }

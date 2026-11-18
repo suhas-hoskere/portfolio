@@ -4,7 +4,6 @@ import {
   smoothstep,
   mulberry32,
 } from './types';
-import { INDIA_EXACT_OUTLINE } from './indiaExactPath';
 
 interface OrbitalSatSpec {
   rxScale: number;
@@ -23,44 +22,11 @@ let cachedEarthSprite: HTMLCanvasElement | null = null;
 const EARTH_SPRITE_SIZE = 820;
 const EARTH_SPRITE_R = 344; // leaves 66px silky outer atmospheric glow margin
 
-// Placement of exact India map on Earth's visible upper orbital crown
-const INDIA_CX_NORM = 0.04;
-const INDIA_CY_NORM = -0.75;
-const INDIA_SPAN_NORM = 0.41;
-
-/** Maps exact normalized India-map space ([-0.45..0.45], [-0.5..0.5]) onto globe [-1..1] */
-function indiaToGlobe(ux: number, uy: number): [number, number] {
-  return [
-    INDIA_CX_NORM + ux * INDIA_SPAN_NORM,
-    INDIA_CY_NORM + uy * INDIA_SPAN_NORM,
-  ];
-}
-
-/** Converts real WGS84 (lon°E, lat°N) to exact normalized India-map space aligned with INDIA_EXACT_OUTLINE */
-function lonLatToIndiaNorm(lon: number, lat: number): [number, number] {
-  const ux = -0.447 + ((lon - 68.1) / (97.4 - 68.1)) * 0.894;
-  const uy = 0.50 - (lat - 8.08) / (37.0 - 8.08);
-  return [ux, uy];
-}
-
-const SRI_LANKA_LON_LAT: [number, number][] = [
-  [80.05, 9.8],
-  [80.85, 8.9],
-  [81.65, 7.7],
-  [81.85, 6.9],
-  [81.1, 6.05],
-  [80.2, 5.95],
-  [79.85, 6.95],
-  [79.8, 8.2],
-  [79.95, 9.2],
-];
-
 /**
- * Pre-renders a photorealistic monochrome LEO Earth globe sprite ONCE (820x820, 0ms per-frame cost!):
- * - ZERO wireframe grid lines!
+ * Pre-renders a clean, photorealistic monochrome LEO Earth globe sprite ONCE (820x820, 0ms per-frame cost!):
+ * - ZERO map outlines, ZERO wireframe grids!
  * - Silky zero-banding radial atmospheric limb glow
- * - Pixel-exact official India map extracted directly from the user-provided outline + Sri Lanka
- * - Soft swirling orbital cloud cover + glowing Indian metro city lights
+ * - Spherical sunlit-to-obsidian ocean depth + soft swirling monochrome orbital weather cloud bands
  */
 function getEarthSprite(): HTMLCanvasElement {
   if (cachedEarthSprite) return cachedEarthSprite;
@@ -92,65 +58,30 @@ function getEarthSprite(): HTMLCanvasElement {
   ctx.arc(c, c, r, 0, Math.PI * 2);
   ctx.clip();
 
-  // Deep orbital ocean shading (sunlit charcoal-silver upper-right -> obsidian lower-left, zero grid!)
+  // Deep orbital ocean shading (sunlit silver-charcoal upper-right -> deep obsidian lower-left)
   const ocean = ctx.createRadialGradient(c + r * 0.32, c - r * 0.58, r * 0.08, c, c, r * 1.22);
-  ocean.addColorStop(0.0, '#22222b');
-  ocean.addColorStop(0.36, '#131319');
+  ocean.addColorStop(0.0, '#24242d');
+  ocean.addColorStop(0.36, '#14141a');
   ocean.addColorStop(0.75, '#0a0a0e');
   ocean.addColorStop(1.0, '#050507');
   ctx.fillStyle = ocean;
   ctx.fillRect(c - r, c - r, r * 2, r * 2);
 
-  // 3. Exact Official India Map Outline (167-vertex exact contour)
-  ctx.fillStyle = 'rgba(235, 235, 244, 0.14)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
-  ctx.lineWidth = 1.35;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  INDIA_EXACT_OUTLINE.forEach(([ux, uy], idx) => {
-    const [gx, gy] = indiaToGlobe(ux, uy);
-    const x = c + gx * r;
-    const y = c + gy * r;
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Sri Lanka nestled naturally below Tamil Nadu
-  ctx.fillStyle = 'rgba(235, 235, 244, 0.15)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
-  ctx.lineWidth = 1.1;
-  ctx.beginPath();
-  SRI_LANKA_LON_LAT.forEach(([lon, lat], idx) => {
-    const [ux, uy] = lonLatToIndiaNorm(lon, lat);
-    const [gx, gy] = indiaToGlobe(ux, uy);
-    const x = c + gx * r;
-    const y = c + gy * r;
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Subtle soft orbital cloud wisps across the Indian Ocean & Bay of Bengal
-  for (let cl = 0; cl < 18; cl++) {
-    const cxPos = c + (rand() - 0.5) * r * 1.50;
-    const cyPos = c - r * 0.42 - rand() * r * 0.52;
-    const rw = 24 + rand() * 54;
-    const rh = 6 + rand() * 13;
-    const rot = (rand() - 0.5) * 0.55;
-    const a = 0.045 + rand() * 0.085;
+  // Clean swirling monochrome orbital cloud bands across the planetary hemisphere
+  for (let cl = 0; cl < 32; cl++) {
+    const cxPos = c + (rand() - 0.5) * r * 1.65;
+    const cyPos = c - r * 0.32 - rand() * r * 0.65;
+    const rw = 30 + rand() * 76;
+    const rh = 7 + rand() * 18;
+    const rot = (rand() - 0.5) * 0.58;
+    const a = 0.06 + rand() * 0.13;
 
     ctx.save();
     ctx.translate(cxPos, cyPos);
     ctx.rotate(rot);
     const cg = ctx.createRadialGradient(0, 0, 1, 0, 0, rw);
     cg.addColorStop(0.0, `rgba(255, 255, 255, ${a})`);
-    cg.addColorStop(0.55, `rgba(220, 220, 228, ${a * 0.4})`);
+    cg.addColorStop(0.55, `rgba(220, 220, 228, ${a * 0.42})`);
     cg.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
     ctx.scale(1, rh / rw);
     ctx.fillStyle = cg;
@@ -160,38 +91,12 @@ function getEarthSprite(): HTMLCanvasElement {
     ctx.restore();
   }
 
-  // Real-coordinate Indian metro city-light clusters mapped onto exact India contour
-  const cities: [number, number, number][] = [
-    [77.59, 12.97, 2.7], // Bangalore
-    [80.27, 13.08, 2.1], // Chennai
-    [80.23, 13.72, 1.8], // Sriharikota
-    [75.92, 14.46, 1.5], // Davanagere
-    [78.48, 17.38, 2.1], // Hyderabad
-    [72.88, 19.07, 2.5], // Mumbai
-    [77.21, 28.61, 2.6], // Delhi NCR
-    [88.36, 22.57, 2.1], // Kolkata
-  ];
-  for (const [lon, lat, cr] of cities) {
-    const [ux, uy] = lonLatToIndiaNorm(lon, lat);
-    const [gx, gy] = indiaToGlobe(ux, uy);
-    const lx = c + gx * r;
-    const ly = c + gy * r;
-    const lg = ctx.createRadialGradient(lx, ly, 0.4, lx, ly, cr * 3.8);
-    lg.addColorStop(0.0, 'rgba(255, 255, 255, 0.82)');
-    lg.addColorStop(0.35, 'rgba(240, 240, 248, 0.26)');
-    lg.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = lg;
-    ctx.beginPath();
-    ctx.arc(lx, ly, cr * 3.8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
   // Soft spherical limb inner atmospheric scatter
-  const innerRim = ctx.createRadialGradient(c, c, r * 0.82, c, c, r);
+  const innerRim = ctx.createRadialGradient(c, c, r * 0.80, c, c, r);
   innerRim.addColorStop(0.0, 'rgba(255, 255, 255, 0)');
-  innerRim.addColorStop(0.74, 'rgba(220, 220, 232, 0.06)');
-  innerRim.addColorStop(0.94, 'rgba(255, 255, 255, 0.24)');
-  innerRim.addColorStop(1.0, 'rgba(255, 255, 255, 0.56)');
+  innerRim.addColorStop(0.72, 'rgba(220, 220, 232, 0.06)');
+  innerRim.addColorStop(0.94, 'rgba(255, 255, 255, 0.26)');
+  innerRim.addColorStop(1.0, 'rgba(255, 255, 255, 0.58)');
   ctx.fillStyle = innerRim;
   ctx.beginPath();
   ctx.arc(c, c, r, 0, Math.PI * 2);
@@ -235,8 +140,8 @@ function drawMonoMiniSat(
 
 /**
  * Pure Monochrome Photorealistic Earth-to-Orbit Globe (sp 0.215 -> 1.000):
- * - Smoothly reveals the full shaded monochrome Earth globe right below the climbing rocket
- *   with pixel-exact India map, Sri Lanka, glowing city lights & Bangalore ISRO radar reticle!
+ * - Clean atmospheric globe with swirling clouds & glowing limb (zero map outlines, zero grids)
+ * - Subtle pulsing Bangalore orbital ground-track beacon + orbiting constellation satellites
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, vehicleAnchorX, unit, reducedMotion } = frame;
@@ -244,7 +149,7 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   if (sp < 0.215) return;
 
   const baseEarthR = Math.max(w, h) * 0.58;
-  const leoTopY = Math.max(h * 0.56, h - baseEarthR * 0.48);
+  const leoTopY = Math.max(h * 0.58, h - baseEarthR * 0.46);
 
   const climbCurve = smoothstep(0.215, 0.480, sp);
   const earthFadeIn = smoothstep(0.215, 0.310, sp);
@@ -297,54 +202,40 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
     ctx.restore();
   }
 
-  // 2. Full Cached Photorealistic Monochrome Earth Globe Sprite
+  // 2. Full Cached Photorealistic Monochrome Earth Globe Sprite (pure clouds + atmosphere, zero map!)
   const earthImg = getEarthSprite();
   const drawScale = earthR / EARTH_SPRITE_R;
   const drawSize = EARTH_SPRITE_SIZE * drawScale;
   ctx.drawImage(earthImg, centerX - drawSize * 0.5, centerY - drawSize * 0.5, drawSize, drawSize);
 
-  // 3. BANGALORE ISRO GROUND STATION RETICLE (exact projected 12.97° N, 77.59° E!)
+  // 3. Subtle pulsing Bangalore Ground Station Beacon on Earth's horizon
   if (blrReticleAlpha > 0.01) {
-    const [blrUx, blrUy] = lonLatToIndiaNorm(77.59, 12.97);
-    const [blrGx, blrGy] = indiaToGlobe(blrUx, blrUy);
-    const blrX = centerX + blrGx * earthR;
-    const blrY = centerY + blrGy * earthR;
+    const blrX = centerX + earthR * 0.02;
+    const blrY = centerY - earthR * 0.72;
     if (blrY < h - 32 && blrY > topLimbY) {
       ctx.save();
       ctx.globalAlpha = earthFadeIn * blrReticleAlpha;
       const pingWave = reducedMotion ? 0.35 : (t * 0.78) % 1.0;
 
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.1;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
-      ctx.arc(blrX, blrY, unit * 0.075, 0, Math.PI * 2);
+      ctx.arc(blrX, blrY, unit * 0.068, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - pingWave) * 0.72})`;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - pingWave) * 0.65})`;
       ctx.beginPath();
-      ctx.arc(blrX, blrY, unit * (0.075 + pingWave * 0.24), 0, Math.PI * 2);
-      ctx.stroke();
-
-      const tick = unit * 0.12;
-      ctx.strokeStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(blrX - tick, blrY);
-      ctx.lineTo(blrX - unit * 0.04, blrY);
-      ctx.moveTo(blrX + unit * 0.04, blrY);
-      ctx.lineTo(blrX + tick, blrY);
-      ctx.moveTo(blrX, blrY - tick);
-      ctx.lineTo(blrX, blrY - unit * 0.04);
-      ctx.moveTo(blrX, blrY + unit * 0.04);
-      ctx.lineTo(blrX, blrY + tick);
+      ctx.arc(blrX, blrY, unit * (0.068 + pingWave * 0.24), 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(blrX, blrY, 2.2, 0, Math.PI * 2);
+      ctx.arc(blrX, blrY, 2.0, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.font = `600 ${Math.max(9, Math.round(unit * 0.08))}px "JetBrains Mono", monospace`;
-      ctx.fillText('BLR // 12.97°N 77.59°E', blrX + unit * 0.15, blrY + 3);
+      ctx.font = `600 ${Math.max(9, Math.round(unit * 0.078))}px "JetBrains Mono", monospace`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillText('BLR // 12.97°N 77.59°E', blrX + unit * 0.14, blrY + 3);
       ctx.restore();
     }
   }

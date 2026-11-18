@@ -105,11 +105,11 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const startY = rocketPose.y + Math.cos(rocketPose.pitchRad) * localCavityY;
   const pitchRad = rocketPose.pitchRad;
 
-  // Emerges smoothly from stowed fairing scale (0.24) -> full LEO showcase (0.98) -> terminal uplink zoom (1.32)
-  let satScale = lerp(0.24, 0.98, floatEase);
+  // Emerges smoothly from the compact distant rocket fairing scale (0.14) -> clean LEO showcase (0.94) -> terminal zoom (1.28)
+  let satScale = lerp(0.14, 0.94, floatEase);
   if (sp >= 0.87) {
     const terminalZoom = easeOutCubic((sp - 0.87) / 0.10);
-    satScale = lerp(0.98, 1.32, terminalZoom);
+    satScale = lerp(0.94, 1.28, terminalZoom);
   }
   if (cameraMode === 'BOOSTER') satScale *= 1.18;
   else if (cameraMode === 'CHASE') satScale *= 1.10;
