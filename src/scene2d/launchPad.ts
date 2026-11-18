@@ -174,6 +174,50 @@ function getPadPools(): {
   return { puffs: steamPool, sparks: sparkPool, cryo: cryoPool };
 }
 
+function drawTowerBeaconGlow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  pulse: number,
+  coreR: number
+): void {
+  const haloR = coreR * (7.5 + pulse * 4.5);
+  const intensity = 0.62 + pulse * 0.38;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  // Soft wide luminous outer beacon halo (feathered smoothly to 0 alpha)
+  const halo = ctx.createRadialGradient(x, y, 0.5, x, y, haloR);
+  halo.addColorStop(0.0, `rgba(255, 255, 255, ${0.95 * intensity})`);
+  halo.addColorStop(0.22, `rgba(245, 245, 255, ${0.52 * intensity})`);
+  halo.addColorStop(0.55, `rgba(220, 225, 240, ${0.18 * intensity})`);
+  halo.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(x, y, haloR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Delicate optical 4-point beacon glint
+  const glintLen = coreR * (3.2 + pulse * 2.4);
+  ctx.strokeStyle = `rgba(255, 255, 255, ${0.55 * intensity})`;
+  ctx.lineWidth = 0.75;
+  ctx.beginPath();
+  ctx.moveTo(x - glintLen, y);
+  ctx.lineTo(x + glintLen, y);
+  ctx.moveTo(x, y - glintLen);
+  ctx.lineTo(x, y + glintLen);
+  ctx.stroke();
+
+  // Pure white incandescent core
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.92 + pulse * 0.08})`;
+  ctx.beginPath();
+  ctx.arc(x, y, coreR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
 /**
  * Minimal, Whisper-Light Monochrome Launch Pad — BACK LAYER:
  * - Zero spheres, zero bulky clutter!
@@ -189,34 +233,26 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
 
   const padX = vehicleAnchorX - mouseX * 8 * scale;
 
-  const beaconCycle = t % 1.0;
-  const beaconPulse = reducedMotion
-    ? 0.4
-    : beaconCycle < 0.40
-      ? Math.sin((beaconCycle / 0.40) * Math.PI)
-      : 0;
+  const beaconPulse = reducedMotion ? 0.7 : 0.5 + 0.5 * Math.sin(t * 3.6);
 
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.translate(padX, anchorY);
   ctx.scale(scale, scale);
 
-  // 1. TWO FAINT DISTANT LIGHTNING NEEDLE SPIRES
+  // 1. TWO DISTANT LIGHTNING NEEDLE SPIRES WITH LUMINOUS GLOWING BEACON TIPS
   for (const ox of [-2.25, 2.15]) {
     const mx = ox * unit;
     const baseY = -unit * 0.04;
     const topY = baseY - unit * 3.15;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.13)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
     ctx.lineWidth = 0.85;
     ctx.beginPath();
     ctx.moveTo(mx, baseY);
     ctx.lineTo(mx, topY);
     ctx.stroke();
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.22 + beaconPulse * 0.42})`;
-    ctx.beginPath();
-    ctx.arc(mx, topY - 2, 1.4, 0, Math.PI * 2);
-    ctx.fill();
+    drawTowerBeaconGlow(ctx, mx, topY - 2, beaconPulse, 2.0);
   }
 
   // 2. SLENDER, TALL LIGHTWEIGHT UMBILICAL GANTRY TOWER (proportioned to taller slimmer rocket)
@@ -254,18 +290,15 @@ export function renderLaunchPadBack(frame: Scene2DFrameContext): void {
     ctx.stroke();
   }
 
-  // Top slender lightning rod + gentle pulsing white beacon
+  // Top slender lightning rod + bright glowing white aviation beacon
   const mastTopY = towerTopY - unit * 0.42;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
   ctx.lineWidth = 0.95;
   ctx.beginPath();
   ctx.moveTo(towerCx, towerTopY);
   ctx.lineTo(towerCx, mastTopY);
   ctx.stroke();
-  ctx.fillStyle = `rgba(255, 255, 255, ${0.32 + beaconPulse * 0.58})`;
-  ctx.beginPath();
-  ctx.arc(towerCx, mastTopY - 2, 1.6, 0, Math.PI * 2);
-  ctx.fill();
+  drawTowerBeaconGlow(ctx, towerCx, mastTopY - 2, beaconPulse, 2.3);
 
   // 3. CLEAN LOW-PROFILE LAUNCH PAD BASE
   const padW = unit * 1.38;
