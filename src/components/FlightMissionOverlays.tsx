@@ -182,7 +182,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
         className="relative z-10 w-full pointer-events-none select-none"
         style={{ textShadow: '0 2px 18px rgba(0, 0, 0, 0.92), 0 1px 4px rgba(0, 0, 0, 0.95)' }}
       >
-        <div className="w-full max-w-[92vw] sm:max-w-[500px] lg:max-w-[540px] pl-5 sm:pl-10 md:pl-14 lg:pl-20 pr-4 sm:pr-6">
+        <div className="w-full max-w-[92vw] sm:max-w-[540px] md:max-w-[54vw] lg:max-w-[55vw] xl:max-w-[860px] pl-5 sm:pl-10 md:pl-14 lg:pl-20 pr-4 sm:pr-6">
           {/* ===== SECTION 00: LAUNCH PAD — HERO ===== */}
           <section
             id="section-pad"
@@ -203,7 +203,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
 
               <div className={`space-y-1.5 ${enterCls}`} style={{ animationDelay: '75ms' }}>
-                <h1 className="text-[clamp(2.35rem,5.4vw,4.9rem)] font-space font-bold text-white leading-[0.96] tracking-tight">
+                <h1 className="text-[clamp(2.4rem,5.6vw,5.2rem)] font-space font-bold text-white leading-[0.96] tracking-tight">
                   Suhas Hoskere
                 </h1>
                 <div className="font-kannada text-sm sm:text-base font-medium text-zinc-300 tracking-wide">
@@ -212,7 +212,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </div>
 
               <p
-                className={`text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed max-w-md ${enterCls}`}
+                className={`text-sm sm:text-base lg:text-lg text-zinc-200 font-sans font-light leading-relaxed max-w-2xl ${enterCls}`}
                 style={{ animationDelay: '140ms' }}
               >
                 B.Tech in Artificial Intelligence &amp; Machine Learning at PES University, Bangalore.
@@ -284,7 +284,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                   <h3 className="text-base sm:text-lg font-space font-semibold text-white tracking-tight">
                     {title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed max-w-md">
+                  <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed max-w-xl">
                     {detail}
                   </p>
                 </div>
@@ -385,7 +385,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 </span>
               </div>
 
-              <div className="divide-y divide-white/15 border-y border-white/15">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 border-t border-white/15 pt-2">
                 {PROJECTS.map((proj) => (
                   <button
                     key={proj.id}
@@ -394,25 +394,27 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                       cosmicAudio.playTelemetryChirp(1380, 0.05);
                       onSelectProject(proj);
                     }}
-                    className="w-full py-4 px-2 -mx-2 rounded-lg text-left hover:bg-white/[0.06] transition-colors cursor-pointer group space-y-1.5"
+                    className="w-full py-4 px-2.5 -mx-2.5 rounded-lg border-b border-white/15 text-left hover:bg-white/[0.06] transition-colors cursor-pointer group flex flex-col justify-between gap-2"
                   >
-                    <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
-                      <span className="font-semibold uppercase text-white tracking-wider">
-                        {proj.name}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full border border-white/20 text-zinc-200">
-                        {proj.badge}
-                      </span>
-                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
+                        <span className="font-semibold uppercase text-white tracking-wider">
+                          {proj.name}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full border border-white/20 text-zinc-200">
+                          {proj.badge}
+                        </span>
+                      </div>
 
-                    <div className="text-base sm:text-lg font-space text-white font-bold flex items-center justify-between gap-2 tracking-tight">
-                      <span>{proj.title}</span>
-                      <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
-                    </div>
+                      <div className="text-base font-space text-white font-bold flex items-center justify-between gap-2 tracking-tight">
+                        <span>{proj.title}</span>
+                        <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                      </div>
 
-                    <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed">
-                      {proj.description}
-                    </p>
+                      <p className="text-xs text-zinc-300 font-sans font-light leading-relaxed">
+                        {proj.description}
+                      </p>
+                    </div>
 
                     <div className="flex items-center justify-between pt-1 text-[10px] font-mono">
                       <span className="text-zinc-400">
@@ -482,12 +484,12 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 Establish Uplink.
               </h2>
 
-              <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed max-w-md">
+              <p className="text-sm sm:text-base text-zinc-200 font-sans font-light leading-relaxed max-w-xl">
                 Open to technical collaborations, speech pipelines, open-source architectures, and
                 engineering roles.
               </p>
 
-              <div className="space-y-2.5 pt-2 max-w-md">
+              <div className="space-y-2.5 pt-2 max-w-lg">
                 <a
                   href="mailto:suhashoskere@gmail.com"
                   className="w-full py-3.5 px-5 rounded-lg bg-white hover:bg-zinc-200 text-black font-space font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
