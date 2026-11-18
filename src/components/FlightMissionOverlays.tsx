@@ -98,7 +98,7 @@ export const PROJECTS: ProjectData[] = [
   {
     id: 'ntools',
     name: 'ntools',
-    title: 'OLED Productivity & Kannada Text Suite',
+    title: 'Multiple Tools in One App',
     category: 'CROSS-PLATFORM // ANDROID & WEB',
     badge: 'Open Source',
     description:
