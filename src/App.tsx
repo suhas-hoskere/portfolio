@@ -91,21 +91,23 @@ export const App: React.FC = () => {
 
   // High-performance mutable refs read directly inside the 2D Canvas render loop
   const scrollProgressRef = useRef(0);
+  const flightProgressRef = useRef(0);
   const scrollSpeedRef = useRef(0);
+  const programmaticJumpTargetRef = useRef<number | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const lastScrollY = useRef(0);
   const lastScrollTime = useRef(0);
-  const rafThrottler = useRef<number | null>(null);
   const scrollAnimRaf = useRef<number | null>(null);
   const lastStageRef = useRef<number>(0);
   const lastUiCommitTimeRef = useRef<number>(0);
   const lastUiProgressRef = useRef<number>(0);
   const trailingUiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Throttled UI State updater: Canvas reads scrollProgressRef at native 60/120Hz with 0 React lag,
-  // while HUD & overlay DOM updates smoothly at ~18Hz (or immediately on stage transitions).
+  // Throttled UI State updater driven by the Canvas's velocity-paced cinematic flight timeline:
+  // Keeps HUD telemetry, stage cards, sidebar active state & acoustics 100% locked to the rocket
+  // even when a visitor scrolls rapidly, while committing React DOM updates cleanly at ~18Hz.
   const updateUI = useCallback((progress: number) => {
-    scrollProgressRef.current = progress;
+    flightProgressRef.current = progress;
 
     let stage = 0;
     if (progress >= 0.90) stage = 5;
@@ -161,7 +163,7 @@ export const App: React.FC = () => {
     } else if (!trailingUiTimerRef.current) {
       trailingUiTimerRef.current = setTimeout(() => {
         trailingUiTimerRef.current = null;
-        commitUi(scrollProgressRef.current);
+        commitUi(flightProgressRef.current);
       }, 60);
     }
   }, []);
@@ -169,6 +171,7 @@ export const App: React.FC = () => {
   // Lightweight native passive scroll listener (0% CPU when idle, no extra RAF loop)
   useEffect(() => {
     const cancelProgrammaticScroll = () => {
+      programmaticJumpTargetRef.current = null;
       if (scrollAnimRaf.current) {
         cancelAnimationFrame(scrollAnimRaf.current);
         scrollAnimRaf.current = null;
@@ -188,13 +191,6 @@ export const App: React.FC = () => {
 
       lastScrollY.current = scrollY;
       lastScrollTime.current = now;
-
-      if (!rafThrottler.current) {
-        rafThrottler.current = requestAnimationFrame(() => {
-          updateUI(scrollProgressRef.current);
-          rafThrottler.current = null;
-        });
-      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -205,11 +201,10 @@ export const App: React.FC = () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('wheel', cancelProgrammaticScroll);
       window.removeEventListener('touchstart', cancelProgrammaticScroll);
-      if (rafThrottler.current) cancelAnimationFrame(rafThrottler.current);
       if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
       if (trailingUiTimerRef.current) clearTimeout(trailingUiTimerRef.current);
     };
-  }, [updateUI]);
+  }, []);
 
   const animateScrollTo = useCallback((targetY: number, durationMs: number) => {
     if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
@@ -238,15 +233,17 @@ export const App: React.FC = () => {
 
   const handleJumpToStage = (fraction: number) => {
     if (!trackRef.current) return;
+    programmaticJumpTargetRef.current = fraction;
     const maxScroll = Math.max(trackRef.current.scrollHeight - window.innerHeight, 1);
     const currentFraction = (window.scrollY || window.pageYOffset || 0) / maxScroll;
     const distance = Math.abs(fraction - currentFraction);
-    const durationMs = Math.max(520, Math.min(1150, Math.round(480 + distance * 720)));
+    const durationMs = Math.max(420, Math.min(950, Math.round(380 + distance * 580)));
     animateScrollTo(fraction * maxScroll, durationMs);
   };
 
   const handleLaunch = () => {
     if (!trackRef.current) return;
+    programmaticJumpTargetRef.current = null;
     if (!audioActive) {
       cosmicAudio.unmute();
       setAudioActive(true);
@@ -273,6 +270,8 @@ export const App: React.FC = () => {
       <SpaceFlightCanvas2D
         scrollProgressRef={scrollProgressRef}
         scrollSpeedRef={scrollSpeedRef}
+        programmaticJumpTargetRef={programmaticJumpTargetRef}
+        onFlightProgress={updateUI}
         cameraMode={cameraMode}
         blueprintMode={blueprintMode}
       />
