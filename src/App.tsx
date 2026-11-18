@@ -234,7 +234,7 @@ export const App: React.FC = () => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / durationMs, 1);
       const eased = easeOutOnly
-        ? 1 - Math.pow(1 - t, 3)
+        ? 1 - Math.pow(1 - t, 2.2)
         : t < 0.5
           ? 4 * t * t * t
           : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -287,8 +287,8 @@ export const App: React.FC = () => {
       setActiveStageIndex(clampedIdx);
 
       const distFrac = Math.abs(targetFraction - scrollProgressRef.current);
-      const durationMs = Math.max(920, Math.min(1950, Math.round(820 + distFrac * 1150)));
-      animateScrollTo(targetY, durationMs, false);
+      const durationMs = Math.max(1100, Math.min(2400, Math.round(950 + distFrac * 1450)));
+      animateScrollTo(targetY, durationMs, true);
     },
     [animateScrollTo]
   );

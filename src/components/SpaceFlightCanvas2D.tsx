@@ -136,13 +136,13 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
       } else {
         const baseMaxRate = getCinematicMaxRate(smoothSp);
         const dirMultiplier = diff < 0 ? 1.65 : 1.0;
-        const effectiveMaxRate = isJumping ? 0.85 : baseMaxRate * dirMultiplier;
+        const effectiveMaxRate = isJumping ? 1.8 : baseMaxRate * dirMultiplier;
 
         // Critically-damped (zeta ~ 1.02) soft-saturated velocity controller:
         // - Slow discrete wheel notches / gentle drags respond crisply (~170ms) with ZERO overshoot/snap
         // - Fast continuous scrolling smoothly saturates at effectiveMaxRate via tanh (C-infinity smooth)
-        // - Sidebar clicks glide cinematically in sync with the smooth page scroll
-        const omega = isJumping ? 9.5 : 12.0;
+        // - Sidebar clicks track the smooth ease-out scroll tightly so canvas starts on frame 1 with zero lag
+        const omega = isJumping ? 18.0 : 12.0;
         const desiredVel = effectiveMaxRate * Math.tanh((diff * omega) / effectiveMaxRate);
         const accelRate = omega * 4.2;
         const accelLerp = 1 - Math.exp(-accelRate * dt);
