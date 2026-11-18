@@ -143,7 +143,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
 
         {/* STAGE 1: ATMOSPHERIC ASCENT & DAVANAGERE */}
         {activeStageIndex === 1 && (
-          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+          <div key="stage-1" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
               <span>STAGE 01 // ASCENT</span>
               <span className="text-white">2020 ERA</span>
@@ -173,7 +173,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
 
         {/* STAGE 2: LOW EARTH ORBIT & BANGALORE */}
         {activeStageIndex === 2 && (
-          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+          <div key="stage-2" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
               <span>STAGE 02 // ORBIT</span>
               <span className="text-white">420 KM LEO</span>
@@ -206,7 +206,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
 
         {/* STAGE 3: ORBITAL PAYLOAD & THE 4 EXPLORATION MISSIONS */}
         {activeStageIndex === 3 && (
-          <div className="space-y-2.5 text-left max-h-[68vh] md:max-h-[78vh] overflow-y-auto pr-1">
+          <div key="stage-3" className="animate-stage-in space-y-2.5 text-left max-h-[68vh] md:max-h-[78vh] overflow-y-auto pr-1">
             <div className="flex items-center justify-between border-b border-white/15 pb-2">
               <div>
                 <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
@@ -262,7 +262,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
 
         {/* STAGE 4: KARNATAKA GROUND PASS & KANNADA HERITAGE */}
         {activeStageIndex === 4 && (
-          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+          <div key="stage-4" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-widest">
               <span>STAGE 04 // KARNATAKA PASS</span>
               <span className="text-white">420 KM LEO</span>
@@ -295,7 +295,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
 
         {/* STAGE 5: DEEP SPACE UPLINK & CONTACT */}
         {activeStageIndex === 5 && (
-          <div className="p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/25 space-y-3.5 text-left">
+          <div key="stage-5" className="animate-stage-in p-5 sm:p-7 rounded-xl bg-[#09090b]/95 border border-white/25 space-y-3.5 text-left">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-[11px] font-mono font-medium text-white uppercase tracking-widest">
               <div className="w-1.5 h-1.5 rounded-full bg-white" />
               <span>TERMINAL VECTOR // 05</span>

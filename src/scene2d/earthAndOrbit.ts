@@ -159,6 +159,16 @@ export function getEarthOrbitGeometry(frame: Scene2DFrameContext): {
   return { centerX, centerY, earthR, topLimbY, climbCurve };
 }
 
+/** Shared live screen coordinates of the Bangalore Ground Station beacon on Earth */
+export function getBlrGroundStationPos(frame: Scene2DFrameContext): { x: number; y: number; visible: boolean } {
+  const { h, sp } = frame;
+  if (sp < 0.46) return { x: 0, y: 0, visible: false };
+  const { centerX, centerY, earthR, topLimbY } = getEarthOrbitGeometry(frame);
+  const x = centerX + earthR * 0.02;
+  const y = centerY - earthR * 0.72;
+  return { x, y, visible: y < h - 32 && y > topLimbY };
+}
+
 /**
  * Pure Monochrome Photorealistic Earth-to-Orbit Globe (sp 0.255 -> 1.000):
  * - Clean atmospheric globe with swirling clouds & glowing limb (zero map outlines, zero grids)

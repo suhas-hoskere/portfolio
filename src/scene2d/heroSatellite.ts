@@ -5,7 +5,7 @@ import {
   smoothstep,
 } from './types';
 import { getRocketPose } from './rocketVehicle';
-import { getEarthOrbitGeometry } from './earthAndOrbit';
+import { getEarthOrbitGeometry, getBlrGroundStationPos } from './earthAndOrbit';
 
 function drawMonoSolarSegment(
   ctx: CanvasRenderingContext2D,
@@ -117,12 +117,13 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   if (cameraMode === 'BOOSTER') satScale *= 1.16;
   else if (cameraMode === 'CHASE') satScale *= 1.08;
 
+  const isMobile = frame.w < 768;
   const s = unit * satScale;
   const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.028 * floatEase;
   const uplinkLift = smoothstep(0.840, 0.920, sp) * h * 0.04;
   const targetX =
-    vehicleAnchorX - mouseX * 10 - (sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.14 : 0);
-  const targetY = h * 0.37 - uplinkLift + bobY - mouseY * 6;
+    vehicleAnchorX - mouseX * 10 - (!isMobile && sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.14 : 0);
+  const targetY = (isMobile ? h * 0.28 : h * 0.37) - uplinkLift + bobY - mouseY * 6;
 
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);
@@ -150,7 +151,55 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const busW = s * 0.52;
   const busH = s * 0.82;
 
-  // 1. STAGE 05 ORBITAL DOWNLINK CONTINUOUSLY EXPANDING RF SIGNAL ARCS & CARRIER BEAM
+  // 1A. STAGE 05 LIVE DISH-TO-BANGALORE CARRIER DOWNLINK BEAM (world-space lock to BLR beacon!)
+  if (sp >= 0.905) {
+    const blr = getBlrGroundStationPos(frame);
+    if (blr.visible) {
+      const lockAlpha = smoothstep(0.905, 0.945, sp) * revealAlpha;
+      const dishTipLocalY = -busH * 0.5 - s * 0.42;
+      // Convert dish tip from satellite local space to world coordinates
+      const dishWorldX = cx - Math.sin(bankRad) * dishTipLocalY;
+      const dishWorldY = cy + Math.cos(bankRad) * dishTipLocalY;
+
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const dpr = ctx.canvas.width / Math.max(frame.w, 1);
+      ctx.scale(dpr, dpr);
+
+      // Delicate dashed downlink carrier beam directly from dish to BLR ground station
+      const beamGrad = ctx.createLinearGradient(dishWorldX, dishWorldY, blr.x, blr.y);
+      beamGrad.addColorStop(0.0, `rgba(255, 255, 255, ${0.42 * lockAlpha})`);
+      beamGrad.addColorStop(0.6, `rgba(255, 255, 255, ${0.22 * lockAlpha})`);
+      beamGrad.addColorStop(1.0, `rgba(255, 255, 255, ${0.52 * lockAlpha})`);
+
+      ctx.strokeStyle = beamGrad;
+      ctx.lineWidth = 1.05;
+      ctx.setLineDash([4, 6]);
+      ctx.lineDashOffset = reducedMotion ? 0 : -t * 36;
+      ctx.beginPath();
+      ctx.moveTo(dishWorldX, dishWorldY);
+      ctx.lineTo(blr.x, blr.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 3 crisp traveling monochrome data-packet pulses sliding down from satellite dish to Bangalore!
+      if (!reducedMotion) {
+        for (let pIdx = 0; pIdx < 3; pIdx++) {
+          const u = (t * 0.72 + pIdx / 3) % 1.0;
+          const px = lerp(dishWorldX, blr.x, u);
+          const py = lerp(dishWorldY, blr.y, u);
+          const pAlpha = Math.sin(u * Math.PI) * 0.92 * lockAlpha;
+          ctx.fillStyle = `rgba(255, 255, 255, ${pAlpha})`;
+          ctx.beginPath();
+          ctx.arc(px, py, 2.0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  // 1B. STAGE 05 ORBITAL DOWNLINK CONTINUOUSLY EXPANDING RF SIGNAL ARCS & CARRIER BEAM
   if (sp >= 0.900) {
     const txAlpha = smoothstep(0.900, 0.935, sp);
     const dishTipY = -busH * 0.5 - s * 0.42;

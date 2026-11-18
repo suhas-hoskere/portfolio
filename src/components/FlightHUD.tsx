@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Volume2, VolumeX, ChevronDown, Rocket, Terminal, Layers, Camera } from 'lucide-react';
+import { VolumeX, ChevronDown, Rocket, Terminal, Layers, Camera } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
 export interface StageWaypoint {
@@ -245,7 +245,15 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
             }`}
             aria-label="Toggle Sound"
           >
-            {audioActive ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            {audioActive ? (
+              <span className="inline-flex items-end gap-[2px] h-3 w-3.5 justify-center" aria-hidden="true">
+                <span className="w-[2px] h-full bg-black rounded-full animate-eq-bar" style={{ animationDelay: '0ms' }} />
+                <span className="w-[2px] h-full bg-black rounded-full animate-eq-bar" style={{ animationDelay: '180ms' }} />
+                <span className="w-[2px] h-full bg-black rounded-full animate-eq-bar" style={{ animationDelay: '340ms' }} />
+              </span>
+            ) : (
+              <VolumeX className="w-3.5 h-3.5" />
+            )}
             <span className="hidden sm:inline">{audioActive ? 'AUDIO: ON' : 'AUDIO'}</span>
           </button>
         </div>

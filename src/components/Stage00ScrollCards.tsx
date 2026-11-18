@@ -81,7 +81,7 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
 
   if (scrollProgress < 0.032) {
     return (
-      <div className="space-y-3.5 sm:space-y-5 text-left">
+      <div key="step-00" className="animate-stage-in space-y-3.5 sm:space-y-5 text-left">
         <div className="flex flex-wrap items-center gap-2">
           <span className="px-2.5 py-1 rounded-md bg-zinc-950/95 border border-white/25 text-white text-[11px] font-mono font-medium tracking-widest uppercase flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-zinc-300" />
@@ -142,7 +142,10 @@ export const Stage00ScrollCards: React.FC<Stage00ScrollCardsProps> = ({
   if (!activeMilestone) return null;
 
   return (
-    <div className="p-5 sm:p-6 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left">
+    <div
+      key={activeMilestone.step}
+      className="animate-stage-in p-5 sm:p-6 rounded-xl bg-[#09090b]/95 border border-white/20 space-y-3 text-left"
+    >
       <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-widest text-zinc-300">
         <span className="flex items-center gap-1.5">
           <activeMilestone.Icon className="w-3.5 h-3.5 text-white" />

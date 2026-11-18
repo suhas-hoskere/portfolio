@@ -119,11 +119,24 @@ function getSunSprite(): HTMLCanvasElement {
 export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   const { ctx, w, h, sp, t, mouseX, mouseY, reducedMotion } = frame;
 
-  // 1. Crisp monochrome background (subtle dark charcoal at ground zero -> pure obsidian in space across long ascent)
+  // 1. Monochrome sky with soft pre-dawn coastal horizon mist at Ground Zero -> pure obsidian in space
   const spaceBlend = smoothstep(0.15, 0.46, sp);
-  const bgLum = Math.round(lerp(13, 5, spaceBlend));
+  const bgLum = Math.round(lerp(10, 5, spaceBlend));
   ctx.fillStyle = `rgb(${bgLum},${bgLum},${bgLum + 1})`;
   ctx.fillRect(0, 0, w, h);
+
+  // Whisper-soft lower horizon atmospheric depth glow on the launch pad (fades out climbing to space)
+  const atmoHaze = 1 - smoothstep(0.14, 0.34, sp);
+  if (atmoHaze > 0.01) {
+    const horizonTop = h * 0.42;
+    const horizonBot = h * 0.84;
+    const hazeGrad = ctx.createLinearGradient(0, horizonTop, 0, horizonBot);
+    hazeGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0)');
+    hazeGrad.addColorStop(0.68, `rgba(210, 212, 224, ${0.045 * atmoHaze})`);
+    hazeGrad.addColorStop(1.0, `rgba(230, 232, 242, ${0.085 * atmoHaze})`);
+    ctx.fillStyle = hazeGrad;
+    ctx.fillRect(0, horizonTop, w, horizonBot - horizonTop);
+  }
 
   // 2. Crisp monochrome starfield with gentle subtle twinkle (clean pinpoints, zero rain/warp streaks!)
   const starVis = lerp(0.24, 1.0, smoothstep(0.16, 0.44, sp));
@@ -169,4 +182,53 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   ctx.globalAlpha = lerp(0.94, 0.84, spaceBlend);
   ctx.drawImage(sunImg, sunX - sunSize * 0.5, sunY - sunSize * 0.5, sunSize, sunSize);
   ctx.restore();
+
+  // 4. RARE SUBTLE MONOCHROME SHOOTING STAR IN DEEP ORBIT (sp >= 0.48, streaks silently every ~8.5s)
+  if (sp >= 0.48 && !reducedMotion) {
+    const orbitVis = smoothstep(0.48, 0.58, sp);
+    const period = 8.5;
+    const cycleIdx = Math.floor(t / period);
+    const localT = t % period;
+    const streakDur = 0.65;
+
+    if (localT < streakDur) {
+      const p = localT / streakDur;
+      const fade = Math.sin(p * Math.PI) * orbitVis;
+      // Deterministic pseudo-random start coordinates per meteor cycle (kept in upper sky)
+      const seedA = Math.sin(cycleIdx * 12.9898) * 43758.5453;
+      const seedB = Math.sin(cycleIdx * 78.233) * 24634.6345;
+      const rx = 0.14 + (seedA - Math.floor(seedA)) * 0.56;
+      const ry = 0.08 + (seedB - Math.floor(seedB)) * 0.24;
+
+      const startX = rx * w;
+      const startY = ry * h;
+      const dx = w * 0.16;
+      const dy = h * 0.095;
+      const headX = startX + dx * p;
+      const headY = startY + dy * p;
+      const tailLen = 0.28;
+      const tailP = Math.max(0, p - tailLen);
+      const tailX = startX + dx * tailP;
+      const tailY = startY + dy * tailP;
+
+      ctx.save();
+      const sg = ctx.createLinearGradient(tailX, tailY, headX, headY);
+      sg.addColorStop(0.0, 'rgba(255, 255, 255, 0)');
+      sg.addColorStop(0.7, `rgba(244, 244, 250, ${0.32 * fade})`);
+      sg.addColorStop(1.0, `rgba(255, 255, 255, ${0.88 * fade})`);
+      ctx.strokeStyle = sg;
+      ctx.lineWidth = 1.25;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(tailX, tailY);
+      ctx.lineTo(headX, headY);
+      ctx.stroke();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.95 * fade})`;
+      ctx.beginPath();
+      ctx.arc(headX, headY, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
 }

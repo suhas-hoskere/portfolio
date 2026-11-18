@@ -472,12 +472,37 @@ export function renderRocketVehicle(frame: Scene2DFrameContext): void {
   const c25TopY = interTopY - c25H;
 
   // =========================================================================
-  // 1. LOWER ROCKET BODY + RADIANT VOLUMETRIC EXHAUST + LIVE SPARK STREAKS
+  // 1. LOWER ROCKET BODY + ASCENT VAPOUR TRAIL + RADIANT VOLUMETRIC EXHAUST
   // =========================================================================
   ctx.save();
   ctx.globalAlpha = coreAlpha;
   ctx.translate(0, coreDropY);
   ctx.rotate(coreDropRot);
+
+  // Soft fading monochrome ascent exhaust vapour contrail (sp 0.145 -> 0.420)
+  if (fireRamp > 0.05 && sp >= 0.145 && sp < 0.425) {
+    const trailVis =
+      smoothstep(0.145, 0.190, sp) * (1 - smoothstep(0.320, 0.425, sp)) * fireRamp * coreAlpha;
+    if (trailVis > 0.015) {
+      const puffSprite = getTrailPuffSprite();
+      const trailPuffs = 9;
+      for (let k = 0; k < trailPuffs; k++) {
+        const phase = reducedMotion ? k / trailPuffs : ((t * 1.65 + k / trailPuffs) % 1);
+        const py = u * (1.25 + phase * 4.6);
+        const sway = Math.sin(phase * 6.5 + k * 1.4) * u * (0.08 + phase * 0.16);
+        const sz = u * (0.68 + phase * 1.45);
+        const puffA = Math.sin(phase * Math.PI) * (1 - phase * 0.65) * 0.34 * trailVis;
+        if (puffA < 0.01) continue;
+        ctx.save();
+        ctx.globalAlpha = puffA;
+        ctx.translate(sway, py);
+        ctx.rotate(k * 1.1 + phase * 1.4);
+        ctx.drawImage(puffSprite, -sz * 0.5, -sz * 0.5, sz, sz);
+        ctx.restore();
+      }
+      ctx.globalAlpha = coreAlpha;
+    }
+  }
 
   // Twin Core Vikas Radiant Plumes + Glowing Mach Diamonds
   if (fireRamp > 0.01) {

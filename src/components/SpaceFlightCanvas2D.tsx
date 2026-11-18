@@ -118,12 +118,10 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
 
       const isMobile = width < 768;
       const vehicleAnchorX = isMobile ? width * 0.50 : width * 0.74;
-      const groundY = isMobile ? height * 0.56 : height * 0.80;
-      const unit = clamp(
-        Math.min(height * 0.145, width * (isMobile ? 0.19 : 0.13)),
-        54,
-        128
-      );
+      const groundY = isMobile ? height * 0.52 : height * 0.80;
+      const unit = isMobile
+        ? clamp(Math.min(height * 0.098, width * 0.175), 42, 78)
+        : clamp(Math.min(height * 0.145, width * 0.13), 54, 128);
 
       const frame: Scene2DFrameContext = {
         ctx,
