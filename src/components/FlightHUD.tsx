@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { VolumeX, ChevronUp, ChevronDown, Rocket, Terminal } from 'lucide-react';
+import { VolumeX, ChevronDown, Rocket, Terminal } from 'lucide-react';
 import { cosmicAudio } from './AudioEngine';
 
 export interface StageWaypoint {
@@ -251,7 +251,7 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
       >
         <div className="bg-[#09090b]/92 border border-white/15 hover:border-white/30 rounded-xl p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.65)] transition-colors duration-200">
           {/* Header Counter (Desktop) */}
-          <div className="hidden lg:flex items-center justify-between px-2 pt-1 pb-1.5 mb-1 border-b border-white/10">
+          <div className="hidden lg:flex items-center justify-between px-2 pt-1 pb-1.5 mb-1.5 border-b border-white/10">
             <span className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 uppercase">
               NAV
             </span>
@@ -259,18 +259,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
               {String(activeStageIndex + 1).padStart(2, '0')}/{String(STAGES.length).padStart(2, '0')}
             </span>
           </div>
-
-          {/* Previous Page Stepper */}
-          <button
-            type="button"
-            onClick={() => jumpToIndex(activeStageIndex - 1)}
-            disabled={activeStageIndex === 0}
-            aria-label="Previous page"
-            title="Previous page"
-            className="w-full py-1 mb-1 flex items-center justify-center rounded-md text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
-          >
-            <ChevronUp className="w-3.5 h-3.5" />
-          </button>
 
           {/* Clickable Page Links + Live Progress Spine */}
           <div className="relative flex flex-col gap-0.5 pr-2">
@@ -350,18 +338,6 @@ export const FlightHUD: React.FC<FlightHUDProps> = React.memo(({
               );
             })}
           </div>
-
-          {/* Next Page Stepper */}
-          <button
-            type="button"
-            onClick={() => jumpToIndex(activeStageIndex + 1)}
-            disabled={activeStageIndex === STAGES.length - 1}
-            aria-label="Next page"
-            title="Next page"
-            className="w-full py-1 mt-1 flex items-center justify-center rounded-md text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
-          >
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
         </div>
       </nav>
 
