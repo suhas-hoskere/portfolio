@@ -439,7 +439,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                 <div className="pt-3 border-t border-white/15 flex items-center">
                   <span className="font-kannada text-sm sm:text-base font-semibold text-white flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-zinc-300 shrink-0" />
-                    <span>ಸಿರಿಗನ್ನಡಂ ಗೆಲ್ಗೆ, ಸಿರಿಗನ್ನಡಂ ಬಾಳ್ಗೆ</span>
+                    <span>ಜೀವ, ಜೀವನ ಎರಡೂ ಕನ್ನಡದ್ದೇ</span>
                   </span>
                 </div>
               </div>
