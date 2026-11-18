@@ -228,17 +228,24 @@ export const App: React.FC = () => {
     if (scrollAnimRaf.current) cancelAnimationFrame(scrollAnimRaf.current);
     const startY = window.scrollY || window.pageYOffset || 0;
     const dist = targetY - startY;
-    const startTime = performance.now();
+    const maxScroll = Math.max(
+      (trackRef.current?.scrollHeight || document.documentElement.scrollHeight) - window.innerHeight,
+      1
+    );
+    let startTime: number | null = null;
 
     const step = (now: number) => {
-      const elapsed = now - startTime;
-      const t = Math.min(elapsed / durationMs, 1);
+      if (startTime === null) startTime = now;
+      const elapsed = Math.max(0, now - startTime);
+      const t = Math.min(elapsed / Math.max(durationMs, 1), 1);
       const eased = easeOutOnly
         ? 1 - Math.pow(1 - t, 2.2)
         : t < 0.5
           ? 4 * t * t * t
           : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      window.scrollTo(0, startY + dist * eased);
+      const nextY = startY + dist * eased;
+      window.scrollTo({ top: nextY, behavior: 'instant' as ScrollBehavior });
+      scrollProgressRef.current = Math.min(Math.max(nextY / maxScroll, 0), 1);
       if (t < 1) {
         scrollAnimRaf.current = requestAnimationFrame(step);
       } else {
