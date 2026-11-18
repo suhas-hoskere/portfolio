@@ -30,8 +30,10 @@ export const SpaceFlightCanvas2D: React.FC<SpaceFlightCanvas2DProps> = React.mem
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cameraModeRef = useRef<CameraMode>(cameraMode);
   const blueprintRef = useRef<boolean>(blueprintMode);
-  cameraModeRef.current = cameraMode;
-  blueprintRef.current = blueprintMode;
+  useEffect(() => {
+    cameraModeRef.current = cameraMode;
+    blueprintRef.current = blueprintMode;
+  }, [cameraMode, blueprintMode]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

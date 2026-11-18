@@ -31,7 +31,7 @@ export const MissionTerminalModal: React.FC<MissionTerminalModalProps> = ({
   onToggleBlueprint,
 }) => {
   const [inputVal, setInputVal] = useState('');
-  const [history, setHistory] = useState<CommandOutput[]>([
+  const [history, setHistory] = useState<CommandOutput[]>(() => [
     {
       id: 'init-1',
       command: 'sys.init --telemetry --secure',

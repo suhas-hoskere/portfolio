@@ -94,7 +94,7 @@ export const App: React.FC = () => {
   const scrollSpeedRef = useRef(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const lastScrollY = useRef(0);
-  const lastScrollTime = useRef(Date.now());
+  const lastScrollTime = useRef(0);
   const rafThrottler = useRef<number | null>(null);
   const scrollAnimRaf = useRef<number | null>(null);
   const lastStageRef = useRef<number>(0);

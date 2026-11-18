@@ -41,7 +41,12 @@ interface LoaderSpark {
 export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = ({
   onComplete,
 }) => {
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(() =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 100
+      : 0
+  );
   const [isFadingOut, setIsFadingOut] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -51,7 +56,6 @@ export const MonochromeLiftoffLoader: React.FC<MonochromeLiftoffLoaderProps> = (
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (reducedMotion) {
-      setProgress(100);
       const fastTimer = setTimeout(() => onComplete(), 350);
       return () => clearTimeout(fastTimer);
     }
