@@ -174,24 +174,26 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
     ctx.fillRect(0, horizonTop, w, horizonBot - horizonTop);
   }
 
-  // Whisper-faint monochrome Milky Way dust band in deep orbit (lazily built only at sp >= 0.44!)
+  // Whisper-faint monochrome Milky Way dust band in deep orbit (gently pans across orbital flyby)
+  const orbitDrift = smoothstep(0.45, 1.0, sp);
   if (sp >= 0.44) {
     const mwAlpha = smoothstep(0.44, 0.62, sp) * 0.52;
     if (mwAlpha > 0.01) {
       const mwImg = getMilkyWaySprite();
       ctx.save();
       ctx.globalAlpha = mwAlpha;
-      ctx.translate(w * 0.46 - mouseX * 4, h * 0.28 - mouseY * 3);
+      ctx.translate(w * 0.48 - orbitDrift * w * 0.08 - mouseX * 4, h * 0.28 - mouseY * 3);
       ctx.rotate(-0.28);
       ctx.drawImage(mwImg, -w * 0.55, -h * 0.24, w * 1.10, h * 0.48);
       ctx.restore();
     }
   }
 
-  // 2. Crisp monochrome starfield with gentle subtle twinkle (clean pinpoints, zero rain/warp streaks!)
+  // 2. Crisp monochrome starfield with sub-pixel silky parallax drift across ascent & orbit
   const starVis = lerp(0.24, 1.0, smoothstep(0.16, 0.44, sp));
   const stars = getStars();
-  const driftY = sp * h * 1.45;
+  const driftY = sp * h * 1.55;
+  const driftX = orbitDrift * w * 0.36;
 
   ctx.fillStyle = '#ffffff';
   ctx.strokeStyle = '#ffffff';
@@ -203,11 +205,11 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
     const alpha = s.alpha * starVis * dawnMask * twinkle;
     if (alpha < 0.05) continue;
 
-    const px = ((s.nx * w - mouseX * 10 * s.depth) % w + w) % w;
+    const px = ((s.nx * w - driftX * s.depth - mouseX * 10 * s.depth) % w + w) % w;
     const py = ((s.ny * h + driftY * s.depth - mouseY * 7 * s.depth) % h + h) % h;
 
     ctx.globalAlpha = alpha;
-    ctx.fillRect(px | 0, py | 0, s.size, s.size);
+    ctx.fillRect(px, py, s.size, s.size);
     if (s.bright && sp > 0.28) {
       ctx.globalAlpha = alpha * 0.36;
       ctx.lineWidth = 0.75;
@@ -221,9 +223,9 @@ export function renderSkyAndStars(frame: Scene2DFrameContext): void {
   }
   ctx.globalAlpha = 1;
 
-  // 3. LUMINOUS MONOCHROME SUN (upper-right sky, crisp photosphere + soft optical corona)
+  // 3. LUMINOUS MONOCHROME SUN (upper-right sky, glides gently during orbital cruise)
   const sunImg = getSunSprite();
-  const sunX = w * 0.87 - mouseX * 4;
+  const sunX = w * 0.87 - orbitDrift * w * 0.055 - mouseX * 4;
   const sunY = lerp(h * 0.22, h * 0.17, smoothstep(0.17, 0.48, sp)) - mouseY * 2.5;
   const sunPulse = reducedMotion ? 1 : 1 + Math.sin(t * 0.85) * 0.02;
   const sunSize = Math.min(w, h) * 0.28 * sunPulse;

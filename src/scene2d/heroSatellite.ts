@@ -120,10 +120,18 @@ export function renderHeroSatellite(frame: Scene2DFrameContext): void {
   const isMobile = frame.w < 768;
   const s = unit * satScale;
   const bobY = reducedMotion ? 0 : Math.sin(t * 1.15) * s * 0.028 * floatEase;
+  // Continuous graceful curved orbital flyby across Bangalore -> Projects -> Heritage so the satellite
+  // never sits frozen during slow scrolling, then settles smoothly into nadir lock at Stage 05!
+  const orbitalArc = smoothstep(0.56, 0.92, sp);
+  const arcOffsetX = Math.sin(orbitalArc * Math.PI) * unit * (isMobile ? 0.16 : 0.34);
+  const arcOffsetY = -Math.sin(orbitalArc * Math.PI) * h * 0.028;
   const uplinkLift = smoothstep(0.840, 0.920, sp) * h * 0.04;
   const targetX =
-    vehicleAnchorX - mouseX * 10 - (!isMobile && sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.14 : 0);
-  const targetY = (isMobile ? h * 0.28 : h * 0.37) - uplinkLift + bobY - mouseY * 6;
+    vehicleAnchorX +
+    arcOffsetX -
+    mouseX * 10 -
+    (!isMobile && sp >= 0.90 ? smoothstep(0.90, 0.97, sp) * unit * 0.14 : 0);
+  const targetY = (isMobile ? h * 0.28 : h * 0.37) + arcOffsetY - uplinkLift + bobY - mouseY * 6;
 
   const cx = lerp(startX, targetX, floatEase);
   const cy = lerp(startY, targetY, floatEase);

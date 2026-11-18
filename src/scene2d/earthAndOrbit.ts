@@ -184,10 +184,13 @@ export function getEarthOrbitGeometry(frame: Scene2DFrameContext): {
   const baseEarthR = Math.max(w, h) * 0.58;
   const leoTopY = Math.max(h * 0.58, h - baseEarthR * 0.46);
   const climbCurve = smoothstep(0.255, 0.560, sp);
+  const orbitalPass = smoothstep(0.52, 0.98, sp);
   const earthR = baseEarthR * Math.pow(3.2, Math.pow(1 - climbCurve, 1.25));
-  const terminalDrop = smoothstep(0.88, 1.0, sp) * baseEarthR * 0.06;
-  const topLimbY = lerp(h * 0.88, leoTopY, climbCurve) + terminalDrop - mouseY * (2 + 4 * climbCurve);
-  const leoCenterX = lerp(w * 0.62, vehicleAnchorX + unit * 0.15, 0.55);
+  const terminalDrop = smoothstep(0.84, 1.0, sp) * baseEarthR * 0.055;
+  const orbitalHorizonDip = Math.sin(orbitalPass * Math.PI) * baseEarthR * 0.018;
+  const topLimbY =
+    lerp(h * 0.88, leoTopY, climbCurve) + terminalDrop - orbitalHorizonDip - mouseY * (2 + 4 * climbCurve);
+  const leoCenterX = lerp(w * 0.62, vehicleAnchorX + unit * 0.15, 0.55) - orbitalPass * w * 0.045;
   const centerX = lerp(vehicleAnchorX, leoCenterX, climbCurve) - mouseX * (5 + 5 * climbCurve);
   const centerY = topLimbY + earthR;
   return { centerX, centerY, earthR, topLimbY, climbCurve };
@@ -198,8 +201,10 @@ export function getBlrGroundStationPos(frame: Scene2DFrameContext): { x: number;
   const { h, sp } = frame;
   if (sp < 0.46) return { x: 0, y: 0, visible: false };
   const { centerX, centerY, earthR, topLimbY } = getEarthOrbitGeometry(frame);
-  const x = centerX + earthR * 0.02;
-  const y = centerY - earthR * 0.72;
+  // Smoothly rotates Bangalore across Earth's curved globe into nadir lock as the spacecraft approaches Stage 05
+  const groundTrack = smoothstep(0.46, 0.92, sp);
+  const x = centerX + lerp(earthR * 0.14, earthR * 0.02, groundTrack);
+  const y = centerY - lerp(earthR * 0.69, earthR * 0.73, groundTrack);
   return { x, y, visible: y < h - 32 && y > topLimbY };
 }
 
@@ -220,7 +225,7 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const blrReticleAlpha = smoothstep(0.46, 0.57, sp);
   const orbitRingAlpha = smoothstep(0.47, 0.58, sp);
 
-  const orbitAdvance = (sp - 0.45) * 3.0 + (reducedMotion ? 0 : t * 0.20);
+  const orbitAdvance = (sp - 0.45) * 4.2 + (reducedMotion ? 0 : t * 0.20);
 
   const satPos = (sat: OrbitalSatSpec, angle: number) => {
     const lx = Math.cos(angle) * earthR * sat.rxScale;

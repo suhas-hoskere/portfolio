@@ -358,15 +358,21 @@ export function getPadZoomTransform(
 ): { scale: number; anchorY: number; alpha: number; horizonY: number } {
   const baseHorizonY = groundY - unit * 0.24;
   if (sp <= 0.140) {
-    return { scale: 1, anchorY: groundY, alpha: 1, horizonY: baseHorizonY };
+    const dolly = smoothstep(0.0, 0.140, sp);
+    return {
+      scale: 1 + dolly * 0.032,
+      anchorY: groundY + dolly * unit * 0.04,
+      alpha: 1,
+      horizonY: baseHorizonY + dolly * unit * 0.025,
+    };
   }
 
   // Gentle natural parallax drop as the camera pans up tracking the rising rocket across many frames
   const panUp = smoothstep(0.148, 0.310, sp);
   const dropPx = Math.pow(panUp, 1.55) * (h * 0.62 + unit * 1.4);
-  const scale = 1 - panUp * 0.22;
-  const anchorY = groundY + dropPx;
-  const horizonY = baseHorizonY + dropPx * 0.65;
+  const scale = 1.032 - panUp * 0.252;
+  const anchorY = groundY + unit * 0.04 + dropPx;
+  const horizonY = baseHorizonY + unit * 0.025 + dropPx * 0.65;
   const alpha = 1 - smoothstep(0.240, 0.305, sp);
 
   return { scale, anchorY, alpha, horizonY };
