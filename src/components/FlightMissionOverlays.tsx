@@ -177,18 +177,28 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
   ({ onLaunch, onSelectProject, entered = true }) => {
     const enterCls = entered ? 'animate-stage-in' : 'opacity-0';
 
+    const textWell =
+      'bg-[#050505]/78 border border-white/[0.09] rounded-2xl px-5 py-6 sm:px-8 sm:py-7 shadow-[0_12px_40px_rgba(0,0,0,0.55)]';
+
     return (
-      <main
-        className="relative z-10 w-full pointer-events-none select-none"
-        style={{ textShadow: '0 2px 18px rgba(0, 0, 0, 0.92), 0 1px 4px rgba(0, 0, 0, 0.95)' }}
-      >
-        <div className="w-full max-w-[92vw] sm:max-w-[540px] md:max-w-[54vw] lg:max-w-[55vw] xl:max-w-[860px] pl-5 sm:pl-10 md:pl-14 lg:pl-20 pr-4 sm:pr-6">
-          {/* ===== SECTION 00: LAUNCH PAD — HERO ===== */}
-          <section
-            id="section-pad"
-            className="min-h-[100vh] flex flex-col justify-center py-24 pointer-events-auto"
-          >
-            <div className="space-y-4 sm:space-y-5 text-left">
+      <>
+        {/* Soft continuous feathered dark reading scrim behind the left editorial column (never clips hard!) */}
+        <div
+          aria-hidden="true"
+          className="fixed inset-y-0 left-0 z-[5] w-full md:w-[60vw] lg:w-[60vw] xl:w-[940px] pointer-events-none bg-gradient-to-r from-[#050505]/82 via-[#050505]/52 to-transparent"
+        />
+
+        <main
+          className="relative z-10 w-full pointer-events-none select-none"
+          style={{ textShadow: '0 2px 14px rgba(0, 0, 0, 0.90)' }}
+        >
+          <div className="w-full max-w-[92vw] sm:max-w-[540px] md:max-w-[54vw] lg:max-w-[55vw] xl:max-w-[860px] pl-5 sm:pl-10 md:pl-14 lg:pl-20 pr-4 sm:pr-6">
+            {/* ===== SECTION 00: LAUNCH PAD — HERO ===== */}
+            <section
+              id="section-pad"
+              className="min-h-[100vh] flex flex-col justify-center py-24 pointer-events-auto"
+            >
+              <div className={`${textWell} space-y-4 sm:space-y-5 text-left`}>
               <div
                 className={`flex flex-wrap items-center gap-2.5 ${enterCls}`}
                 style={{ animationDelay: '0ms' }}
@@ -265,30 +275,32 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
             aria-label="Launch sequence telemetry log"
             className="min-h-[65vh] flex flex-col justify-center py-10 pointer-events-auto"
           >
-            <div className="border-l border-white/20 pl-5 sm:pl-6 space-y-6">
-              <div className="text-[10px] font-mono tracking-[0.22em] text-zinc-400 uppercase">
-                LAUNCH SEQUENCE // T-00:03 → T+00:03
-              </div>
-              {LAUNCH_STEPS.map(({ step, time, Icon, title, detail }) => (
-                <div key={step} className="relative space-y-1">
-                  <span
-                    aria-hidden="true"
-                    className="absolute -left-[25px] sm:-left-[29px] top-1.5 w-2 h-2 rounded-full bg-white"
-                  />
-                  <div className="flex items-center gap-2.5 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
-                    <Icon className="w-3 h-3 text-white" />
-                    <span className="text-white font-semibold">STEP {step}</span>
-                    <span>·</span>
-                    <span>{time}</span>
-                  </div>
-                  <h3 className="text-base sm:text-lg font-space font-semibold text-white tracking-tight">
-                    {title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed max-w-xl">
-                    {detail}
-                  </p>
+            <div className={textWell}>
+              <div className="border-l border-white/20 pl-5 sm:pl-6 space-y-6">
+                <div className="text-[10px] font-mono tracking-[0.22em] text-zinc-400 uppercase">
+                  LAUNCH SEQUENCE // T-00:03 → T+00:03
                 </div>
-              ))}
+                {LAUNCH_STEPS.map(({ step, time, Icon, title, detail }) => (
+                  <div key={step} className="relative space-y-1">
+                    <span
+                      aria-hidden="true"
+                      className="absolute -left-[25px] sm:-left-[29px] top-1.5 w-2 h-2 rounded-full bg-white"
+                    />
+                    <div className="flex items-center gap-2.5 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                      <Icon className="w-3 h-3 text-white" />
+                      <span className="text-white font-semibold">STEP {step}</span>
+                      <span>·</span>
+                      <span>{time}</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-space font-semibold text-white tracking-tight">
+                      {title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-300 font-sans font-light leading-relaxed max-w-xl">
+                      {detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -297,7 +309,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
             id="section-ascent"
             className="min-h-[125vh] flex flex-col justify-center py-20 pointer-events-auto"
           >
-            <div className="space-y-4 text-left border-t border-white/15 pt-6">
+            <div className={`${textWell} space-y-4 text-left`}>
               <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
                 <span>STAGE 01 // ASCENT</span>
                 <span className="text-white">2020 ERA</span>
@@ -314,13 +326,13 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
               </p>
 
               <div className="flex flex-wrap gap-2 pt-2">
-                <span className="px-3 py-1 rounded-full border border-white/20 text-[11px] font-mono text-zinc-200">
+                <span className="px-3 py-1 rounded-full bg-black/50 border border-white/20 text-[11px] font-mono text-zinc-200">
                   Mathematics &amp; Physics
                 </span>
-                <span className="px-3 py-1 rounded-full border border-white/20 text-[11px] font-mono text-zinc-200">
+                <span className="px-3 py-1 rounded-full bg-black/50 border border-white/20 text-[11px] font-mono text-zinc-200">
                   Siddaganga PU College
                 </span>
-                <span className="px-3 py-1 rounded-full border border-white/20 text-[11px] font-mono text-zinc-200">
+                <span className="px-3 py-1 rounded-full bg-black/50 border border-white/20 text-[11px] font-mono text-zinc-200">
                   Davanagere, Karnataka
                 </span>
               </div>
@@ -332,7 +344,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
             id="section-orbit"
             className="min-h-[100vh] flex flex-col justify-center py-20 pointer-events-auto"
           >
-            <div className="space-y-4 text-left border-t border-white/15 pt-6">
+            <div className={`${textWell} space-y-4 text-left`}>
               <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
                 <span>STAGE 02 // ORBIT</span>
                 <span className="text-white">420 KM LEO</span>
@@ -370,7 +382,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
             id="section-missions"
             className="min-h-[95vh] flex flex-col justify-center py-20 pointer-events-auto"
           >
-            <div className="space-y-5 text-left border-t border-white/15 pt-6">
+            <div className={`${textWell} space-y-5 text-left`}>
               <div className="flex items-end justify-between gap-2">
                 <div>
                   <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
@@ -401,7 +413,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                         <span className="font-semibold uppercase text-white tracking-wider">
                           {proj.name}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full border border-white/20 text-zinc-200">
+                        <span className="px-2 py-0.5 rounded-full bg-black/50 border border-white/20 text-zinc-200">
                           {proj.badge}
                         </span>
                       </div>
@@ -437,7 +449,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
             id="section-heritage"
             className="min-h-[80vh] flex flex-col justify-center py-20 pointer-events-auto"
           >
-            <div className="space-y-4 text-left border-t border-white/15 pt-6">
+            <div className={`${textWell} space-y-4 text-left`}>
               <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 uppercase tracking-[0.2em]">
                 <span>STAGE 04 // KARNATAKA PASS</span>
                 <span className="text-white">420 KM LEO</span>
@@ -474,7 +486,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
             id="section-signal"
             className="min-h-[100vh] flex flex-col justify-center pt-20 pb-28 pointer-events-auto"
           >
-            <div className="space-y-5 text-left border-t border-white/20 pt-6">
+            <div className={`${textWell} space-y-5 text-left`}>
               <div className="inline-flex items-center gap-2 text-[11px] font-mono font-medium text-white uppercase tracking-[0.22em]">
                 <span className="w-1.5 h-1.5 rounded-full bg-white" />
                 <span>TERMINAL VECTOR // 05</span>
@@ -504,7 +516,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     href="https://github.com/suhashoskere"
                     target="_blank"
                     rel="noreferrer"
-                    className="py-3 px-4 rounded-lg bg-transparent hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="py-3 px-4 rounded-lg bg-black/50 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <GithubIcon className="w-4 h-4" />
                     <span>GitHub</span>
@@ -515,7 +527,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     href="https://linkedin.com/in/suhashoskere"
                     target="_blank"
                     rel="noreferrer"
-                    className="py-3 px-4 rounded-lg bg-transparent hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="py-3 px-4 rounded-lg bg-black/50 hover:bg-white/10 border border-white/25 hover:border-white text-zinc-100 hover:text-white font-mono text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <LinkedinIcon className="w-4 h-4" />
                     <span>LinkedIn</span>
@@ -531,6 +543,7 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
           </section>
         </div>
       </main>
+      </>
     );
   }
 );
