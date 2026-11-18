@@ -196,33 +196,20 @@ export function getEarthOrbitGeometry(frame: Scene2DFrameContext): {
   return { centerX, centerY, earthR, topLimbY, climbCurve };
 }
 
-/** Shared live screen coordinates of the Bangalore Ground Station beacon on Earth */
-export function getBlrGroundStationPos(frame: Scene2DFrameContext): { x: number; y: number; visible: boolean } {
-  const { h, sp } = frame;
-  if (sp < 0.46) return { x: 0, y: 0, visible: false };
-  const { centerX, centerY, earthR, topLimbY } = getEarthOrbitGeometry(frame);
-  // Smoothly rotates Bangalore across Earth's curved globe into nadir lock as the spacecraft approaches Stage 05
-  const groundTrack = smoothstep(0.46, 0.92, sp);
-  const x = centerX + lerp(earthR * 0.14, earthR * 0.02, groundTrack);
-  const y = centerY - lerp(earthR * 0.69, earthR * 0.73, groundTrack);
-  return { x, y, visible: y < h - 32 && y > topLimbY };
-}
-
 /**
  * Pure Monochrome Photorealistic Earth-to-Orbit Globe (sp 0.255 -> 1.000):
- * - Clean atmospheric globe with swirling clouds & glowing limb (zero map outlines, zero grids)
- * - Subtle pulsing Bangalore orbital ground-track beacon + orbiting constellation satellites
+ * - Clean atmospheric globe with swirling clouds & glowing limb (zero map outlines, zero grids, zero ground markers)
+ * - Orbiting monochrome constellation micro-satellites
  */
 export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
-  const { ctx, h, sp, t, unit, reducedMotion } = frame;
+  const { ctx, sp, t, unit, reducedMotion } = frame;
 
   // Rises gradually across the expanded ascent-to-orbit span (0.255 -> 0.560)
   if (sp < 0.255) return;
 
-  const { centerX, centerY, earthR, topLimbY } = getEarthOrbitGeometry(frame);
+  const { centerX, centerY, earthR } = getEarthOrbitGeometry(frame);
   const earthFadeIn = smoothstep(0.255, 0.365, sp);
 
-  const blrReticleAlpha = smoothstep(0.46, 0.57, sp);
   const orbitRingAlpha = smoothstep(0.47, 0.58, sp);
 
   const orbitAdvance = (sp - 0.45) * 4.2 + (reducedMotion ? 0 : t * 0.20);
@@ -268,39 +255,7 @@ export function renderEarthAndOrbit(frame: Scene2DFrameContext): void {
   const drawSize = EARTH_SPRITE_SIZE * drawScale;
   ctx.drawImage(earthImg, centerX - drawSize * 0.5, centerY - drawSize * 0.5, drawSize, drawSize);
 
-  // 3. Subtle pulsing Bangalore Ground Station Beacon on Earth's horizon
-  if (blrReticleAlpha > 0.01) {
-    const blrX = centerX + earthR * 0.02;
-    const blrY = centerY - earthR * 0.72;
-    if (blrY < h - 32 && blrY > topLimbY) {
-      ctx.save();
-      ctx.globalAlpha = earthFadeIn * blrReticleAlpha;
-      const pingWave = reducedMotion ? 0.35 : (t * 0.78) % 1.0;
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
-      ctx.lineWidth = 1.0;
-      ctx.beginPath();
-      ctx.arc(blrX, blrY, unit * 0.068, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - pingWave) * 0.65})`;
-      ctx.beginPath();
-      ctx.arc(blrX, blrY, unit * (0.068 + pingWave * 0.24), 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(blrX, blrY, 2.0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.font = `600 ${Math.max(9, Math.round(unit * 0.078))}px "JetBrains Mono", monospace`;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.fillText('BLR // 12.97°N 77.59°E', blrX + unit * 0.14, blrY + 3);
-      ctx.restore();
-    }
-  }
-
-  // 4. Front orbital trace arcs & monochrome Keplerian satellites
+  // 3. Front orbital trace arcs & monochrome Keplerian satellites
   if (orbitRingAlpha > 0.01) {
     ctx.save();
     ctx.globalAlpha = earthFadeIn * orbitRingAlpha;
