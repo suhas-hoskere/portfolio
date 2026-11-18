@@ -56,6 +56,7 @@ export const App: React.FC = () => {
   const [activeStageIndex, setActiveStageIndex] = useState(0);
   const [uiScrollProgress, setUiScrollProgress] = useState(0);
   const [audioActive, setAudioActive] = useState(false);
+  const [isAutoTourActive, setIsAutoTourActive] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
 
   const [cameraMode, setCameraMode] = useState<'CINEMATIC' | 'BOOSTER' | 'CHASE'>('CINEMATIC');
@@ -180,6 +181,7 @@ export const App: React.FC = () => {
         cancelAnimationFrame(scrollAnimRaf.current);
         scrollAnimRaf.current = null;
       }
+      setIsAutoTourActive(false);
     };
 
     const handleScroll = () => {
@@ -289,6 +291,7 @@ export const App: React.FC = () => {
       }
 
       const targetFraction = targetY / maxScroll;
+      setIsAutoTourActive(false);
       programmaticJumpTargetRef.current = targetFraction;
       lastStageRef.current = clampedIdx;
       setActiveStageIndex(clampedIdx);
@@ -300,29 +303,79 @@ export const App: React.FC = () => {
     [animateScrollTo]
   );
 
-  // "Ignite & Lift Off" button smoothly launches down past the launch sequence into Stage 01 Ascent
+  const stopAutoTour = useCallback(() => {
+    if (scrollAnimRaf.current) {
+      cancelAnimationFrame(scrollAnimRaf.current);
+      scrollAnimRaf.current = null;
+    }
+    setIsAutoTourActive(false);
+  }, []);
+
+  const handleSelectProject = useCallback(
+    (proj: ProjectData) => {
+      stopAutoTour();
+      setSelectedProject(proj);
+    },
+    [stopAutoTour]
+  );
+
+  // "Explore Journey" button: hands-free slow reading cruise across the entire page (~88 px/sec)
+  // so visitors can read every section & watch the entire launch-to-orbit flight without touching scroll!
   const handleLaunch = useCallback(() => {
+    if (scrollAnimRaf.current) {
+      cancelAnimationFrame(scrollAnimRaf.current);
+      scrollAnimRaf.current = null;
+    }
     programmaticJumpTargetRef.current = null;
     if (cosmicAudio.isMuted && !cosmicAudio.userExplicitlyMuted) {
       cosmicAudio.unmute();
       setAudioActive(true);
     }
-    cosmicAudio.playQuindarTone(true);
-    cosmicAudio.playRadioCallout('Initiating liftoff sequence. Dual Vikas core ignited.');
 
     const maxScroll = Math.max(
       (trackRef.current?.scrollHeight || document.documentElement.scrollHeight) - window.innerHeight,
       1
     );
-    const ascentEl = document.getElementById('section-ascent');
-    const targetY = ascentEl
-      ? Math.min(
-          Math.max(ascentEl.offsetTop + (ascentEl.offsetHeight - window.innerHeight) * 0.5, 0),
-          maxScroll
-        )
-      : maxScroll * 0.34;
-    animateScrollTo(targetY, 2800, false);
-  }, [animateScrollTo]);
+    let currentY = window.scrollY || window.pageYOffset || 0;
+    if (currentY >= maxScroll - 10) {
+      currentY = 0;
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    }
+
+    const basePxPerSec = 88; // Comfortable hands-free reading & cinematic launch pace
+    let lastNow: number | null = null;
+    let elapsedSec = 0;
+    setIsAutoTourActive(true);
+
+    const cruiseStep = (now: number) => {
+      if (lastNow === null) lastNow = now;
+      const dt = Math.min(Math.max((now - lastNow) / 1000, 0), 0.05);
+      lastNow = now;
+      elapsedSec += dt;
+
+      const remaining = maxScroll - currentY;
+      if (remaining <= 0.5) {
+        window.scrollTo({ top: maxScroll, behavior: 'instant' as ScrollBehavior });
+        scrollProgressRef.current = 1;
+        scrollAnimRaf.current = null;
+        setIsAutoTourActive(false);
+        return;
+      }
+
+      // Gentle 0.9s ramp-up at takeoff + soft 180px feather-stop at the bottom
+      const rampIn = Math.min(elapsedSec / 0.9, 1);
+      const rampOut = Math.min(remaining / 180, 1);
+      const speed = basePxPerSec * (0.25 + 0.75 * rampIn) * (0.22 + 0.78 * rampOut);
+
+      currentY = Math.min(currentY + speed * dt, maxScroll);
+      window.scrollTo({ top: currentY, behavior: 'instant' as ScrollBehavior });
+      scrollProgressRef.current = Math.min(Math.max(currentY / maxScroll, 0), 1);
+
+      scrollAnimRaf.current = requestAnimationFrame(cruiseStep);
+    };
+
+    scrollAnimRaf.current = requestAnimationFrame(cruiseStep);
+  }, []);
 
   return (
     <div
@@ -355,10 +408,24 @@ export const App: React.FC = () => {
         onOpenTerminal={handleOpenTerminal}
       />
 
+      {/* Minimal Hands-Free Auto-Tour Pause Pill */}
+      {isAutoTourActive && (
+        <div className="fixed bottom-4 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-auto">
+          <button
+            type="button"
+            onClick={stopAutoTour}
+            className="px-3.5 py-1.5 rounded-full bg-[#050505]/95 border border-white/25 hover:border-white text-[10px] font-mono tracking-[0.18em] text-zinc-200 hover:text-white uppercase flex items-center gap-2 shadow-[0_8px_24px_rgba(0,0,0,0.8)] transition-colors cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            <span>Auto Journey · Click or Scroll to Pause</span>
+          </button>
+        </div>
+      )}
+
       {/* Single Continuous Transparent Scrollable Editorial Page */}
       <FlightMissionOverlays
         onLaunch={handleLaunch}
-        onSelectProject={setSelectedProject}
+        onSelectProject={handleSelectProject}
         entered={!showLoader}
       />
 

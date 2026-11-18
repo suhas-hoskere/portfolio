@@ -298,6 +298,18 @@ export const FlightMissionOverlays: React.FC<FlightMissionOverlaysProps> = React
                     <span>suhas-hoskere</span>
                     <ExternalLink className="w-3 h-3 text-zinc-400" />
                   </a>
+
+                  <a
+                    href="https://www.linkedin.com/in/suhas-hoskere/"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => cosmicAudio.playTelemetryChirp(1240, 0.05)}
+                    className="px-4 py-2.5 sm:py-3 rounded-lg bg-transparent hover:bg-white/10 border border-white/20 hover:border-white/60 text-zinc-200 hover:text-white font-mono text-xs flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <LinkedinIcon className="w-4 h-4" />
+                    <span>LinkedIn</span>
+                    <ExternalLink className="w-3 h-3 text-zinc-400" />
+                  </a>
                 </div>
               </div>
             </section>
